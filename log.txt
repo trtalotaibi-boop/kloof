@@ -1,0 +1,911 @@
+[  +29 ms] Unable to locate an Android SDK.
+[   +5 ms] executing: sysctl hw.optional.arm64
+[   +3 ms] Exit code 0 from: sysctl hw.optional.arm64
+[        ] hw.optional.arm64: 1
+[   +3 ms] Artifact Instance of 'MaterialFonts' is not required, skipping update.
+[        ] Artifact Instance of 'GradleWrapper' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[        ] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterSdk' is not required, skipping update.
+[        ] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FontSubsetArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'PubDependencies' is not required, skipping update.
+[        ] executing: [/Users/turkialotaibi/Desktop/development/flutter/] git -c log.showSignature=false log HEAD -n 1 --pretty=format:%ad --date=iso
+[  +16 ms] Exit code 0 from: git -c log.showSignature=false log HEAD -n 1 --pretty=format:%ad --date=iso
+[        ] 2026-07-08 15:02:06 -0700
+[   +5 ms] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterEngineStamp' is not required, skipping update.
+[        ] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[        ] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[  +19 ms] Artifact Instance of 'MaterialFonts' is not required, skipping update.
+[        ] Artifact Instance of 'GradleWrapper' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidGenSnapshotArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'AndroidInternalBuildArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterWebSdk' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterEngineStamp' is not required, skipping update.
+[        ] Artifact Instance of 'LegacyCanvasKitRemover' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterSdk' is not required, skipping update.
+[        ] Artifact Instance of 'WindowsEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxEngineArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'LinuxFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'MacOSFuchsiaSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerSDKArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FlutterRunnerDebugSymbols' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'IosUsbArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'FontSubsetArtifacts' is not required, skipping update.
+[        ] Artifact Instance of 'PubDependencies' is not required, skipping update.
+[  +26 ms] executing: sysctl hw.optional.arm64
+[   +3 ms] Exit code 0 from: sysctl hw.optional.arm64
+[        ] hw.optional.arm64: 1
+[        ] executing: /usr/bin/arch -arm64e xcrun xcodebuild -version
+[ +115 ms] Exit code 0 from: /usr/bin/arch -arm64e xcrun xcodebuild -version
+[        ] Xcode 26.6
+           Build version 17F113
+[   +1 ms] executing: [./ios/] /usr/bin/arch -arm64e xcrun xcodebuild -clonedSourcePackagesDirPath /Users/turkialotaibi/kloof/build/ios/SourcePackages -resolvePackageDependencies
+[ +842 ms] executing: [./ios/] /usr/bin/arch -arm64e xcrun xcodebuild -clonedSourcePackagesDirPath /Users/turkialotaibi/kloof/build/ios/SourcePackages -skipPackageUpdates -skipPackagePluginValidation -skipPackageSignatureValidation -list
+[ +728 ms] Command line invocation:
+               /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -clonedSourcePackagesDirPath /Users/turkialotaibi/kloof/build/ios/SourcePackages -skipPackageUpdates -skipPackagePluginValidation -skipPackageSignatureValidation -list
+
+           Resolve Package Graph
+
+
+           Resolved source packages:
+             FlutterFramework: /Users/turkialotaibi/kloof/ios/Flutter/ephemeral/Packages/.packages/FlutterFramework @ local
+             FlutterGeneratedPluginSwiftPackage: /Users/turkialotaibi/kloof/ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage
+
+           Information about project "Runner":
+               Targets:
+                   Runner
+                   RunnerTests
+
+               Build Configurations:
+                   Debug
+                   Release
+                   Profile
+
+               If no build configuration is specified and -scheme is not passed then "Release" is used.
+
+               Schemes:
+                   FlutterFramework
+                   FlutterGeneratedPluginSwiftPackage
+                   Runner
+[   +2 ms] executing: /usr/bin/plutil -convert xml1 -o - /Users/turkialotaibi/kloof/./ios/Runner/Info.plist
+[   +6 ms] Exit code 0 from: /usr/bin/plutil -convert xml1 -o - /Users/turkialotaibi/kloof/./ios/Runner/Info.plist
+[        ] <?xml version="1.0" encoding="UTF-8"?>
+           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+           <plist version="1.0">
+           <dict>
+           	<key>CADisableMinimumFrameDurationOnPhone</key>
+           	<true/>
+           	<key>CFBundleDevelopmentRegion</key>
+           	<string>$(DEVELOPMENT_LANGUAGE)</string>
+           	<key>CFBundleDisplayName</key>
+           	<string>Kloof</string>
+           	<key>CFBundleExecutable</key>
+           	<string>$(EXECUTABLE_NAME)</string>
+           	<key>CFBundleIdentifier</key>
+           	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+           	<key>CFBundleInfoDictionaryVersion</key>
+           	<string>6.0</string>
+           	<key>CFBundleName</key>
+           	<string>kloof</string>
+           	<key>CFBundlePackageType</key>
+           	<string>APPL</string>
+           	<key>CFBundleShortVersionString</key>
+           	<string>$(FLUTTER_BUILD_NAME)</string>
+           	<key>CFBundleSignature</key>
+           	<string>????</string>
+           	<key>CFBundleVersion</key>
+           	<string>$(FLUTTER_BUILD_NUMBER)</string>
+           	<key>LSRequiresIPhoneOS</key>
+           	<true/>
+           	<key>UIApplicationSceneManifest</key>
+           	<dict>
+           		<key>UIApplicationSupportsMultipleScenes</key>
+           		<false/>
+           		<key>UISceneConfigurations</key>
+           		<dict>
+           			<key>UIWindowSceneSessionRoleApplication</key>
+           			<array>
+           				<dict>
+           					<key>UISceneClassName</key>
+           					<string>UIWindowScene</string>
+           					<key>UISceneConfigurationName</key>
+           					<string>flutter</string>
+           					<key>UISceneDelegateClassName</key>
+           					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+           					<key>UISceneStoryboardFile</key>
+           					<string>Main</string>
+           				</dict>
+           			</array>
+           		</dict>
+           	</dict>
+           	<key>UIApplicationSupportsIndirectInputEvents</key>
+           	<true/>
+           	<key>UILaunchStoryboardName</key>
+           	<string>LaunchScreen</string>
+           	<key>UIMainStoryboardFile</key>
+           	<string>Main</string>
+           	<key>UISupportedInterfaceOrientations</key>
+           	<array>
+           		<string>UIInterfaceOrientationPortrait</string>
+           		<string>UIInterfaceOrientationLandscapeLeft</string>
+           		<string>UIInterfaceOrientationLandscapeRight</string>
+           	</array>
+           	<key>UISupportedInterfaceOrientations~ipad</key>
+           	<array>
+           		<string>UIInterfaceOrientationPortrait</string>
+           		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+           		<string>UIInterfaceOrientationLandscapeLeft</string>
+           		<string>UIInterfaceOrientationLandscapeRight</string>
+           	</array>
+           </dict>
+           </plist>
+[  +37 ms] executing: [./ios/Runner.xcodeproj/] /usr/bin/arch -arm64e xcrun xcodebuild -clonedSourcePackagesDirPath /Users/turkialotaibi/kloof/build/ios/SourcePackages -skipPackageUpdates -skipPackagePluginValidation -skipPackageSignatureValidation -project /Users/turkialotaibi/kloof/./ios/Runner.xcodeproj -scheme Runner -destination generic/platform=iOS -showBuildSettings BUILD_DIR=/Users/turkialotaibi/kloof/build/ios
+[        ] executing: [./ios/Runner.xcodeproj/] /usr/bin/arch -arm64e xcrun xcodebuild -clonedSourcePackagesDirPath /Users/turkialotaibi/kloof/build/ios/SourcePackages -skipPackageUpdates -skipPackagePluginValidation -skipPackageSignatureValidation -project /Users/turkialotaibi/kloof/./ios/Runner.xcodeproj -scheme Runner -destination generic/platform=iOS -showBuildSettings BUILD_DIR=/Users/turkialotaibi/kloof/build/ios
+[+1011 ms] Command line invocation:
+               /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -clonedSourcePackagesDirPath /Users/turkialotaibi/kloof/build/ios/SourcePackages -skipPackageUpdates -skipPackagePluginValidation -skipPackageSignatureValidation -project /Users/turkialotaibi/kloof/./ios/Runner.xcodeproj -scheme Runner -destination generic/platform=iOS -showBuildSettings BUILD_DIR=/Users/turkialotaibi/kloof/build/ios
+
+           Build settings from command line:
+               BUILD_DIR = /Users/turkialotaibi/kloof/build/ios
+
+           Resolve Package Graph
+
+
+           Resolved source packages:
+             FlutterGeneratedPluginSwiftPackage: /Users/turkialotaibi/kloof/ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage
+             FlutterFramework: /Users/turkialotaibi/kloof/ios/Flutter/ephemeral/Packages/.packages/FlutterFramework @ local
+
+           Build settings for action build and target Runner:
+               ACTION = build
+               AD_HOC_CODE_SIGNING_ALLOWED = NO
+               AGGREGATE_TRACKED_DOMAINS = YES
+               ALLOW_BUILD_REQUEST_OVERRIDES = NO
+               ALLOW_TARGET_PLATFORM_SPECIALIZATION = NO
+               ALTERNATE_GROUP = staff
+               ALTERNATE_MODE = u+w,go-w,a+rX
+               ALTERNATE_OWNER = turkialotaibi
+               ALTERNATIVE_DISTRIBUTION_WEB = NO
+               ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO
+               ALWAYS_SEARCH_USER_PATHS = NO
+               ALWAYS_USE_SEPARATE_HEADERMAPS = NO
+               APPLICATION_EXTENSION_API_ONLY = NO
+               APPLY_RULES_IN_COPY_FILES = NO
+               APPLY_RULES_IN_COPY_HEADERS = NO
+               APP_SHORTCUTS_ENABLE_FLEXIBLE_MATCHING = YES
+               ARCHS = arm64
+               ARCHS_BASE = arm64
+               ARCHS_STANDARD = arm64
+               ARCHS_STANDARD_32_64_BIT = armv7 arm64
+               ARCHS_STANDARD_32_BIT = armv7
+               ARCHS_STANDARD_64_BIT = arm64
+               ARCHS_STANDARD_INCLUDING_64_BIT = arm64
+               ARCHS_UNIVERSAL_IPHONE_OS = armv7 arm64
+               ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon
+               ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES
+               AUTOMATICALLY_MERGE_DEPENDENCIES = NO
+               AUTOMATION_APPLE_EVENTS = NO
+               AVAILABLE_PLATFORMS = android appletvos appletvsimulator driverkit freebsd iphoneos iphonesimulator linux macosx none openbsd qnx watchos watchsimulator webassembly xros xrsimulator
+               BUILD_ACTIVE_RESOURCES_ONLY = NO
+               BUILD_COMPONENTS = headers build
+               BUILD_DIR = /Users/turkialotaibi/kloof/build/ios
+               BUILD_LIBRARY_FOR_DISTRIBUTION = NO
+               BUILD_ONLY_KNOWN_LOCALIZATIONS = NO
+               BUILD_ROOT = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Products
+               BUILD_STYLE = 
+               BUILD_VARIANTS = normal
+               BUILT_PRODUCTS_DIR = /Users/turkialotaibi/kloof/build/ios/Debug-iphoneos
+               BUNDLE_CONTENTS_FOLDER_PATH_deep = Contents/
+               BUNDLE_EXECUTABLE_FOLDER_NAME_deep = MacOS
+               BUNDLE_EXTENSIONS_FOLDER_PATH = Extensions
+               BUNDLE_FORMAT = shallow
+               BUNDLE_FRAMEWORKS_FOLDER_PATH = Frameworks
+               BUNDLE_PLUGINS_FOLDER_PATH = PlugIns
+               BUNDLE_PRIVATE_HEADERS_FOLDER_PATH = PrivateHeaders
+               BUNDLE_PUBLIC_HEADERS_FOLDER_PATH = Headers
+               CACHE_ROOT = /var/folders/h7/djfgq8wj43v0d48wbg4vnc3w0000gn/C/com.apple.DeveloperTools/26.6-17F113/Xcode
+               CCHROOT = /var/folders/h7/djfgq8wj43v0d48wbg4vnc3w0000gn/C/com.apple.DeveloperTools/26.6-17F113/Xcode
+               CHMOD = /bin/chmod
+               CHOWN = chown
+               CLANG_ANALYZER_NONNULL = YES
+               CLANG_CACHE_FINE_GRAINED_OUTPUTS = YES
+               CLANG_CXX_LANGUAGE_STANDARD = gnu++0x
+               CLANG_CXX_LIBRARY = libc++
+               CLANG_ENABLE_EXPLICIT_MODULES = YES
+               CLANG_ENABLE_MODULES = YES
+               CLANG_ENABLE_OBJC_ARC = YES
+               CLANG_MODULES_BUILD_SESSION_FILE = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation
+               CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES
+               CLANG_WARN_BOOL_CONVERSION = YES
+               CLANG_WARN_COMMA = YES
+               CLANG_WARN_CONSTANT_CONVERSION = YES
+               CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES
+               CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR
+               CLANG_WARN_EMPTY_BODY = YES
+               CLANG_WARN_ENUM_CONVERSION = YES
+               CLANG_WARN_INFINITE_RECURSION = YES
+               CLANG_WARN_INT_CONVERSION = YES
+               CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES
+               CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES
+               CLANG_WARN_OBJC_LITERAL_CONVERSION = YES
+               CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR
+               CLANG_WARN_RANGE_LOOP_ANALYSIS = YES
+               CLANG_WARN_STRICT_PROTOTYPES = YES
+               CLANG_WARN_SUSPICIOUS_MOVE = YES
+               CLANG_WARN_UNREACHABLE_CODE = YES
+               CLANG_WARN__DUPLICATE_METHOD_MATCH = YES
+               CLASS_FILE_DIR = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/JavaClasses
+               CLEAN_PRECOMPS = YES
+               CLONE_HEADERS = NO
+               COCOAPODS_PARALLEL_CODE_SIGN = true
+               CODESIGNING_FOLDER_PATH = /Users/turkialotaibi/kloof/build/ios/Debug-iphoneos/Runner.app
+               CODE_SIGNING_ALLOWED = YES
+               CODE_SIGNING_REQUIRED = YES
+               CODE_SIGN_CONTEXT_CLASS = XCiPhoneOSCodeSignContext
+               CODE_SIGN_IDENTITY = iPhone Developer
+               CODE_SIGN_INJECT_BASE_ENTITLEMENTS = YES
+               COLOR_DIAGNOSTICS = NO
+               COMBINE_HIDPI_IMAGES = NO
+               COMPILATION_CACHE_CAS_PATH = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/CompilationCache.noindex
+               COMPILATION_CACHE_KEEP_CAS_DIRECTORY = YES
+               COMPILER_INDEX_STORE_ENABLE = Default
+               COMPOSITE_SDK_DIRS = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/CompositeSDKs
+               COMPRESS_PNG_FILES = YES
+               CONFIGURATION = Debug
+               CONFIGURATION_BUILD_DIR = /Users/turkialotaibi/kloof/build/ios/Debug-iphoneos
+               CONFIGURATION_TEMP_DIR = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos
+               CONTENTS_FOLDER_PATH = Runner.app
+               CONTENTS_FOLDER_PATH_SHALLOW_BUNDLE_NO = Runner.app/Contents
+               CONTENTS_FOLDER_PATH_SHALLOW_BUNDLE_YES = Runner.app
+               COPYING_PRESERVES_HFS_DATA = NO
+               COPY_HEADERS_RUN_UNIFDEF = NO
+               COPY_PHASE_STRIP = NO
+               CORRESPONDING_SIMULATOR_PLATFORM_DIR = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform
+               CORRESPONDING_SIMULATOR_PLATFORM_NAME = iphonesimulator
+               CORRESPONDING_SIMULATOR_SDK_DIR = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk
+               CORRESPONDING_SIMULATOR_SDK_NAME = iphonesimulator26.5
+               CP = /bin/cp
+               CREATE_INFOPLIST_SECTION_IN_BINARY = NO
+               CURRENT_ARCH = undefined_arch
+               CURRENT_PROJECT_VERSION = 1
+               CURRENT_VARIANT = normal
+               DART_OBFUSCATION = false
+               DEAD_CODE_STRIPPING = YES
+               DEBUGGING_SYMBOLS = YES
+               DEBUG_INFORMATION_FORMAT = dwarf
+               DEBUG_INFORMATION_VERSION = compiler-default
+               DEFAULT_COMPILER = com.apple.compilers.llvm.clang.1_0
+               DEFAULT_DEXT_INSTALL_PATH = /System/Library/DriverExtensions
+               DEFAULT_KEXT_INSTALL_PATH = /System/Library/Extensions
+               DEFINES_MODULE = NO
+               DEPLOYMENT_LOCATION = NO
+               DEPLOYMENT_POSTPROCESSING = NO
+               DEPLOYMENT_TARGET_SETTING_NAME = IPHONEOS_DEPLOYMENT_TARGET
+               DEPLOYMENT_TARGET_SUGGESTED_VALUES = 12.0 12.1 12.2 12.3 12.4 13.0 13.1 13.2 13.3 13.4 13.5 13.6 14.0 14.1 14.2 14.3 14.4 14.5 14.6 14.7 15.0 15.1 15.2 15.3 15.4 15.5 15.6 16.0 16.1 16.2 16.3 16.4 16.5 16.6 17.0 17.1 17.2 17.3 17.4 17.5 17.6 18.0 18.1 18.2 18.3 18.4 18.5 18.6 26.0 26.2 26.3 26.4 26.5
+               DERIVED_FILES_DIR = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/DerivedSources
+               DERIVED_FILE_DIR = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/DerivedSources
+               DERIVED_SOURCES_DIR = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/DerivedSources
+               DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO
+               DEVELOPER_APPLICATIONS_DIR = /Applications/Xcode.app/Contents/Developer/Applications
+               DEVELOPER_BIN_DIR = /Applications/Xcode.app/Contents/Developer/usr/bin
+               DEVELOPER_DIR = /Applications/Xcode.app/Contents/Developer
+               DEVELOPER_FRAMEWORKS_DIR = /Applications/Xcode.app/Contents/Developer/Library/Frameworks
+               DEVELOPER_FRAMEWORKS_DIR_QUOTED = /Applications/Xcode.app/Contents/Developer/Library/Frameworks
+               DEVELOPER_LIBRARY_DIR = /Applications/Xcode.app/Contents/Developer/Library
+               DEVELOPER_SDK_DIR = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs
+               DEVELOPER_TOOLS_DIR = /Applications/Xcode.app/Contents/Developer/Tools
+               DEVELOPER_USR_DIR = /Applications/Xcode.app/Contents/Developer/usr
+               DEVELOPMENT_LANGUAGE = en
+               DEVELOPMENT_TEAM = PAP889S2C9
+               DIAGNOSE_MISSING_TARGET_DEPENDENCIES = YES
+               DIFF = /usr/bin/diff
+               DOCUMENTATION_FOLDER_PATH = Runner.app/en.lproj/Documentation
+               DONT_GENERATE_INFOPLIST_FILE = NO
+               DRIVERKIT_DEPLOYMENT_TARGET = 25.5
+               DSTROOT = /tmp/Runner.dst
+               DT_TOOLCHAIN_DIR = /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain
+               DUMP_DEPENDENCIES = NO
+               DUMP_DEPENDENCIES_OUTPUT_PATH = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Runner-BuildDependencyInfo.json
+               DWARF_DSYM_FILE_NAME = Runner.app.dSYM
+               DWARF_DSYM_FILE_SHOULD_ACCOMPANY_PRODUCT = NO
+               DWARF_DSYM_FOLDER_PATH = /Users/turkialotaibi/kloof/build/ios/Debug-iphoneos
+               DYNAMIC_LIBRARY_EXTENSION = dylib
+               EAGER_COMPILATION_ALLOW_SCRIPTS = NO
+               EAGER_LINKING = NO
+               EFFECTIVE_PLATFORM_NAME = -iphoneos
+               EFFECTIVE_SWIFT_VERSION = 5
+               EMBEDDED_CONTENT_CONTAINS_SWIFT = NO
+               EMBEDDED_PROFILE_NAME = embedded.mobileprovision
+               EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = NO
+               ENABLE_APP_SANDBOX = NO
+               ENABLE_BITCODE = NO
+               ENABLE_CODE_COVERAGE = YES
+               ENABLE_COHORT_ARCHS = NO
+               ENABLE_CPLUSPLUS_BOUNDS_SAFE_BUFFERS = NO
+               ENABLE_C_BOUNDS_SAFETY = NO
+               ENABLE_DEBUG_DYLIB = YES
+               ENABLE_DEFAULT_HEADER_SEARCH_PATHS = YES
+               ENABLE_DEFAULT_SEARCH_PATHS = YES
+               ENABLE_ENHANCED_SECURITY = NO
+               ENABLE_HARDENED_RUNTIME = NO
+               ENABLE_HEADER_DEPENDENCIES = YES
+               ENABLE_INCOMING_NETWORK_CONNECTIONS = NO
+               ENABLE_ON_DEMAND_RESOURCES = YES
+               ENABLE_OUTGOING_NETWORK_CONNECTIONS = NO
+               ENABLE_POINTER_AUTHENTICATION = NO
+               ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO
+               ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO
+               ENABLE_RESOURCE_ACCESS_CALENDARS = NO
+               ENABLE_RESOURCE_ACCESS_CAMERA = NO
+               ENABLE_RESOURCE_ACCESS_CONTACTS = NO
+               ENABLE_RESOURCE_ACCESS_LOCATION = NO
+               ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO
+               ENABLE_RESOURCE_ACCESS_PRINTING = NO
+               ENABLE_RESOURCE_ACCESS_USB = NO
+               ENABLE_SDK_IMPORTS = NO
+               ENABLE_SECURITY_COMPILER_WARNINGS = NO
+               ENABLE_STRICT_OBJC_MSGSEND = YES
+               ENABLE_TESTABILITY = YES
+               ENABLE_TESTING_SEARCH_PATHS = NO
+               ENABLE_USER_SCRIPT_SANDBOXING = NO
+               ENFORCE_VALID_ARCHS = YES
+               ENTITLEMENTS_ALLOWED = YES
+               ENTITLEMENTS_DESTINATION = Signature
+               ENTITLEMENTS_REQUIRED = NO
+               EXCLUDED_ARCHS = armv7
+               EXCLUDED_INSTALLSRC_SUBDIRECTORY_PATTERNS = .DS_Store .svn .git .hg CVS
+               EXCLUDED_RECURSIVE_SEARCH_PATH_SUBDIRECTORIES = *.nib *.lproj *.framework *.gch *.xcode* *.xcassets *.icon (*) .DS_Store CVS .svn .git .hg *.pbproj *.pbxproj
+               EXECUTABLES_FOLDER_PATH = Runner.app/Executables
+               EXECUTABLE_FOLDER_PATH = Runner.app
+               EXECUTABLE_FOLDER_PATH_SHALLOW_BUNDLE_NO = Runner.app/MacOS
+               EXECUTABLE_FOLDER_PATH_SHALLOW_BUNDLE_YES = Runner.app
+               EXECUTABLE_NAME = Runner
+               EXECUTABLE_PATH = Runner.app/Runner
+               EXTENSIONS_FOLDER_PATH = Runner.app/Extensions
+               FILE_LIST = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Objects/LinkFileList
+               FIXED_FILES_DIR = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/FixedFiles
+               FLUTTER_APPLICATION_PATH = /Users/turkialotaibi/kloof
+               FLUTTER_BUILD_DIR = build
+               FLUTTER_BUILD_NAME = 1.0.0
+               FLUTTER_BUILD_NUMBER = 1
+               FLUTTER_FRAMEWORK_SWIFT_PACKAGE_PATH = /Users/turkialotaibi/kloof/ios/Flutter/ephemeral/Packages/.packages/FlutterFramework
+               FLUTTER_ROOT = /Users/turkialotaibi/Desktop/development/flutter
+               FLUTTER_TARGET = lib/main.dart
+               FRAMEWORKS_FOLDER_PATH = Runner.app/Frameworks
+               FRAMEWORK_FLAG_PREFIX = -framework
+               FRAMEWORK_SEARCH_PATHS = /Users/turkialotaibi/kloof/build/ios/Debug-iphoneos 
+               FRAMEWORK_VERSION = A
+               FULL_PRODUCT_NAME = Runner.app
+               FUSE_BUILD_PHASES = YES
+               FUSE_BUILD_SCRIPT_PHASES = NO
+               GCC3_VERSION = 3.3
+               GCC_C_LANGUAGE_STANDARD = gnu99
+               GCC_DYNAMIC_NO_PIC = NO
+               GCC_INLINES_ARE_PRIVATE_EXTERN = YES
+               GCC_NO_COMMON_BLOCKS = YES
+               GCC_OPTIMIZATION_LEVEL = 0
+               GCC_PFE_FILE_C_DIALECTS = c objective-c c++ objective-c++
+               GCC_PREPROCESSOR_DEFINITIONS = DEBUG=1 
+               GCC_SYMBOLS_PRIVATE_EXTERN = NO
+               GCC_THUMB_SUPPORT = YES
+               GCC_TREAT_WARNINGS_AS_ERRORS = NO
+               GCC_VERSION = com.apple.compilers.llvm.clang.1_0
+               GCC_VERSION_IDENTIFIER = com_apple_compilers_llvm_clang_1_0
+               GCC_WARN_64_TO_32_BIT_CONVERSION = YES
+               GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR
+               GCC_WARN_UNDECLARED_SELECTOR = YES
+               GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE
+               GCC_WARN_UNUSED_FUNCTION = YES
+               GCC_WARN_UNUSED_VARIABLE = YES
+               GENERATED_MODULEMAP_DIR = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/GeneratedModuleMaps-iphoneos
+               GENERATE_INFOPLIST_FILE = NO
+               GENERATE_INTERMEDIATE_TEXT_BASED_STUBS = YES
+               GENERATE_PKGINFO_FILE = YES
+               GENERATE_PRELINK_OBJECT_FILE = NO
+               GENERATE_PROFILING_CODE = NO
+               GENERATE_TEXT_BASED_STUBS = NO
+               GID = 20
+               GROUP = staff
+               HEADERMAP_INCLUDES_FLAT_ENTRIES_FOR_TARGET_BEING_BUILT = YES
+               HEADERMAP_INCLUDES_FRAMEWORK_ENTRIES_FOR_ALL_PRODUCT_TYPES = YES
+               HEADERMAP_INCLUDES_FRAMEWORK_ENTRIES_FOR_TARGETS_NOT_BEING_BUILT = YES
+               HEADERMAP_INCLUDES_NONPUBLIC_NONPRIVATE_HEADERS = YES
+               HEADERMAP_INCLUDES_PROJECT_HEADERS = YES
+               HEADERMAP_USES_FRAMEWORK_PREFIX_ENTRIES = YES
+               HEADERMAP_USES_VFS = NO
+               HEADER_SEARCH_PATHS = /Users/turkialotaibi/kloof/build/ios/Debug-iphoneos/include 
+               HOME = /Users/turkialotaibi
+               HOST_ARCH = arm64
+               HOST_PLATFORM = macosx
+               ICONV = /usr/bin/iconv
+               IMPLICIT_DEPENDENCY_DOMAIN = default
+               INDEX_STORE_COMPRESS = NO
+               INDEX_STORE_ONLY_PROJECT_FILES = NO
+               INFOPLIST_ENABLE_CFBUNDLEICONS_MERGE = YES
+               INFOPLIST_EXPAND_BUILD_SETTINGS = YES
+               INFOPLIST_FILE = Runner/Info.plist
+               INFOPLIST_OUTPUT_FORMAT = binary
+               INFOPLIST_PATH = Runner.app/Info.plist
+               INFOPLIST_PREPROCESS = NO
+               INFOSTRINGS_PATH = Runner.app/en.lproj/InfoPlist.strings
+               INLINE_PRIVATE_FRAMEWORKS = NO
+               INSTALLAPI_IGNORE_SKIP_INSTALL = YES
+               INSTALLHDRS_COPY_PHASE = NO
+               INSTALLHDRS_SCRIPT_PHASE = NO
+               INSTALL_DIR = /tmp/Runner.dst/Applications
+               INSTALL_GROUP = staff
+               INSTALL_MODE_FLAG = u+w,go-w,a+rX
+               INSTALL_OWNER = turkialotaibi
+               INSTALL_PATH = /Applications
+               INSTALL_ROOT = /tmp/Runner.dst
+               IPHONEOS_DEPLOYMENT_TARGET = 13.0
+               IS_UNOPTIMIZED_BUILD = YES
+               JAVAC_DEFAULT_FLAGS = -J-Xms64m -J-XX:NewSize=4M -J-Dfile.encoding=UTF8
+               JAVA_APP_STUB = /System/Library/Frameworks/JavaVM.framework/Resources/MacOS/JavaApplicationStub
+               JAVA_ARCHIVE_CLASSES = YES
+               JAVA_ARCHIVE_TYPE = JAR
+               JAVA_COMPILER = /usr/bin/javac
+               JAVA_FOLDER_PATH = Runner.app/Java
+               JAVA_FRAMEWORK_RESOURCES_DIRS = Resources
+               JAVA_JAR_FLAGS = cv
+               JAVA_SOURCE_SUBDIR = .
+               JAVA_USE_DEPENDENCIES = YES
+               JAVA_ZIP_FLAGS = -urg
+               JIKES_DEFAULT_FLAGS = +E +OLDCSO
+               KASAN_CFLAGS_CLASSIC = -DKASAN=1 -DKASAN_CLASSIC=1 -fsanitize=address -mllvm -asan-globals-live-support -mllvm -asan-force-dynamic-shadow
+               KASAN_CFLAGS_TBI = -DKASAN=1 -DKASAN_TBI=1 -fsanitize=kernel-hwaddress -mllvm -hwasan-recover=0 -mllvm -hwasan-instrument-atomics=0 -mllvm -hwasan-instrument-stack=1 -mllvm -hwasan-generate-tags-with-calls=1 -mllvm -hwasan-instrument-with-calls=1 -mllvm -hwasan-use-short-granules=0 -mllvm -hwasan-memory-access-callback-prefix=__asan_
+               KASAN_DEFAULT_CFLAGS = -DKASAN=1 -DKASAN_CLASSIC=1 -fsanitize=address -mllvm -asan-globals-live-support -mllvm -asan-force-dynamic-shadow
+               KEEP_PRIVATE_EXTERNS = NO
+               LD_DEPENDENCY_INFO_FILE = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Objects-normal/undefined_arch/Runner_dependency_info.dat
+               LD_EXPORT_SYMBOLS = YES
+               LD_GENERATE_MAP_FILE = NO
+               LD_MAP_FILE_PATH = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Runner-LinkMap-normal-undefined_arch.txt
+               LD_NO_PIE = NO
+               LD_QUOTE_LINKER_ARGUMENTS_FOR_COMPILER_DRIVER = YES
+               LD_RUNPATH_SEARCH_PATHS =  @executable_path/Frameworks
+               LD_RUNPATH_SEARCH_PATHS_YES = @loader_path/../Frameworks
+               LD_SHARED_CACHE_ELIGIBLE = Automatic
+               LD_WARN_DUPLICATE_LIBRARIES = NO
+               LD_WARN_UNUSED_DYLIBS = NO
+               LEGACY_DEVELOPER_DIR = /Applications/Xcode.app/Contents/PlugIns/Xcode3Core.ideplugin/Contents/SharedSupport/Developer
+               LEX = lex
+               LIBRARY_DEXT_INSTALL_PATH = /Library/DriverExtensions
+               LIBRARY_FLAG_NOSPACE = YES
+               LIBRARY_FLAG_PREFIX = -l
+               LIBRARY_KEXT_INSTALL_PATH = /Library/Extensions
+               LIBRARY_SEARCH_PATHS = /Users/turkialotaibi/kloof/build/ios/Debug-iphoneos 
+               LINKER_DISPLAYS_MANGLED_NAMES = NO
+               LINK_FILE_LIST_normal_arm64 = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Objects-normal/arm64/Runner.LinkFileList
+               LINK_OBJC_RUNTIME = YES
+               LINK_WITH_STANDARD_LIBRARIES = YES
+               LLVM_TARGET_TRIPLE_OS_VERSION = ios13.0
+               LLVM_TARGET_TRIPLE_VENDOR = apple
+               LM_AUX_CONST_METADATA_LIST_PATH_normal_arm64 = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Objects-normal/arm64/Runner.SwiftConstValuesFileList
+               LOCALIZATION_EXPORT_SUPPORTED = YES
+               LOCALIZATION_PREFERS_STRING_CATALOGS = NO
+               LOCALIZED_RESOURCES_FOLDER_PATH = Runner.app/en.lproj
+               LOCALIZED_STRING_CODE_COMMENTS = NO
+               LOCALIZED_STRING_MACRO_NAMES = NSLocalizedString CFCopyLocalizedString
+               LOCALIZED_STRING_SWIFTUI_SUPPORT = YES
+               LOCAL_ADMIN_APPS_DIR = /Applications/Utilities
+               LOCAL_APPS_DIR = /Applications
+               LOCAL_DEVELOPER_DIR = /Library/Developer
+               LOCAL_LIBRARY_DIR = /Library
+               LOCROOT = /Users/turkialotaibi/kloof/ios
+               LOCSYMROOT = /Users/turkialotaibi/kloof/ios
+               MACH_O_TYPE = mh_execute
+               MACOSX_DEPLOYMENT_TARGET = 26.5
+               MAC_OS_X_PRODUCT_BUILD_VERSION = 25F80
+               MAC_OS_X_VERSION_ACTUAL = 260501
+               MAC_OS_X_VERSION_MAJOR = 260000
+               MAC_OS_X_VERSION_MINOR = 260500
+               MAKE_MERGEABLE = NO
+               MERGEABLE_LIBRARY = NO
+               MERGED_BINARY_TYPE = none
+               MERGE_LINKED_LIBRARIES = NO
+               METAL_LIBRARY_FILE_BASE = default
+               METAL_LIBRARY_OUTPUT_DIR = /Users/turkialotaibi/kloof/build/ios/Debug-iphoneos/Runner.app
+               MODULES_FOLDER_PATH = Runner.app/Modules
+               MODULE_CACHE_DIR = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/ModuleCache.noindex
+               MTL_ENABLE_DEBUG_INFO = YES
+               NATIVE_ARCH = arm64
+               NATIVE_ARCH_32_BIT = arm
+               NATIVE_ARCH_64_BIT = arm64
+               NATIVE_ARCH_ACTUAL = arm64
+               NO_COMMON = YES
+               OBJECT_FILE_DIR = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Objects
+               OBJECT_FILE_DIR_normal = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Objects-normal
+               OBJROOT = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex
+               ONLY_ACTIVE_ARCH = NO
+               OS = MACOS
+               OSAC = /usr/bin/osacompile
+               PACKAGE_CONFIG = .dart_tool/package_config.json
+               PACKAGE_TYPE = com.apple.package-type.wrapper.application
+               PASCAL_STRINGS = YES
+               PATH = /Applications/Xcode.app/Contents/SharedFrameworks/SwiftBuild.framework/Versions/A/PlugIns/SWBBuildService.bundle/Contents/PlugIns/SWBUniversalPlatformPlugin.bundle/Contents/Frameworks/SWBUniversalPlatform.framework/Resources:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/local/bin:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/libexec:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/usr/bin:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/usr/local/bin:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/local/bin:/Applications/Xcode.app/Contents/Developer/usr/bin:/Applications/Xcode.app/Contents/Developer/usr/local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/Users/turkialotaibi/Desktop/development/flutter/bin/:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/Users/turkialotaibi/.pub-cache/bin
+               PATH_PREFIXES_EXCLUDED_FROM_HEADER_DEPENDENCIES = /usr/include /usr/local/include /System/Library/Frameworks /System/Library/PrivateFrameworks /Applications/Xcode.app/Contents/Developer/Headers /Applications/Xcode.app/Contents/Developer/SDKs /Applications/Xcode.app/Contents/Developer/Platforms
+               PBDEVELOPMENTPLIST_PATH = Runner.app/pbdevelopment.plist
+               PER_ARCH_MODULE_FILE_DIR = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Objects-normal/undefined_arch
+               PER_ARCH_OBJECT_FILE_DIR = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Objects-normal/undefined_arch
+               PER_VARIANT_OBJECT_FILE_DIR = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Objects-normal
+               PKGINFO_FILE_PATH = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/PkgInfo
+               PKGINFO_PATH = Runner.app/PkgInfo
+               PLATFORM_DEVELOPER_APPLICATIONS_DIR = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Applications
+               PLATFORM_DEVELOPER_BIN_DIR = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin
+               PLATFORM_DEVELOPER_LIBRARY_DIR = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Library
+               PLATFORM_DEVELOPER_SDK_DIR = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs
+               PLATFORM_DEVELOPER_TOOLS_DIR = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Tools
+               PLATFORM_DEVELOPER_USR_DIR = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr
+               PLATFORM_DIR = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform
+               PLATFORM_DISPLAY_NAME = iOS
+               PLATFORM_FAMILY_NAME = iOS
+               PLATFORM_NAME = iphoneos
+               PLATFORM_PREFERRED_ARCH = arm64
+               PLATFORM_PRODUCT_BUILD_VERSION = 23F81a
+               PLATFORM_REQUIRES_SWIFT_AUTOLINK_EXTRACT = NO
+               PLATFORM_REQUIRES_SWIFT_MODULEWRAP = NO
+               PLATFORM_USES_DSYMS = YES
+               PLIST_FILE_OUTPUT_FORMAT = binary
+               PLUGINS_FOLDER_PATH = Runner.app/PlugIns
+               PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES
+               PRECOMP_DESTINATION_DIR = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/PrefixHeaders
+               PRIVATE_HEADERS_FOLDER_PATH = Runner.app/PrivateHeaders
+               PROCESSED_INFOPLIST_PATH = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Objects-normal/undefined_arch/Processed-Info.plist
+               PRODUCT_BUNDLE_IDENTIFIER = com.example.kloof
+               PRODUCT_BUNDLE_PACKAGE_TYPE = APPL
+               PRODUCT_MODULE_NAME = Runner
+               PRODUCT_NAME = Runner
+               PRODUCT_SETTINGS_PATH = /Users/turkialotaibi/kloof/ios/Runner/Info.plist
+               PRODUCT_TYPE = com.apple.product-type.application
+               PROFILING_CODE = NO
+               PROJECT = Runner
+               PROJECT_DERIVED_FILE_DIR = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/DerivedSources
+               PROJECT_DIR = /Users/turkialotaibi/kloof/ios
+               PROJECT_FILE_PATH = /Users/turkialotaibi/kloof/ios/Runner.xcodeproj
+               PROJECT_GUID = 18c1723432283e0cc55f10a6dcfd9e02
+               PROJECT_NAME = Runner
+               PROJECT_TEMP_DIR = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build
+               PROJECT_TEMP_ROOT = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex
+               PROVISIONING_PROFILE_REQUIRED = YES
+               PROVISIONING_PROFILE_REQUIRED_YES_YES = YES
+               PROVISIONING_PROFILE_SUPPORTED = YES
+               PUBLIC_HEADERS_FOLDER_PATH = Runner.app/Headers
+               RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET = 15.0
+               RECURSIVE_SEARCH_PATHS_FOLLOW_SYMLINKS = YES
+               REMOVE_CVS_FROM_RESOURCES = YES
+               REMOVE_GIT_FROM_RESOURCES = YES
+               REMOVE_HEADERS_FROM_EMBEDDED_BUNDLES = YES
+               REMOVE_HG_FROM_RESOURCES = YES
+               REMOVE_STATIC_EXECUTABLES_FROM_EMBEDDED_BUNDLES = YES
+               REMOVE_SVN_FROM_RESOURCES = YES
+               RESCHEDULE_INDEPENDENT_HEADERS_PHASES = YES
+               REZ_COLLECTOR_DIR = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/ResourceManagerResources
+               REZ_OBJECTS_DIR = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/ResourceManagerResources/Objects
+               REZ_SEARCH_PATHS = /Users/turkialotaibi/kloof/build/ios/Debug-iphoneos 
+               RPATH_ORIGIN = @loader_path
+               RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO
+               RUNTIME_EXCEPTION_ALLOW_JIT = NO
+               RUNTIME_EXCEPTION_ALLOW_UNSIGNED_EXECUTABLE_MEMORY = NO
+               RUNTIME_EXCEPTION_DEBUGGING_TOOL = NO
+               RUNTIME_EXCEPTION_DISABLE_EXECUTABLE_PAGE_PROTECTION = NO
+               RUNTIME_EXCEPTION_DISABLE_LIBRARY_VALIDATION = NO
+               SCANNING_PCM_KEEP_CACHE_DIRECTORY = YES
+               SCAN_ALL_SOURCE_FILES_FOR_INCLUDES = NO
+               SCRIPTS_FOLDER_PATH = Runner.app/Scripts
+               SDKROOT = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk
+               SDK_DIR = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk
+               SDK_DIR_iphoneos = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk
+               SDK_DIR_iphoneos26_5 = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk
+               SDK_NAME = iphoneos26.5
+               SDK_NAMES = iphoneos26.5
+               SDK_PRODUCT_BUILD_VERSION = 23F81a
+               SDK_STAT_CACHE_DIR = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData
+               SDK_STAT_CACHE_ENABLE = YES
+               SDK_STAT_CACHE_PATH = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphoneos26.5-23F81a-32daed1954a7d5dd0789fcaf2a9bb78b.sdkstatcache
+               SDK_VERSION = 26.5
+               SDK_VERSION_ACTUAL = 260500
+               SDK_VERSION_MAJOR = 260000
+               SDK_VERSION_MINOR = 260500
+               SED = /usr/bin/sed
+               SEPARATE_STRIP = NO
+               SEPARATE_SYMBOL_EDIT = NO
+               SET_DIR_MODE_OWNER_GROUP = YES
+               SET_FILE_MODE_OWNER_GROUP = NO
+               SHALLOW_BUNDLE = YES
+               SHALLOW_BUNDLE_TRIPLE = ios
+               SHALLOW_BUNDLE_ios_macabi = NO
+               SHALLOW_BUNDLE_macos = NO
+               SHARED_DERIVED_FILE_DIR = /Users/turkialotaibi/kloof/build/ios/Debug-iphoneos/DerivedSources
+               SHARED_FRAMEWORKS_FOLDER_PATH = Runner.app/SharedFrameworks
+               SHARED_PRECOMPS_DIR = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/PrecompiledHeaders
+               SHARED_SUPPORT_FOLDER_PATH = Runner.app/SharedSupport
+               SKIP_INSTALL = NO
+               SKIP_MERGEABLE_LIBRARY_BUNDLE_HOOK = NO
+               SOURCE_ROOT = /Users/turkialotaibi/kloof/ios
+               SRCROOT = /Users/turkialotaibi/kloof/ios
+               STRINGSDATA_DIR = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Objects-normal/undefined_arch
+               STRINGSDATA_ROOT = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build
+               STRINGS_FILE_INFOPLIST_RENAME = YES
+               STRINGS_FILE_OUTPUT_ENCODING = binary
+               STRING_CATALOG_GENERATE_SYMBOLS = NO
+               STRIP_BITCODE_FROM_COPIED_FILES = YES
+               STRIP_INSTALLED_PRODUCT = NO
+               STRIP_STYLE = all
+               STRIP_SWIFT_SYMBOLS = YES
+               SUPPORTED_DEVICE_FAMILIES = 1,2
+               SUPPORTED_PLATFORMS = iphoneos iphonesimulator
+               SUPPORTS_MACCATALYST = NO
+               SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES
+               SUPPORTS_ON_DEMAND_RESOURCES = YES
+               SUPPORTS_TEXT_BASED_API = NO
+               SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES
+               SUPPRESS_WARNINGS = NO
+               SWIFT_EMIT_CONST_VALUE_PROTOCOLS = AnyResolverProviding AppEntity AppEnum AppExtension AppIntent AppIntentsPackage AppShortcutProviding AppShortcutsProvider AppUnionValue AppUnionValueCasesProviding DynamicOptionsProvider EntityQuery ExtensionPointDefining IntentValueQuery Resolver TransientEntity _AssistantIntentsProvider _GenerativeFunctionExtractable _IntentValueRepresentable
+               SWIFT_EMIT_LOC_STRINGS = NO
+               SWIFT_ENABLE_EXPLICIT_MODULES = YES
+               SWIFT_OBJC_BRIDGING_HEADER = Runner/Runner-Bridging-Header.h
+               SWIFT_OPTIMIZATION_LEVEL = -Onone
+               SWIFT_PLATFORM_TARGET_PREFIX = ios
+               SWIFT_RESPONSE_FILE_PATH_normal_arm64 = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build/Objects-normal/arm64/Runner.SwiftFileList
+               SWIFT_VERSION = 5.0
+               SYMROOT = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Products
+               SYSTEM_ADMIN_APPS_DIR = /Applications/Utilities
+               SYSTEM_APPS_DIR = /Applications
+               SYSTEM_CORE_SERVICES_DIR = /System/Library/CoreServices
+               SYSTEM_DEMOS_DIR = /Applications/Extras
+               SYSTEM_DEVELOPER_APPS_DIR = /Applications/Xcode.app/Contents/Developer/Applications
+               SYSTEM_DEVELOPER_BIN_DIR = /Applications/Xcode.app/Contents/Developer/usr/bin
+               SYSTEM_DEVELOPER_DEMOS_DIR = /Applications/Xcode.app/Contents/Developer/Applications/Utilities/Built Examples
+               SYSTEM_DEVELOPER_DIR = /Applications/Xcode.app/Contents/Developer
+               SYSTEM_DEVELOPER_DOC_DIR = /Applications/Xcode.app/Contents/Developer/ADC Reference Library
+               SYSTEM_DEVELOPER_GRAPHICS_TOOLS_DIR = /Applications/Xcode.app/Contents/Developer/Applications/Graphics Tools
+               SYSTEM_DEVELOPER_JAVA_TOOLS_DIR = /Applications/Xcode.app/Contents/Developer/Applications/Java Tools
+               SYSTEM_DEVELOPER_PERFORMANCE_TOOLS_DIR = /Applications/Xcode.app/Contents/Developer/Applications/Performance Tools
+               SYSTEM_DEVELOPER_RELEASENOTES_DIR = /Applications/Xcode.app/Contents/Developer/ADC Reference Library/releasenotes
+               SYSTEM_DEVELOPER_TOOLS = /Applications/Xcode.app/Contents/Developer/Tools
+               SYSTEM_DEVELOPER_TOOLS_DOC_DIR = /Applications/Xcode.app/Contents/Developer/ADC Reference Library/documentation/DeveloperTools
+               SYSTEM_DEVELOPER_TOOLS_RELEASENOTES_DIR = /Applications/Xcode.app/Contents/Developer/ADC Reference Library/releasenotes/DeveloperTools
+               SYSTEM_DEVELOPER_USR_DIR = /Applications/Xcode.app/Contents/Developer/usr
+               SYSTEM_DEVELOPER_UTILITIES_DIR = /Applications/Xcode.app/Contents/Developer/Applications/Utilities
+               SYSTEM_DEXT_INSTALL_PATH = /System/Library/DriverExtensions
+               SYSTEM_DOCUMENTATION_DIR = /Library/Documentation
+               SYSTEM_EXTENSIONS_FOLDER_PATH = Runner.app/SystemExtensions
+               SYSTEM_EXTENSIONS_FOLDER_PATH_SHALLOW_BUNDLE_NO = Runner.app/Library/SystemExtensions
+               SYSTEM_EXTENSIONS_FOLDER_PATH_SHALLOW_BUNDLE_YES = Runner.app/SystemExtensions
+               SYSTEM_KEXT_INSTALL_PATH = /System/Library/Extensions
+               SYSTEM_LIBRARY_DIR = /System/Library
+               TAPI_DEMANGLE = YES
+               TAPI_ENABLE_PROJECT_HEADERS = NO
+               TAPI_LANGUAGE = objective-c
+               TAPI_LANGUAGE_STANDARD = compiler-default
+               TAPI_USE_SRCROOT = YES
+               TAPI_VERIFY_MODE = Pedantic
+               TARGETED_DEVICE_FAMILY = 1,2
+               TARGETNAME = Runner
+               TARGET_BUILD_DIR = /Users/turkialotaibi/kloof/build/ios/Debug-iphoneos
+               TARGET_NAME = Runner
+               TARGET_TEMP_DIR = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build
+               TEMP_DIR = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build
+               TEMP_FILES_DIR = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build
+               TEMP_FILE_DIR = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/Runner.build/Debug-iphoneos/Runner.build
+               TEMP_ROOT = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex
+               TEMP_SANDBOX_DIR = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/TemporaryTaskSandboxes
+               TEST_FRAMEWORK_SEARCH_PATHS =  /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Library/Frameworks /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/Developer/Library/Frameworks
+               TEST_LIBRARY_SEARCH_PATHS =  /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib
+               TOOLCHAINS = com.apple.dt.toolchain.XcodeDefault
+               TOOLCHAIN_DIR = /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain
+               TRACK_WIDGET_CREATION = true
+               TREAT_MISSING_BASELINES_AS_TEST_FAILURES = NO
+               TREAT_MISSING_SCRIPT_PHASE_OUTPUTS_AS_ERRORS = NO
+               TREE_SHAKE_ICONS = false
+               TVOS_DEPLOYMENT_TARGET = 26.5
+               UID = 501
+               UNINSTALLED_PRODUCTS_DIR = /Users/turkialotaibi/Library/Developer/Xcode/DerivedData/Runner-bgclwwiskyxkwpethlcaptglshsn/Build/Intermediates.noindex/UninstalledProducts
+               UNLOCALIZED_RESOURCES_FOLDER_PATH = Runner.app
+               UNLOCALIZED_RESOURCES_FOLDER_PATH_SHALLOW_BUNDLE_NO = Runner.app/Resources
+               UNLOCALIZED_RESOURCES_FOLDER_PATH_SHALLOW_BUNDLE_YES = Runner.app
+               UNSTRIPPED_PRODUCT = NO
+               USER = turkialotaibi
+               USER_APPS_DIR = /Users/turkialotaibi/Applications
+               USER_LIBRARY_DIR = /Users/turkialotaibi/Library
+               USE_DYNAMIC_NO_PIC = YES
+               USE_HEADERMAP = YES
+               USE_HEADER_SYMLINKS = NO
+               VALIDATE_DEVELOPMENT_ASSET_PATHS = YES_ERROR
+               VALIDATE_PRODUCT = NO
+               VALID_ARCHS = arm64 arm64e armv7 armv7s
+               VERBOSE_PBXCP = NO
+               VERSIONING_SYSTEM = apple-generic
+               VERSIONPLIST_PATH = Runner.app/version.plist
+               VERSION_INFO_BUILDER = turkialotaibi
+               VERSION_INFO_FILE = Runner_vers.c
+               VERSION_INFO_STRING = "@(#)PROGRAM:Runner  PROJECT:Runner-1"
+               WATCHOS_DEPLOYMENT_TARGET = 26.5
+               WORKSPACE_DIR = /Users/turkialotaibi/kloof/ios/Runner.xcodeproj
+               WRAPPER_EXTENSION = app
+               WRAPPER_NAME = Runner.app
+               WRAPPER_SUFFIX = .app
+               WRAP_ASSET_PACKS_IN_SEPARATE_DIRECTORIES = NO
+               XCODE_APP_SUPPORT_DIR = /Applications/Xcode.app/Contents/Developer/Library/Xcode
+               XCODE_PRODUCT_BUILD_VERSION = 17F113
+               XCODE_VERSION_ACTUAL = 2660
+               XCODE_VERSION_MAJOR = 2600
+               XCODE_VERSION_MINOR = 2660
+               XPCSERVICES_FOLDER_PATH = Runner.app/XPCServices
+               XROS_DEPLOYMENT_TARGET = 26.5
+               YACC = yacc
+               _DISCOVER_COMMAND_LINE_LINKER_INPUTS = YES
+               _DISCOVER_COMMAND_LINE_LINKER_INPUTS_INCLUDE_WL = YES
+               _LD_MULTIARCH = YES
+               _WRAPPER_CONTENTS_DIR_SHALLOW_BUNDLE_NO = /Contents
+               _WRAPPER_PARENT_PATH_SHALLOW_BUNDLE_NO = /..
+               _WRAPPER_RESOURCES_DIR_SHALLOW_BUNDLE_NO = /Resources
+               __DIAGNOSE_DEPRECATED_ARCHS = YES
+               __IS_NOT_MACOS = YES
+               __IS_NOT_MACOS_macosx = NO
+               __IS_NOT_SIMULATOR = YES
+               __IS_NOT_SIMULATOR_simulator = NO
+               __ORIGINAL_SDK_DEFINED_LLVM_TARGET_TRIPLE_SYS = ios
+               arch = undefined_arch
+               variant = normal
+[   +7 ms] executing: which security
+[   +4 ms] executing: which openssl
+[  +26 ms] executing: security find-identity -p codesigning -v
+[  +28 ms]   1) 0E3EBFD09895E808006D9C02E25BC2D60C29FF80 "Apple Development: turki.alotibi.77@gmail.com (JL6L749CS5)"
+                1 valid identities found
+[   +1 ms] executing: security find-certificate -c JL6L749CS5 -p
+[  +11 ms] -----BEGIN CERTIFICATE-----
+           MIIF1TCCBL2gAwIBAgIQeSgetlmskSXYheLpocZLxzANBgkqhkiG9w0BAQsFADB1
+           MUQwQgYDVQQDDDtBcHBsZSBXb3JsZHdpZGUgRGV2ZWxvcGVyIFJlbGF0aW9ucyBD
+           ZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTELMAkGA1UECwwCRzMxEzARBgNVBAoMCkFw
+           cGxlIEluYy4xCzAJBgNVBAYTAlVTMB4XDTI2MDcxMzIyNTkxNFoXDTI3MDcxMzIy
+           NTkxM1owgZsxGjAYBgoJkiaJk/IsZAEBDApQNThWWlhVMzQzMUMwQQYDVQQDDDpB
+           cHBsZSBEZXZlbG9wbWVudDogdHVya2kuYWxvdGliaS43N0BnbWFpbC5jb20gKEpM
+           Nkw3NDlDUzUpMRMwEQYDVQQLDApQQVA4ODlTMkM5MRYwFAYDVQQKDA1UdXJraSBh
+           bG90aWJpMQswCQYDVQQGEwJVUzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoC
+           ggEBANtWRU1AvHCHprhl6sNW0j9SRL96u2lgOATb3RT/Z3eafDPZTcAzeW04Lyh7
+           fyWaHQ/UXncde4SbnbDfGq3fBuP5yK30Wed/7cCUfcUz6I7dek65wFuNtg5ys32y
+           2nQ4h3iiL3ny1U5qq2CUtbeBWiHKnQdmbCD5VYOy0ArmzdxZ89lV7j9q/NLn4Clz
+           +ZjC89L/waNhVoxrJ9IVnRmvqxC2DIh8MmcFMRoAWFGNnlQpxiOrDLhFD4NPNq/3
+           iJvjQ+09WRlfsuP+3ivaU8W5xu4QMu1JIqp16v0O5QXhR8AYQ716IZRU11YlOD/D
+           d0jdXhVu8OuSYZaEJUeXRM8nDFsCAwEAAaOCAjgwggI0MAwGA1UdEwEB/wQCMAAw
+           HwYDVR0jBBgwFoAUCf7AFZD5r2QKkhK5JihjDJfsp7IwcAYIKwYBBQUHAQEEZDBi
+           MC0GCCsGAQUFBzAChiFodHRwOi8vY2VydHMuYXBwbGUuY29tL3d3ZHJnMy5kZXIw
+           MQYIKwYBBQUHMAGGJWh0dHA6Ly9vY3NwLmFwcGxlLmNvbS9vY3NwMDMtd3dkcmcz
+           MDQwggEeBgNVHSAEggEVMIIBETCCAQ0GCSqGSIb3Y2QFATCB/zCBwwYIKwYBBQUH
+           AgIwgbYMgbNSZWxpYW5jZSBvbiB0aGlzIGNlcnRpZmljYXRlIGJ5IGFueSBwYXJ0
+           eSBhc3N1bWVzIGFjY2VwdGFuY2Ugb2YgdGhlIHRoZW4gYXBwbGljYWJsZSBzdGFu
+           ZGFyZCB0ZXJtcyBhbmQgY29uZGl0aW9ucyBvZiB1c2UsIGNlcnRpZmljYXRlIHBv
+           bGljeSBhbmQgY2VydGlmaWNhdGlvbiBwcmFjdGljZSBzdGF0ZW1lbnRzLjA3Bggr
+           BgEFBQcCARYraHR0cHM6Ly93d3cuYXBwbGUuY29tL2NlcnRpZmljYXRlYXV0aG9y
+           aXR5LzAWBgNVHSUBAf8EDDAKBggrBgEFBQcDAzAdBgNVHQ4EFgQUq6D5rYJxTDql
+           v/SYkU51xk8G1LcwDgYDVR0PAQH/BAQDAgeAMBMGCiqGSIb3Y2QGAQIBAf8EAgUA
+           MBMGCiqGSIb3Y2QGAQwBAf8EAgUAMA0GCSqGSIb3DQEBCwUAA4IBAQBAr7YCr+wV
+           REdjS0EOsRQIbPbWcEnNeTFCbHZCRInVh14xEqcNpCYuhVpjEZaLnPRDx0UAcx11
+           9Eu+NXd6dFWESoFQARro15tvSLhahPHZ5On9x2AetZ4RL4EO+xXDAcgyUHmOOVBi
+           3zvAqqw32QgMVeySErhtjAeY2/H7Qw4C9bZOAkZnciAKAdAGnzdPXQBSPoB9W2vx
+           16Mow3PN1zikZzjB+sDMzLLbTIKTbamtzCbmn6dXQ8cbysGim4T8lNquUAdae4ut
+           OrMWsy6DCNXKYbPsI+gcn5dyo34SI4+4W2sinclbTdw5DXFqe5Xo0Ph8xMD70vrA
+           nC12TlkhKt73
+           -----END CERTIFICATE-----
+[        ] executing: openssl x509 -subject
+[  +30 ms] Developer identity "Apple Development: turki.alotibi.77@gmail.com (JL6L749CS5)" selected for iOS code signing
+[   +6 ms] Recreating project ....
+[  +36 ms]   ios/Runner.xcworkspace/contents.xcworkspacedata (overwritten)
+[        ]   ios/Runner.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist (overwritten)
+[        ]   ios/Runner.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings (overwritten)
+[        ]   ios/RunnerTests/RunnerTests.swift (overwritten)
+[   +5 ms]   ios/Runner/Info.plist (overwritten)
+[   +1 ms]   ios/Runner/Runner-Bridging-Header.h (overwritten)
+[        ]   ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@2x.png (overwritten)
+[   +1 ms]   ios/Runner/Assets.xcassets/LaunchImage.imageset/README.md (overwritten)
+[        ]   ios/Runner/Assets.xcassets/LaunchImage.imageset/Contents.json (overwritten)
+[        ]   ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@3x.png (overwritten)
+[        ]   ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage.png (overwritten)
+[        ]   ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@1x.png (overwritten)
+[        ]   ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@3x.png (overwritten)
+[        ]   ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@2x.png (overwritten)
+[        ]   ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@3x.png (overwritten)
+[        ]   ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-83.5x83.5@2x.png (overwritten)
+[        ]   ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png (overwritten)
+[        ]   ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@2x.png (overwritten)
+[        ]   ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@1x.png (overwritten)
+[        ]   ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-76x76@1x.png (overwritten)
+[        ]   ios/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json (overwritten)
+[        ]   ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-76x76@2x.png (overwritten)
+[        ]   ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@3x.png (overwritten)
+[        ]   ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@3x.png (overwritten)
+[        ]   ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@2x.png (overwritten)
+[        ]   ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@2x.png (overwritten)
+[  +26 ms]   ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@1x.png (overwritten)
+[   +1 ms]   ios/Runner/Base.lproj/LaunchScreen.storyboard (overwritten)
+[   +1 ms]   ios/Runner/Base.lproj/Main.storyboard (overwritten)
+[        ]   ios/Runner/AppDelegate.swift (overwritten)
+[        ]   ios/Runner/SceneDelegate.swift (overwritten)
+[        ]   ios/Runner.xcodeproj/project.xcworkspace/contents.xcworkspacedata (overwritten)
+[        ]   ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist (overwritten)
+[        ]   ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings (overwritten)
+[        ]   ios/Runner.xcodeproj/project.pbxproj (overwritten)
+[   +9 ms]   ios/Runner.xcodeproj/xcshareddata/xcschemes/Runner.xcscheme (overwritten)
+[   +1 ms]   ios/Flutter/Debug.xcconfig (overwritten)
+[        ]   ios/Flutter/Release.xcconfig (overwritten)
+[        ]   ios/Flutter/AppFrameworkInfo.plist (overwritten)
+[        ]   ios/.gitignore (overwritten)
+[        ]   kloof.iml (overwritten)
+[        ]   .gitignore (overwritten)
+[        ]   pubspec.yaml (overwritten)
+[   +1 ms]   README.md (overwritten)
+[        ]   lib/main.dart (overwritten)
+[   +1 ms]   analysis_options.yaml (overwritten)
+[        ]   .idea/runConfigurations/main_dart.xml (overwritten)
+[        ]   .idea/libraries/Dart_SDK.xml (overwritten)
+[        ]   .idea/libraries/KotlinJavaRuntime.xml (overwritten)
+[        ]   .idea/modules.xml (overwritten)
+[        ]   .idea/workspace.xml (overwritten)
+[        ]   test/widget_test.dart (overwritten)
+[  +32 ms] executing: [/Users/turkialotaibi/kloof/] /Users/turkialotaibi/Desktop/development/flutter/bin/cache/dart-sdk/bin/dart pub --suppress-analytics --directory . get --example
+Resolving dependencies...
+Downloading packages...
+Got dependencies.
+[+1288 ms] Skipping generating GeneratedPluginRegistrant.h because it is up-to-date.
+[   +3 ms] Skipping generating GeneratedPluginRegistrant.m because it is up-to-date.
+[  +32 ms] Wrote 52 files.
+[        ] 
+           All done!
+[   +1 ms] You can find general documentation for Flutter at: https://docs.flutter.dev/
+           Detailed API documentation is available at: https://api.flutter.dev/
+           If you prefer video documentation, consider: https://www.youtube.com/c/flutterdev
+
+           In order to run your application, type:
+
+             $ flutter run
+
+           Your application code is in ./lib/main.dart.
+
+[        ] "flutter create" took 4,394ms.
+[   +4 ms] executing: sw_vers -productName
+[  +17 ms] Exit code 0 from: sw_vers -productName
+[        ] macOS
+[        ] executing: sw_vers -productVersion
+[  +16 ms] Exit code 0 from: sw_vers -productVersion
+[        ] 26.5.1
+[        ] executing: sw_vers -buildVersion
+[  +21 ms] Exit code 0 from: sw_vers -buildVersion
+[        ] 25F80
+[        ] executing: uname -m
+[   +8 ms] Exit code 0 from: uname -m
+[   +2 ms] arm64
+[  +10 ms] Running 1 shutdown hook
+[   +1 ms] Shutdown hooks complete
+[ +259 ms] exiting with code 0

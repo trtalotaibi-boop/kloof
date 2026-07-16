@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "818967567121",
+    "project_id": "kloof-1cfcd",
+    "storage_bucket": "kloof-1cfcd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:818967567121:android:34685166e0b5d723780ab0",
+        "android_client_info": {
+          "package_name": "com.example.kloof"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYa0N8L4C4WZss4h5MD9iQpU3L32Z7QeM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
