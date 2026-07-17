@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'booking_screen.dart';
+
 class BarberDetailsScreen extends StatelessWidget {
   final String name;
   final String rating;
@@ -259,9 +261,11 @@ class BarberDetailsScreen extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Booking will be available soon.'),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            BookingScreen(barberName: name, service: services),
                       ),
                     );
                   },
