@@ -17,6 +17,9 @@ class BookingScreen extends StatefulWidget {
 }
 
 class _BookingScreenState extends State<BookingScreen> {
+  static const int _dayStartMinutes = 8 * 60;
+  static const int _dayEndMinutes = 23 * 60;
+
   final bool _isOnline = true;
   final String _openingTime = '8:00 AM';
   final String _closingTime = '11:00 PM';
@@ -27,14 +30,30 @@ class _BookingScreenState extends State<BookingScreen> {
 
   List<String> _generateTimeSlots() {
     final slots = <String>[];
-    final startMinutes = _toMinutes(_openingTime);
-    final endMinutes = _toMinutes(_closingTime);
+    final startMinutes = _toMinutes(
+      _openingTime,
+    ).clamp(_dayStartMinutes, _dayEndMinutes);
+    final endMinutes = _toMinutes(
+      _closingTime,
+    ).clamp(_dayStartMinutes, _dayEndMinutes);
+
+    if (endMinutes < startMinutes) {
+      return slots;
+    }
 
     for (var minutes = startMinutes; minutes <= endMinutes; minutes += 30) {
+      if (minutes < _dayStartMinutes || minutes > _dayEndMinutes) {
+        continue;
+      }
       slots.add(_toTimeLabel(minutes));
     }
 
     return slots;
+  }
+
+  bool _isWithinWorkingRange(String timeLabel) {
+    final minutes = _toMinutes(timeLabel);
+    return minutes >= _dayStartMinutes && minutes <= _dayEndMinutes;
   }
 
   int _toMinutes(String time) {
@@ -74,6 +93,16 @@ class _BookingScreenState extends State<BookingScreen> {
       return;
     }
 
+    final time = _selectedTime!;
+    if (!_isWithinWorkingRange(time) || _bookedSlots.contains(time)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a valid available time slot.'),
+        ),
+      );
+      return;
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -81,7 +110,7 @@ class _BookingScreenState extends State<BookingScreen> {
           barberName: widget.barberName,
           service: widget.service,
           selectedDate: DateTime.now(),
-          selectedTime: _selectedTime!,
+          selectedTime: time,
         ),
       ),
     );
