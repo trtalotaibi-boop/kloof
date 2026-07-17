@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'booking_confirmation_screen.dart';
+import 'login_screen.dart';
 
 class BookingScreen extends StatefulWidget {
   final String barberName;
@@ -83,7 +86,7 @@ class _BookingScreenState extends State<BookingScreen> {
     return '$hour12:$minuteText $period';
   }
 
-  void _onConfirmBooking() {
+  Future<void> _onConfirmBooking() async {
     if (_selectedTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -99,6 +102,78 @@ class _BookingScreenState extends State<BookingScreen> {
         const SnackBar(
           content: Text('Please select a valid available time slot.'),
         ),
+      );
+      return;
+    }
+
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
+      return;
+    }
+
+    try {
+      final now = DateTime.now();
+      final bookingDate = DateTime(now.year, now.month, now.day);
+
+      final barberSnapshot = await FirebaseFirestore.instance
+          .collection('barbers')
+          .where('name', isEqualTo: widget.barberName)
+          .limit(1)
+          .get();
+
+      if (barberSnapshot.docs.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Barber not found. Please try again.')),
+        );
+        return;
+      }
+
+      final barberId = barberSnapshot.docs.first.id;
+      final duplicateSnapshot = await FirebaseFirestore.instance
+          .collection('bookings')
+          .where('barberId', isEqualTo: barberId)
+          .where('bookingDate', isEqualTo: Timestamp.fromDate(bookingDate))
+          .where('selectedTime', isEqualTo: time)
+          .limit(1)
+          .get();
+
+      if (duplicateSnapshot.docs.isNotEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('This slot is already booked for today.'),
+          ),
+        );
+        return;
+      }
+
+      final customerId = currentUser.uid;
+
+      await FirebaseFirestore.instance.collection('bookings').add({
+        'barberId': barberId,
+        'customerId': customerId,
+        'service': widget.service,
+        'selectedTime': time,
+        'bookingDate': Timestamp.fromDate(bookingDate),
+        'status': 'pending',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      setState(() {
+        if (!_bookedSlots.contains(time)) {
+          _bookedSlots.add(time);
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to confirm booking.')),
       );
       return;
     }
