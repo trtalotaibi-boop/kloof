@@ -321,14 +321,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
-                ElevatedButton(
-                  onPressed: isOffline ? null : () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text("Book"),
-                ),
               ],
             ),
           ),
