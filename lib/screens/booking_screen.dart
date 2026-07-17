@@ -75,70 +75,106 @@ class _BookingScreenState extends State<BookingScreen> {
         ),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: ListView(
-            children: [
-              Text(
-                widget.barberName,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Service: ${widget.service}',
-                style: const TextStyle(color: Colors.grey, fontSize: 15),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Time',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Online now',
-                style: TextStyle(
-                  color: Colors.green.shade700,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 2),
-              const Text(
-                'Available until 11:00 PM',
-                style: TextStyle(
-                  color: Colors.black54,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: _timeSlots.map((time) {
-                  final isSelected = time == _selectedTime;
-                  return ChoiceChip(
-                    label: Text(time),
-                    selected: isSelected,
-                    onSelected: (_) {
-                      setState(() {
-                        _selectedTime = time;
-                      });
-                    },
-                    selectedColor: Colors.black,
-                    backgroundColor: Colors.white,
-                    labelStyle: TextStyle(
-                      color: isSelected ? Colors.white : Colors.black,
-                      fontWeight: FontWeight.w500,
+        child: Column(
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: ListView(
+                  children: [
+                    Text(
+                      widget.barberName,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  );
-                }).toList(),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Service: ${widget.service}',
+                      style: const TextStyle(color: Colors.grey, fontSize: 15),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Time',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Online now',
+                      style: TextStyle(
+                        color: Colors.green.shade700,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Available until 11:00 PM',
+                      style: TextStyle(
+                        color: Colors.black54,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _timeSlots.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 4,
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                            mainAxisExtent: 34,
+                          ),
+                      itemBuilder: (context, index) {
+                        final time = _timeSlots[index];
+                        final isSelected = time == _selectedTime;
+
+                        return InkWell(
+                          onTap: () {
+                            setState(() {
+                              _selectedTime = time;
+                            });
+                          },
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: isSelected ? Colors.black : Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isSelected
+                                    ? Colors.black
+                                    : Colors.black26,
+                                width: 1.2,
+                              ),
+                            ),
+                            child: Text(
+                              time,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : Colors.black,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 30),
-              SizedBox(
+            ),
+            Container(
+              color: const Color(0xFFF8F8F8),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+              child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _onConfirmBooking,
@@ -156,8 +192,8 @@ class _BookingScreenState extends State<BookingScreen> {
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
