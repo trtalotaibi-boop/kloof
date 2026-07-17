@@ -20,44 +20,7 @@ class BookingScreen extends StatefulWidget {
 }
 
 class _BookingScreenState extends State<BookingScreen> {
-  static const int _dayStartMinutes = 8 * 60;
-  static const int _dayEndMinutes = 23 * 60;
-
-  final bool _isOnline = true;
-  final String _openingTime = '8:00 AM';
-  final String _closingTime = '11:00 PM';
-  final List<String> _bookedSlots = ['10:00 AM', '2:30 PM', '6:00 PM'];
-
   String? _selectedTime;
-  late final List<String> _timeSlots = _generateTimeSlots();
-
-  List<String> _generateTimeSlots() {
-    final slots = <String>[];
-    final startMinutes = _toMinutes(
-      _openingTime,
-    ).clamp(_dayStartMinutes, _dayEndMinutes);
-    final endMinutes = _toMinutes(
-      _closingTime,
-    ).clamp(_dayStartMinutes, _dayEndMinutes);
-
-    if (endMinutes < startMinutes) {
-      return slots;
-    }
-
-    for (var minutes = startMinutes; minutes <= endMinutes; minutes += 30) {
-      if (minutes < _dayStartMinutes || minutes > _dayEndMinutes) {
-        continue;
-      }
-      slots.add(_toTimeLabel(minutes));
-    }
-
-    return slots;
-  }
-
-  bool _isWithinWorkingRange(String timeLabel) {
-    final minutes = _toMinutes(timeLabel);
-    return minutes >= _dayStartMinutes && minutes <= _dayEndMinutes;
-  }
 
   int _toMinutes(String time) {
     final parts = time.split(' ');
@@ -86,6 +49,63 @@ class _BookingScreenState extends State<BookingScreen> {
     return '$hour12:$minuteText $period';
   }
 
+  String _todayLabel() {
+    const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return labels[DateTime.now().weekday - 1];
+  }
+
+  List<String> _buildSlots({
+    required String openingTime,
+    required String closingTime,
+    required int duration,
+    String? breakStart,
+    String? breakEnd,
+    required bool hidePast,
+  }) {
+    final slots = <String>[];
+
+    final openingMinutes = _toMinutes(openingTime);
+    final closingMinutes = _toMinutes(closingTime);
+    if (closingMinutes <= openingMinutes) return slots;
+
+    final breakStartMinutes = breakStart == null || breakStart.trim().isEmpty
+        ? null
+        : _toMinutes(breakStart);
+    final breakEndMinutes = breakEnd == null || breakEnd.trim().isEmpty
+        ? null
+        : _toMinutes(breakEnd);
+
+    var nowMinutes = 0;
+    if (hidePast) {
+      final now = DateTime.now();
+      nowMinutes = (now.hour * 60) + now.minute;
+    }
+
+    for (
+      var start = openingMinutes;
+      start + duration <= closingMinutes;
+      start += duration
+    ) {
+      final end = start + duration;
+      if (hidePast && start <= nowMinutes) {
+        continue;
+      }
+
+      final overlapsBreak =
+          breakStartMinutes != null &&
+          breakEndMinutes != null &&
+          start < breakEndMinutes &&
+          end > breakStartMinutes;
+      if (overlapsBreak) {
+        continue;
+      }
+
+      slots.add(_toTimeLabel(start));
+    }
+
+    return slots;
+  }
+
   Future<void> _onConfirmBooking() async {
     if (_selectedTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -97,14 +117,6 @@ class _BookingScreenState extends State<BookingScreen> {
     }
 
     final time = _selectedTime!;
-    if (!_isWithinWorkingRange(time) || _bookedSlots.contains(time)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a valid available time slot.'),
-        ),
-      );
-      return;
-    }
 
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
@@ -135,15 +147,67 @@ class _BookingScreenState extends State<BookingScreen> {
       }
 
       final barberId = barberSnapshot.docs.first.id;
-      final duplicateSnapshot = await FirebaseFirestore.instance
+      final barberData = barberSnapshot.docs.first.data();
+      final isOnline = barberData['isOnline'] == true;
+      final workingHours = Map<String, dynamic>.from(
+        barberData['workingHours'] ?? <String, dynamic>{},
+      );
+      final workingDays = List<String>.from(workingHours['workingDays'] ?? []);
+      final todayWorking = workingDays.contains(_todayLabel());
+
+      if (!isOnline || !todayWorking) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Barber is unavailable today.')),
+        );
+        return;
+      }
+
+      final openingTime = workingHours['openingTime']?.toString() ?? '8:00 AM';
+      final closingTime = workingHours['closingTime']?.toString() ?? '11:00 PM';
+      final duration = (workingHours['appointmentDuration'] is num)
+          ? (workingHours['appointmentDuration'] as num).toInt()
+          : 30;
+      final safeDuration = [15, 30, 45, 60].contains(duration) ? duration : 30;
+      final breakStart = workingHours['breakStart']?.toString();
+      final breakEnd = workingHours['breakEnd']?.toString();
+
+      final availableSlots = _buildSlots(
+        openingTime: openingTime,
+        closingTime: closingTime,
+        duration: safeDuration,
+        breakStart: breakStart,
+        breakEnd: breakEnd,
+        hidePast: true,
+      );
+
+      if (!availableSlots.contains(time)) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select a valid available time slot.'),
+          ),
+        );
+        return;
+      }
+
+      final existingSnapshot = await FirebaseFirestore.instance
           .collection('bookings')
           .where('barberId', isEqualTo: barberId)
           .where('bookingDate', isEqualTo: Timestamp.fromDate(bookingDate))
-          .where('selectedTime', isEqualTo: time)
-          .limit(1)
+          .limit(100)
           .get();
 
-      if (duplicateSnapshot.docs.isNotEmpty) {
+      final bookedSlots = existingSnapshot.docs
+          .where(
+            (doc) =>
+                (doc.data()['status']?.toString() ?? 'pending') != 'rejected',
+          )
+          .map((doc) => doc.data()['selectedTime']?.toString() ?? '')
+          .where((slot) => slot.isNotEmpty)
+          .toSet();
+
+      if (bookedSlots.contains(time)) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -157,18 +221,13 @@ class _BookingScreenState extends State<BookingScreen> {
 
       await FirebaseFirestore.instance.collection('bookings').add({
         'barberId': barberId,
+        'barberName': widget.barberName,
         'customerId': customerId,
         'service': widget.service,
         'selectedTime': time,
         'bookingDate': Timestamp.fromDate(bookingDate),
         'status': 'pending',
         'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      setState(() {
-        if (!_bookedSlots.contains(time)) {
-          _bookedSlots.add(time);
-        }
       });
     } catch (e) {
       if (!mounted) return;
@@ -210,121 +269,231 @@ class _BookingScreenState extends State<BookingScreen> {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(20),
-                child: ListView(
-                  children: [
-                    Text(
-                      widget.barberName,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Service: ${widget.service}',
-                      style: const TextStyle(color: Colors.grey, fontSize: 15),
-                    ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Time',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    if (_isOnline) ...[
-                      Text(
-                        'Online now',
-                        style: TextStyle(
-                          color: Colors.green.shade700,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Available until $_closingTime',
-                        style: const TextStyle(
-                          color: Colors.black54,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _timeSlots.length,
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 4,
-                              crossAxisSpacing: 10,
-                              mainAxisSpacing: 10,
-                              mainAxisExtent: 34,
-                            ),
-                        itemBuilder: (context, index) {
-                          final time = _timeSlots[index];
-                          final isSelected = time == _selectedTime;
-                          final isBooked = _bookedSlots.contains(time);
+                child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                  stream: FirebaseFirestore.instance
+                      .collection('barbers')
+                      .where('name', isEqualTo: widget.barberName)
+                      .limit(1)
+                      .snapshots(),
+                  builder: (context, barberSnapshot) {
+                    if (barberSnapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
 
-                          return InkWell(
-                            onTap: isBooked
-                                ? null
-                                : () {
-                                    setState(() {
-                                      _selectedTime = time;
-                                    });
-                                  },
-                            borderRadius: BorderRadius.circular(10),
-                            child: Container(
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: isBooked
-                                    ? Colors.grey.shade300
-                                    : (isSelected
-                                          ? Colors.black
-                                          : Colors.white),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: isBooked
-                                      ? Colors.grey.shade400
-                                      : (isSelected
-                                            ? Colors.black
-                                            : Colors.black26),
-                                  width: 1.2,
-                                ),
-                              ),
-                              child: Text(
-                                time,
-                                style: TextStyle(
-                                  color: isBooked
-                                      ? Colors.grey.shade600
-                                      : (isSelected
-                                            ? Colors.white
-                                            : Colors.black),
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ] else ...[
-                      const SizedBox(height: 20),
-                      const Center(
+                    if (!barberSnapshot.hasData ||
+                        barberSnapshot.data!.docs.isEmpty) {
+                      return const Center(
                         child: Text(
-                          'Barber is currently offline',
+                          'Barber is unavailable today.',
                           style: TextStyle(
                             color: Colors.black54,
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                      ),
-                    ],
-                  ],
+                      );
+                    }
+
+                    final barberDoc = barberSnapshot.data!.docs.first;
+                    final barberId = barberDoc.id;
+                    final barberData = barberDoc.data();
+                    final isOnline = barberData['isOnline'] == true;
+                    final workingHours = Map<String, dynamic>.from(
+                      barberData['workingHours'] ?? <String, dynamic>{},
+                    );
+                    final workingDays = List<String>.from(
+                      workingHours['workingDays'] ?? [],
+                    );
+                    final todayWorking = workingDays.contains(_todayLabel());
+                    final openingTime =
+                        workingHours['openingTime']?.toString() ?? '8:00 AM';
+                    final closingTime =
+                        workingHours['closingTime']?.toString() ?? '11:00 PM';
+                    final duration =
+                        (workingHours['appointmentDuration'] is num)
+                        ? (workingHours['appointmentDuration'] as num).toInt()
+                        : 30;
+                    final safeDuration = [15, 30, 45, 60].contains(duration)
+                        ? duration
+                        : 30;
+                    final breakStart = workingHours['breakStart']?.toString();
+                    final breakEnd = workingHours['breakEnd']?.toString();
+
+                    final slots = _buildSlots(
+                      openingTime: openingTime,
+                      closingTime: closingTime,
+                      duration: safeDuration,
+                      breakStart: breakStart,
+                      breakEnd: breakEnd,
+                      hidePast: true,
+                    );
+
+                    final now = DateTime.now();
+                    final bookingDate = DateTime(now.year, now.month, now.day);
+
+                    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                      stream: FirebaseFirestore.instance
+                          .collection('bookings')
+                          .where('barberId', isEqualTo: barberId)
+                          .where(
+                            'bookingDate',
+                            isEqualTo: Timestamp.fromDate(bookingDate),
+                          )
+                          .snapshots(),
+                      builder: (context, bookingSnapshot) {
+                        final bookedSlots = bookingSnapshot.data == null
+                            ? <String>{}
+                            : bookingSnapshot.data!.docs
+                                  .where(
+                                    (doc) =>
+                                        (doc.data()['status']?.toString() ??
+                                            'pending') !=
+                                        'rejected',
+                                  )
+                                  .map(
+                                    (doc) =>
+                                        doc
+                                            .data()['selectedTime']
+                                            ?.toString() ??
+                                        '',
+                                  )
+                                  .where((slot) => slot.isNotEmpty)
+                                  .toSet();
+
+                        if (_selectedTime != null &&
+                            (!slots.contains(_selectedTime) ||
+                                bookedSlots.contains(_selectedTime))) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (!mounted) return;
+                            setState(() {
+                              _selectedTime = null;
+                            });
+                          });
+                        }
+
+                        return ListView(
+                          children: [
+                            Text(
+                              widget.barberName,
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Service: ${widget.service}',
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 15,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            const Text(
+                              'Time',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            if (!isOnline || !todayWorking) ...[
+                              const SizedBox(height: 20),
+                              const Center(
+                                child: Text(
+                                  'Barber is unavailable today.',
+                                  style: TextStyle(
+                                    color: Colors.black54,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ] else ...[
+                              Text(
+                                'Online now',
+                                style: TextStyle(
+                                  color: Colors.green.shade700,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Available until $closingTime',
+                                style: const TextStyle(
+                                  color: Colors.black54,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              GridView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: slots.length,
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: 4,
+                                      crossAxisSpacing: 10,
+                                      mainAxisSpacing: 10,
+                                      mainAxisExtent: 34,
+                                    ),
+                                itemBuilder: (context, index) {
+                                  final time = slots[index];
+                                  final isSelected = time == _selectedTime;
+                                  final isBooked = bookedSlots.contains(time);
+
+                                  return InkWell(
+                                    onTap: isBooked
+                                        ? null
+                                        : () {
+                                            setState(() {
+                                              _selectedTime = time;
+                                            });
+                                          },
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Container(
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        color: isBooked
+                                            ? Colors.grey.shade300
+                                            : (isSelected
+                                                  ? Colors.black
+                                                  : Colors.white),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: isBooked
+                                              ? Colors.grey.shade400
+                                              : (isSelected
+                                                    ? Colors.black
+                                                    : Colors.black26),
+                                          width: 1.2,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        time,
+                                        style: TextStyle(
+                                          color: isBooked
+                                              ? Colors.grey.shade600
+                                              : (isSelected
+                                                    ? Colors.white
+                                                    : Colors.black),
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ],
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
             ),

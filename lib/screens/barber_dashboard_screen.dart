@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -11,29 +12,33 @@ import '../features/barber_status_cubit.dart';
 class BarberDashboardScreen extends StatefulWidget {
   final String barberName;
 
-  const BarberDashboardScreen({
-    super.key,
-    required this.barberName,
-  });
+  const BarberDashboardScreen({super.key, required this.barberName});
 
   @override
   State<BarberDashboardScreen> createState() => _BarberDashboardScreenState();
 }
 
 class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
-  final List<String> _timeSlots = [
-    '09:00',
-    '10:00',
-    '11:00',
-    '12:00',
-    '01:00 PM',
-    '02:00 PM',
-    '03:00 PM',
+  static const List<String> _allDays = [
+    'Mon',
+    'Tue',
+    'Wed',
+    'Thu',
+    'Fri',
+    'Sat',
+    'Sun',
   ];
-  final Map<String, bool> _slotEnabled = {};
 
   DocumentReference? _barberDocRef;
   String? _barberId;
+
+  Set<String> _workingDays = _allDays.toSet();
+  TimeOfDay _openingTime = const TimeOfDay(hour: 8, minute: 0);
+  TimeOfDay _closingTime = const TimeOfDay(hour: 23, minute: 0);
+  int _appointmentDuration = 30;
+  TimeOfDay? _breakStartTime;
+  TimeOfDay? _breakEndTime;
+  bool _isSavingWorkingHours = false;
 
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _barberSubscription;
 
@@ -43,7 +48,9 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
   void initState() {
     super.initState();
 
-    final repository = BarberRepositoryImpl(firestore: FirebaseFirestore.instance);
+    final repository = BarberRepositoryImpl(
+      firestore: FirebaseFirestore.instance,
+    );
     final useCase = ToggleOnlineStatusUseCase(repository);
     _barberStatusCubit = BarberStatusCubit(useCase);
 
@@ -59,64 +66,255 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
         .limit(1)
         .snapshots()
         .listen((snapshot) {
-      if (!mounted) return;
+          if (!mounted) return;
 
-      if (snapshot.docs.isEmpty) {
-        final docRef =
-            FirebaseFirestore.instance.collection('barbers').doc(widget.barberName);
-        _barberDocRef = docRef;
-        setState(() {
-          _barberId = docRef.id;
-          _slotEnabled
-            ..clear()
-            ..addEntries(_timeSlots.map((slot) => MapEntry(slot, true)));
-        });
-        return;
-      }
+          if (snapshot.docs.isEmpty) {
+            final docRef = FirebaseFirestore.instance
+                .collection('barbers')
+                .doc(widget.barberName);
+            _barberDocRef = docRef;
+            setState(() {
+              _barberId = docRef.id;
+              _workingDays = _allDays.toSet();
+              _openingTime = const TimeOfDay(hour: 8, minute: 0);
+              _closingTime = const TimeOfDay(hour: 23, minute: 0);
+              _appointmentDuration = 30;
+              _breakStartTime = null;
+              _breakEndTime = null;
+            });
+            return;
+          }
 
-      final barberDoc = snapshot.docs.first;
-      _barberDocRef = barberDoc.reference;
-      final data = barberDoc.data();
-      final savedSlots = List<String>.from(data['availableSlots'] ?? []);
-      final enabledSlots = savedSlots.whereType<String>().toSet();
-
-      setState(() {
-        _barberId = barberDoc.id;
-        _slotEnabled
-          ..clear()
-          ..addEntries(
-            _timeSlots.map((slot) => MapEntry(slot, enabledSlots.contains(slot))),
+          final barberDoc = snapshot.docs.first;
+          _barberDocRef = barberDoc.reference;
+          final data = barberDoc.data();
+          final workingHours = Map<String, dynamic>.from(
+            data['workingHours'] ?? <String, dynamic>{},
           );
-      });
+
+          final savedDays = List<String>.from(
+            workingHours['workingDays'] ?? _allDays,
+          ).where(_allDays.contains).toSet();
+          final openingTime =
+              _parseTimeLabel(workingHours['openingTime']?.toString()) ??
+              const TimeOfDay(hour: 8, minute: 0);
+          final closingTime =
+              _parseTimeLabel(workingHours['closingTime']?.toString()) ??
+              const TimeOfDay(hour: 23, minute: 0);
+          final durationRaw = workingHours['appointmentDuration'];
+          final duration = durationRaw is num ? durationRaw.toInt() : 30;
+          final breakStart = _parseTimeLabel(
+            workingHours['breakStart']?.toString(),
+          );
+          final breakEnd = _parseTimeLabel(
+            workingHours['breakEnd']?.toString(),
+          );
+
+          setState(() {
+            _barberId = barberDoc.id;
+            _workingDays = savedDays.isEmpty ? _allDays.toSet() : savedDays;
+            _openingTime = openingTime;
+            _closingTime = closingTime;
+            _appointmentDuration = [15, 30, 45, 60].contains(duration)
+                ? duration
+                : 30;
+            _breakStartTime = breakStart;
+            _breakEndTime = breakEnd;
+          });
+        });
+  }
+
+  TimeOfDay? _parseTimeLabel(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    final parts = value.trim().split(' ');
+    if (parts.length != 2) return null;
+
+    final hm = parts[0].split(':');
+    if (hm.length != 2) return null;
+
+    final rawHour = int.tryParse(hm[0]);
+    final minute = int.tryParse(hm[1]);
+    if (rawHour == null || minute == null) return null;
+
+    var hour = rawHour;
+    final period = parts[1].toUpperCase();
+    if (period == 'PM' && hour != 12) hour += 12;
+    if (period == 'AM' && hour == 12) hour = 0;
+
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+    return TimeOfDay(hour: hour, minute: minute);
+  }
+
+  String _formatTimeLabel(TimeOfDay time) {
+    final hour24 = time.hour;
+    final minuteText = time.minute.toString().padLeft(2, '0');
+    final isPm = hour24 >= 12;
+    final hour12 = hour24 % 12 == 0 ? 12 : hour24 % 12;
+    return '$hour12:$minuteText ${isPm ? 'PM' : 'AM'}';
+  }
+
+  Future<void> _pickTime({
+    required TimeOfDay initialTime,
+    required ValueChanged<TimeOfDay> onPicked,
+  }) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: initialTime,
+    );
+    if (picked == null) return;
+    if (!mounted) return;
+    setState(() {
+      onPicked(picked);
     });
   }
 
-  Future<void> _toggleSlot(String slot, bool value) async {
-    setState(() => _slotEnabled[slot] = value);
-
-    final barberDocRef = _barberDocRef ??
+  Future<void> _saveWorkingHours() async {
+    final barberDocRef =
+        _barberDocRef ??
         FirebaseFirestore.instance.collection('barbers').doc(widget.barberName);
 
-    await barberDocRef.update({
-      'availableSlots': value
-          ? FieldValue.arrayUnion([slot])
-          : FieldValue.arrayRemove([slot]),
+    if (_workingDays.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select at least one working day.'),
+        ),
+      );
+      return;
+    }
+
+    final openingMinutes = (_openingTime.hour * 60) + _openingTime.minute;
+    final closingMinutes = (_closingTime.hour * 60) + _closingTime.minute;
+    if (closingMinutes <= openingMinutes) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Closing time must be after opening time.'),
+        ),
+      );
+      return;
+    }
+
+    if (_breakStartTime != null && _breakEndTime != null) {
+      final breakStartMinutes =
+          (_breakStartTime!.hour * 60) + _breakStartTime!.minute;
+      final breakEndMinutes =
+          (_breakEndTime!.hour * 60) + _breakEndTime!.minute;
+      if (breakEndMinutes <= breakStartMinutes) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Break end must be after break start.')),
+        );
+        return;
+      }
+      if (breakStartMinutes < openingMinutes ||
+          breakEndMinutes > closingMinutes) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Break time must be within opening and closing hours.',
+            ),
+          ),
+        );
+        return;
+      }
+    }
+
+    setState(() {
+      _isSavingWorkingHours = true;
     });
+
+    try {
+      await barberDocRef.set({
+        'workingHours': {
+          'workingDays': _allDays.where(_workingDays.contains).toList(),
+          'openingTime': _formatTimeLabel(_openingTime),
+          'closingTime': _formatTimeLabel(_closingTime),
+          'appointmentDuration': _appointmentDuration,
+          'breakStart': _breakStartTime == null
+              ? null
+              : _formatTimeLabel(_breakStartTime!),
+          'breakEnd': _breakEndTime == null
+              ? null
+              : _formatTimeLabel(_breakEndTime!),
+        },
+      }, SetOptions(merge: true));
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Working hours saved.')));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to save working hours.')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSavingWorkingHours = false;
+        });
+      }
+    }
   }
 
   Future<void> _updateBookingStatus(String bookingId, String status) async {
-    final bookingDoc =
-        await FirebaseFirestore.instance.collection('bookings').doc(bookingId).get();
-    final bookingData = bookingDoc.data();
-    final time = bookingData?['selectedTime']?.toString();
+    await FirebaseFirestore.instance
+        .collection('bookings')
+        .doc(bookingId)
+        .update({'status': status});
+  }
 
-    if (status == 'Rejected' && time != null && _barberDocRef != null) {
-      await _barberDocRef!.update({
-        'availableSlots': FieldValue.arrayUnion([time]),
-      });
+  Color _statusChipColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'accepted':
+        return Colors.green;
+      case 'rejected':
+        return Colors.red;
+      case 'completed':
+        return Colors.blue;
+      case 'pending':
+      default:
+        return Colors.orange;
+    }
+  }
+
+  String _statusLabel(String status) {
+    final lower = status.toLowerCase();
+    if (lower.isEmpty) return 'Pending';
+    return '${lower[0].toUpperCase()}${lower.substring(1)}';
+  }
+
+  String _formatDate(Timestamp? timestamp) {
+    if (timestamp == null) return '-';
+    final date = timestamp.toDate();
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  Future<String> _resolveCustomerName(
+    String customerId,
+    String? fallbackName,
+  ) async {
+    if (fallbackName != null && fallbackName.trim().isNotEmpty) {
+      return fallbackName;
+    }
+    if (customerId.trim().isEmpty) {
+      return 'Customer';
     }
 
-    await bookingDoc.reference.update({'bookingStatus': status});
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(customerId)
+          .get();
+      final data = userDoc.data();
+      final name = (data?['name'] ?? data?['fullName'] ?? data?['displayName'])
+          ?.toString();
+      if (name != null && name.trim().isNotEmpty) {
+        return name;
+      }
+    } catch (_) {
+      // Fall through to fallback.
+    }
+
+    return 'Customer';
   }
 
   @override
@@ -128,6 +326,15 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentBarberId = FirebaseAuth.instance.currentUser?.uid ?? _barberId;
+
+    if (currentBarberId == null) {
+      return Scaffold(
+        appBar: AppBar(title: Text(widget.barberName)),
+        body: const Center(child: Text('Barber is not signed in.')),
+      );
+    }
+
     if (_barberId == null) {
       return Scaffold(
         appBar: AppBar(title: Text(widget.barberName)),
@@ -143,7 +350,10 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
           backgroundColor: Colors.white,
           elevation: 0,
           iconTheme: const IconThemeData(color: Colors.black),
-          title: Text(widget.barberName, style: const TextStyle(color: Colors.black)),
+          title: Text(
+            widget.barberName,
+            style: const TextStyle(color: Colors.black),
+          ),
         ),
         body: SafeArea(
           child: Padding(
@@ -156,7 +366,10 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                   children: [
                     const Text(
                       'Availability',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     _OnlineStatusToggle(barberId: _barberId!),
                   ],
@@ -174,22 +387,172 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Column(
-                    children: _timeSlots.map((slot) {
-                      final isEnabled = _slotEnabled[slot] ?? true;
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(slot),
-                            Switch(
-                              value: isEnabled,
-                              onChanged: (value) => _toggleSlot(slot, value),
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _allDays.map((day) {
+                          final isSelected = _workingDays.contains(day);
+                          return FilterChip(
+                            label: Text(day),
+                            selected: isSelected,
+                            onSelected: (value) {
+                              setState(() {
+                                if (value) {
+                                  _workingDays.add(day);
+                                } else {
+                                  _workingDays.remove(day);
+                                }
+                              });
+                            },
+                            selectedColor: Colors.black,
+                            backgroundColor: Colors.white,
+                            checkmarkColor: Colors.white,
+                            labelStyle: TextStyle(
+                              color: isSelected ? Colors.white : Colors.black,
                             ),
-                          ],
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Opening: ${_formatTimeLabel(_openingTime)}'),
+                          OutlinedButton(
+                            onPressed: () => _pickTime(
+                              initialTime: _openingTime,
+                              onPicked: (picked) => _openingTime = picked,
+                            ),
+                            child: const Text('Set'),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Closing: ${_formatTimeLabel(_closingTime)}'),
+                          OutlinedButton(
+                            onPressed: () => _pickTime(
+                              initialTime: _closingTime,
+                              onPicked: (picked) => _closingTime = picked,
+                            ),
+                            child: const Text('Set'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<int>(
+                        value: _appointmentDuration,
+                        items: const [15, 30, 45, 60]
+                            .map(
+                              (value) => DropdownMenuItem<int>(
+                                value: value,
+                                child: Text('$value minutes'),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          if (value == null) return;
+                          setState(() {
+                            _appointmentDuration = value;
+                          });
+                        },
+                        decoration: const InputDecoration(
+                          labelText: 'Appointment Duration',
                         ),
-                      );
-                    }).toList(),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _breakStartTime == null
+                                ? 'Break Start: Not set'
+                                : 'Break Start: ${_formatTimeLabel(_breakStartTime!)}',
+                          ),
+                          Row(
+                            children: [
+                              OutlinedButton(
+                                onPressed: () => _pickTime(
+                                  initialTime: _breakStartTime ?? _openingTime,
+                                  onPicked: (picked) =>
+                                      _breakStartTime = picked,
+                                ),
+                                child: const Text('Set'),
+                              ),
+                              const SizedBox(width: 6),
+                              OutlinedButton(
+                                onPressed: _breakStartTime == null
+                                    ? null
+                                    : () {
+                                        setState(() {
+                                          _breakStartTime = null;
+                                        });
+                                      },
+                                child: const Text('Clear'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _breakEndTime == null
+                                ? 'Break End: Not set'
+                                : 'Break End: ${_formatTimeLabel(_breakEndTime!)}',
+                          ),
+                          Row(
+                            children: [
+                              OutlinedButton(
+                                onPressed: () => _pickTime(
+                                  initialTime: _breakEndTime ?? _closingTime,
+                                  onPicked: (picked) => _breakEndTime = picked,
+                                ),
+                                child: const Text('Set'),
+                              ),
+                              const SizedBox(width: 6),
+                              OutlinedButton(
+                                onPressed: _breakEndTime == null
+                                    ? null
+                                    : () {
+                                        setState(() {
+                                          _breakEndTime = null;
+                                        });
+                                      },
+                                child: const Text('Clear'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _isSavingWorkingHours
+                              ? null
+                              : _saveWorkingHours,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: _isSavingWorkingHours
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text('Save Working Hours'),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -202,7 +565,8 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                   child: StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
                         .collection('bookings')
-                        .where('barberName', isEqualTo: widget.barberName)
+                        .where('barberId', isEqualTo: currentBarberId)
+                        .orderBy('createdAt', descending: true)
                         .snapshots(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
@@ -214,14 +578,16 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                       return ListView(
                         children: snapshot.data!.docs.map((doc) {
                           final data = doc.data() as Map<String, dynamic>;
-                          final status = data['bookingStatus']?.toString() ?? 'Pending';
-                          final customerName =
-                              data['customerName']?.toString() ?? 'Customer';
-                          final date = data['selectedDate']?.toString() ?? '-';
+                          final status =
+                              data['status']?.toString() ?? 'pending';
+                          final customerId =
+                              data['customerId']?.toString() ?? '';
+                          final customerName = data['customerName']?.toString();
+                          final service = data['service']?.toString() ?? '-';
+                          final date = _formatDate(
+                            data['bookingDate'] as Timestamp?,
+                          );
                           final time = data['selectedTime']?.toString() ?? '-';
-                          final services =
-                              List<String>.from(data['selectedServices'] ?? []);
-                          final notes = data['notes']?.toString() ?? '';
 
                           return Card(
                             margin: const EdgeInsets.only(bottom: 12),
@@ -234,57 +600,88 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text(
-                                        customerName,
-                                        style: const TextStyle(fontWeight: FontWeight.bold),
+                                      Expanded(
+                                        child: FutureBuilder<String>(
+                                          future: _resolveCustomerName(
+                                            customerId,
+                                            customerName,
+                                          ),
+                                          builder: (context, nameSnapshot) {
+                                            final displayName =
+                                                nameSnapshot.data ?? 'Customer';
+                                            return Text(
+                                              displayName,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            );
+                                          },
+                                        ),
                                       ),
                                       Container(
                                         padding: const EdgeInsets.symmetric(
-                                            horizontal: 10, vertical: 4),
+                                          horizontal: 10,
+                                          vertical: 4,
+                                        ),
                                         decoration: BoxDecoration(
-                                          color: status == 'Accepted'
-                                              ? Colors.green.shade100
-                                              : status == 'Rejected'
-                                                  ? Colors.red.shade100
-                                                  : Colors.orange.shade100,
-                                          borderRadius: BorderRadius.circular(20),
+                                          color: _statusChipColor(
+                                            status,
+                                          ).withValues(alpha: 0.16),
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                          border: Border.all(
+                                            color: _statusChipColor(status),
+                                          ),
                                         ),
                                         child: Text(
-                                          status.toUpperCase(),
-                                          style: const TextStyle(fontSize: 12),
+                                          _statusLabel(status),
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: _statusChipColor(status),
+                                            fontWeight: FontWeight.w700,
+                                          ),
                                         ),
                                       ),
                                     ],
                                   ),
                                   const SizedBox(height: 8),
+                                  Text('Service: $service'),
                                   Text('Date: $date'),
                                   Text('Time: $time'),
-                                  if (services.isNotEmpty) ...[
-                                    const SizedBox(height: 6),
-                                    Text('Services: ${services.join(", ")}'),
-                                  ],
-                                  if (notes.isNotEmpty) ...[
-                                    const SizedBox(height: 6),
-                                    Text('Notes: $notes'),
-                                  ],
                                   const SizedBox(height: 10),
                                   Row(
                                     children: [
                                       Expanded(
                                         child: OutlinedButton(
-                                          onPressed: () =>
-                                              _updateBookingStatus(doc.id, 'Accepted'),
+                                          onPressed: () => _updateBookingStatus(
+                                            doc.id,
+                                            'accepted',
+                                          ),
                                           child: const Text('Accept'),
                                         ),
                                       ),
                                       const SizedBox(width: 10),
                                       Expanded(
                                         child: OutlinedButton(
-                                          onPressed: () =>
-                                              _updateBookingStatus(doc.id, 'Rejected'),
+                                          onPressed: () => _updateBookingStatus(
+                                            doc.id,
+                                            'rejected',
+                                          ),
                                           child: const Text('Reject'),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: OutlinedButton(
+                                          onPressed: () => _updateBookingStatus(
+                                            doc.id,
+                                            'completed',
+                                          ),
+                                          child: const Text('Complete'),
                                         ),
                                       ),
                                     ],
@@ -319,9 +716,9 @@ class _OnlineStatusToggle extends StatelessWidget {
     return BlocConsumer<BarberStatusCubit, BarberStatusState>(
       listener: (context, state) {
         if (state is BarberStatusError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.message)));
         }
       },
       builder: (context, state) {
@@ -332,9 +729,10 @@ class _OnlineStatusToggle extends StatelessWidget {
             const SizedBox(width: 8),
             Switch(
               value: state.isOnline,
-              onChanged: (_) => context
-                  .read<BarberStatusCubit>()
-                  .toggleOnline(barberId, state.isOnline),
+              onChanged: (_) => context.read<BarberStatusCubit>().toggleOnline(
+                barberId,
+                state.isOnline,
+              ),
             ),
             if (isUpdating)
               const Padding(
