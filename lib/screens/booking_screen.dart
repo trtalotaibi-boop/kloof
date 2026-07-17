@@ -18,15 +18,25 @@ class BookingScreen extends StatefulWidget {
 
 class _BookingScreenState extends State<BookingScreen> {
   String? _selectedTime;
-  final List<String> _timeSlots = [
-    '09:00',
-    '10:00',
-    '11:00',
-    '12:00',
-    '01:00 PM',
-    '02:00 PM',
-    '03:00 PM',
-  ];
+  late final List<String> _timeSlots = _generateTimeSlots();
+
+  List<String> _generateTimeSlots() {
+    final slots = <String>[];
+    final startMinutes = 8 * 60;
+    final endMinutes = 23 * 60;
+
+    for (var minutes = startMinutes; minutes <= endMinutes; minutes += 30) {
+      final hour24 = minutes ~/ 60;
+      final minute = minutes % 60;
+      final isPm = hour24 >= 12;
+      final hour12 = hour24 % 12 == 0 ? 12 : hour24 % 12;
+      final minuteText = minute.toString().padLeft(2, '0');
+      final period = isPm ? 'PM' : 'AM';
+      slots.add('$hour12:$minuteText $period');
+    }
+
+    return slots;
+  }
 
   void _onConfirmBooking() {
     if (_selectedTime == null) {
@@ -85,6 +95,24 @@ class _BookingScreenState extends State<BookingScreen> {
               const Text(
                 'Time',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Online now',
+                style: TextStyle(
+                  color: Colors.green.shade700,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 2),
+              const Text(
+                'Available until 11:00 PM',
+                style: TextStyle(
+                  color: Colors.black54,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
               const SizedBox(height: 8),
               Wrap(
