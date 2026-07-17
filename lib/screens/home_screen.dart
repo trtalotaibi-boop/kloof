@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'barber_details_screen.dart';
 import 'barber_dashboard_screen.dart';
+import 'my_bookings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,6 +28,25 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         centerTitle: true,
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MyBookingsScreen(),
+                ),
+              );
+            },
+            child: const Text(
+              'My Bookings',
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
@@ -54,18 +74,12 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 25),
             const Text(
               "👋 Welcome",
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
             const Text(
               "Categories",
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 15),
             SingleChildScrollView(
@@ -85,10 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 30),
             const Text(
               "Find your favorite barber",
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 16,
-              ),
+              style: TextStyle(color: Colors.grey, fontSize: 16),
             ),
             const SizedBox(height: 25),
             TextField(
@@ -131,61 +142,69 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 20),
             const Text(
               "Top Rated",
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 15),
             StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection("barbers").snapshots(),
+              stream: FirebaseFirestore.instance
+                  .collection("barbers")
+                  .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
+                  return const Center(child: CircularProgressIndicator());
                 }
 
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return const Text("No barbers found");
                 }
 
-                final barbers = snapshot.data!.docs.map((doc) {
-                  final barberData = doc.data() as Map<String, dynamic>;
-                  final name = barberData['name']?.toString();
-                  final rawRating = barberData['rating'];
-                  final services = barberData['services']?.toString();
+                final barbers = snapshot.data!.docs
+                    .map((doc) {
+                      final barberData = doc.data() as Map<String, dynamic>;
+                      final name = barberData['name']?.toString();
+                      final rawRating = barberData['rating'];
+                      final services = barberData['services']?.toString();
 
-                  if (name == null || name.trim().isEmpty || services == null || services.trim().isEmpty) {
-                    return null;
-                  }
+                      if (name == null ||
+                          name.trim().isEmpty ||
+                          services == null ||
+                          services.trim().isEmpty) {
+                        return null;
+                      }
 
-                  final ratingText = rawRating == null
-                      ? "0.0"
-                      : (rawRating is num
-                          ? rawRating.toDouble().toStringAsFixed(1)
-                          : (double.tryParse(rawRating.toString())?.toStringAsFixed(1) ?? "0.0"));
-                  final imageUrl = barberData['imageUrl']?.toString() ?? '';
-                  final address = barberData['address']?.toString() ?? 'Address not available';
-                  final latitude = barberData['latitude'] is num
-                      ? (barberData['latitude'] as num).toDouble()
-                      : null;
-                  final longitude = barberData['longitude'] is num
-                      ? (barberData['longitude'] as num).toDouble()
-                      : null;
-                  final isOnline = barberData['isOnline'] == true;
+                      final ratingText = rawRating == null
+                          ? "0.0"
+                          : (rawRating is num
+                                ? rawRating.toDouble().toStringAsFixed(1)
+                                : (double.tryParse(
+                                        rawRating.toString(),
+                                      )?.toStringAsFixed(1) ??
+                                      "0.0"));
+                      final imageUrl = barberData['imageUrl']?.toString() ?? '';
+                      final address =
+                          barberData['address']?.toString() ??
+                          'Address not available';
+                      final latitude = barberData['latitude'] is num
+                          ? (barberData['latitude'] as num).toDouble()
+                          : null;
+                      final longitude = barberData['longitude'] is num
+                          ? (barberData['longitude'] as num).toDouble()
+                          : null;
+                      final isOnline = barberData['isOnline'] == true;
 
-                  return {
-                    'name': name,
-                    'rating': "⭐ $ratingText",
-                    'imageUrl': imageUrl,
-                    'services': services,
-                    'address': address,
-                    'latitude': latitude,
-                    'longitude': longitude,
-                    'isOnline': isOnline,
-                  };
-                }).whereType<Map<String, Object?>>().toList();
+                      return {
+                        'name': name,
+                        'rating': "⭐ $ratingText",
+                        'imageUrl': imageUrl,
+                        'services': services,
+                        'address': address,
+                        'latitude': latitude,
+                        'longitude': longitude,
+                        'isOnline': isOnline,
+                      };
+                    })
+                    .whereType<Map<String, Object?>>()
+                    .toList();
 
                 barbers.sort((a, b) {
                   final aOnline = a['isOnline'] as bool;
@@ -289,7 +308,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           if (isOffline)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.grey.shade300,
                                 borderRadius: BorderRadius.circular(20),
@@ -331,10 +353,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _categoryChip(String text) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 10,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.black,
         borderRadius: BorderRadius.circular(25),
