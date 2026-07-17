@@ -17,25 +17,51 @@ class BookingScreen extends StatefulWidget {
 }
 
 class _BookingScreenState extends State<BookingScreen> {
+  final bool _isOnline = true;
+  final String _openingTime = '8:00 AM';
+  final String _closingTime = '11:00 PM';
+  final List<String> _bookedSlots = ['10:00 AM', '2:30 PM', '6:00 PM'];
+
   String? _selectedTime;
   late final List<String> _timeSlots = _generateTimeSlots();
 
   List<String> _generateTimeSlots() {
     final slots = <String>[];
-    final startMinutes = 8 * 60;
-    final endMinutes = 23 * 60;
+    final startMinutes = _toMinutes(_openingTime);
+    final endMinutes = _toMinutes(_closingTime);
 
     for (var minutes = startMinutes; minutes <= endMinutes; minutes += 30) {
-      final hour24 = minutes ~/ 60;
-      final minute = minutes % 60;
-      final isPm = hour24 >= 12;
-      final hour12 = hour24 % 12 == 0 ? 12 : hour24 % 12;
-      final minuteText = minute.toString().padLeft(2, '0');
-      final period = isPm ? 'PM' : 'AM';
-      slots.add('$hour12:$minuteText $period');
+      slots.add(_toTimeLabel(minutes));
     }
 
     return slots;
+  }
+
+  int _toMinutes(String time) {
+    final parts = time.split(' ');
+    final hm = parts.first.split(':');
+    var hour = int.parse(hm[0]);
+    final minute = int.parse(hm[1]);
+    final period = parts.last.toUpperCase();
+
+    if (period == 'PM' && hour != 12) {
+      hour += 12;
+    }
+    if (period == 'AM' && hour == 12) {
+      hour = 0;
+    }
+
+    return (hour * 60) + minute;
+  }
+
+  String _toTimeLabel(int totalMinutes) {
+    final hour24 = totalMinutes ~/ 60;
+    final minute = totalMinutes % 60;
+    final isPm = hour24 >= 12;
+    final hour12 = hour24 % 12 == 0 ? 12 : hour24 % 12;
+    final minuteText = minute.toString().padLeft(2, '0');
+    final period = isPm ? 'PM' : 'AM';
+    return '$hour12:$minuteText $period';
   }
 
   void _onConfirmBooking() {
@@ -103,70 +129,97 @@ class _BookingScreenState extends State<BookingScreen> {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Text(
-                      'Online now',
-                      style: TextStyle(
-                        color: Colors.green.shade700,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                    if (_isOnline) ...[
+                      Text(
+                        'Online now',
+                        style: TextStyle(
+                          color: Colors.green.shade700,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    const Text(
-                      'Available until 11:00 PM',
-                      style: TextStyle(
-                        color: Colors.black54,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                      const SizedBox(height: 2),
+                      Text(
+                        'Available until $_closingTime',
+                        style: const TextStyle(
+                          color: Colors.black54,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _timeSlots.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 4,
-                            crossAxisSpacing: 10,
-                            mainAxisSpacing: 10,
-                            mainAxisExtent: 34,
-                          ),
-                      itemBuilder: (context, index) {
-                        final time = _timeSlots[index];
-                        final isSelected = time == _selectedTime;
+                      const SizedBox(height: 8),
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _timeSlots.length,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 4,
+                              crossAxisSpacing: 10,
+                              mainAxisSpacing: 10,
+                              mainAxisExtent: 34,
+                            ),
+                        itemBuilder: (context, index) {
+                          final time = _timeSlots[index];
+                          final isSelected = time == _selectedTime;
+                          final isBooked = _bookedSlots.contains(time);
 
-                        return InkWell(
-                          onTap: () {
-                            setState(() {
-                              _selectedTime = time;
-                            });
-                          },
-                          borderRadius: BorderRadius.circular(10),
-                          child: Container(
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: isSelected ? Colors.black : Colors.white,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: isSelected
-                                    ? Colors.black
-                                    : Colors.black26,
-                                width: 1.2,
+                          return InkWell(
+                            onTap: isBooked
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _selectedTime = time;
+                                    });
+                                  },
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: isBooked
+                                    ? Colors.grey.shade300
+                                    : (isSelected
+                                          ? Colors.black
+                                          : Colors.white),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: isBooked
+                                      ? Colors.grey.shade400
+                                      : (isSelected
+                                            ? Colors.black
+                                            : Colors.black26),
+                                  width: 1.2,
+                                ),
+                              ),
+                              child: Text(
+                                time,
+                                style: TextStyle(
+                                  color: isBooked
+                                      ? Colors.grey.shade600
+                                      : (isSelected
+                                            ? Colors.white
+                                            : Colors.black),
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
-                            child: Text(
-                              time,
-                              style: TextStyle(
-                                color: isSelected ? Colors.white : Colors.black,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 12,
-                              ),
-                            ),
+                          );
+                        },
+                      ),
+                    ] else ...[
+                      const SizedBox(height: 20),
+                      const Center(
+                        child: Text(
+                          'Barber is currently offline',
+                          style: TextStyle(
+                            color: Colors.black54,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
