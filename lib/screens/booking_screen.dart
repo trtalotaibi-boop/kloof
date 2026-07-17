@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'booking_confirmation_screen.dart';
+
 class BookingScreen extends StatefulWidget {
   final String barberName;
   final String service;
@@ -15,8 +17,8 @@ class BookingScreen extends StatefulWidget {
 }
 
 class _BookingScreenState extends State<BookingScreen> {
-  DateTime _selectedDate = DateTime.now();
-  String _selectedTime = '09:00';
+  DateTime? _selectedDate;
+  String? _selectedTime;
   final List<String> _timeSlots = [
     '09:00',
     '10:00',
@@ -30,7 +32,7 @@ class _BookingScreenState extends State<BookingScreen> {
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate,
+      initialDate: _selectedDate ?? DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 90)),
     );
@@ -40,6 +42,49 @@ class _BookingScreenState extends State<BookingScreen> {
         _selectedDate = picked;
       });
     }
+  }
+
+  void _onConfirmBooking() {
+    if (_selectedDate == null && _selectedTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Please select a date and time slot before confirming.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (_selectedDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a date before confirming.'),
+        ),
+      );
+      return;
+    }
+
+    if (_selectedTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a time slot before confirming.'),
+        ),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BookingConfirmationScreen(
+          barberName: widget.barberName,
+          service: widget.service,
+          selectedDate: _selectedDate!,
+          selectedTime: _selectedTime!,
+        ),
+      ),
+    );
   }
 
   @override
@@ -94,7 +139,9 @@ class _BookingScreenState extends State<BookingScreen> {
                       const Icon(Icons.calendar_today_outlined, size: 18),
                       const SizedBox(width: 10),
                       Text(
-                        '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                        _selectedDate == null
+                            ? 'Select a date'
+                            : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
                         style: const TextStyle(fontSize: 15),
                       ),
                     ],
@@ -133,7 +180,7 @@ class _BookingScreenState extends State<BookingScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: _onConfirmBooking,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
                     foregroundColor: Colors.white,
