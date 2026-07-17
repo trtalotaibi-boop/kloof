@@ -113,27 +113,43 @@ TextField(
                   height: 55,
                   child: ElevatedButton(
 onPressed: () async {
+  debugPrint('[LOGIN] onPressed START');
+  final ctx = context;
   try {
+    debugPrint('[LOGIN] calling signInWithEmailAndPassword...');
     await FirebaseAuth.instance.signInWithEmailAndPassword(
       email: emailController.text.trim(),
       password: passwordController.text.trim(),
     );
+    debugPrint('[LOGIN] signInWithEmailAndPassword returned');
+    print('Login success');
 
     if (!mounted) return;
 
+    debugPrint('[LOGIN] navigating to HomeScreen');
+    // ignore: use_build_context_synchronously
     Navigator.pushReplacement(
-      context,
+      ctx, // ignore: use_build_context_synchronously
       MaterialPageRoute(
         builder: (_) => const HomeScreen(),
       ),
     );
   } on FirebaseAuthException catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(e.message ?? "Login failed"),
-      ),
-    );
+    debugPrint('[LOGIN] FirebaseAuthException: ${e.code} - ${e.message}');
+    print('Login error: ${e.code} - ${e.message}');
+    if (mounted) {
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(ctx).showSnackBar(
+        SnackBar(
+          content: Text(e.message ?? "Login failed"),
+        ),
+      );
+    }
+  } catch (e, stack) {
+    debugPrint('[LOGIN] Unexpected error: $e');
+    debugPrint('[LOGIN] Stack: $stack');
   }
+  debugPrint('[LOGIN] onPressed END');
 },                    child: const Text(
                       "Login",
                       style: TextStyle(fontSize: 18),

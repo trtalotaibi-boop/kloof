@@ -5,15 +5,6 @@ import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
-///
-/// Example:
-/// ```dart
-/// import 'firebase_options.dart';
-/// // ...
-/// await Firebase.initializeApp(
-///   options: DefaultFirebaseOptions.currentPlatform,
-/// );
-/// ```
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
@@ -25,10 +16,7 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos; // Changed from throw UnsupportedError to return macos
       case TargetPlatform.windows:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for windows - '
@@ -62,7 +50,17 @@ class DefaultFirebaseOptions {
     projectId: 'kloof-1cfcd',
     storageBucket: 'kloof-1cfcd.firebasestorage.app',
   );
+
   static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyBPCQ6BNaizmGrAx2JChe0Xz7WKdSBrVgM',
+    appId: '1:818967567121:ios:269a032aed817e1e780ab0',
+    messagingSenderId: '818967567121',
+    projectId: 'kloof-1cfcd',
+    storageBucket: 'kloof-1cfcd.firebasestorage.app',
+    iosBundleId: 'com.example.kloof',
+  );
+
+  static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyBPCQ6BNaizmGrAx2JChe0Xz7WKdSBrVgM',
     appId: '1:818967567121:ios:269a032aed817e1e780ab0',
     messagingSenderId: '818967567121',

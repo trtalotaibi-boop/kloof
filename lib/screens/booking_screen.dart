@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import 'booking_success_screen.dart';
+
 class BookingScreen extends StatefulWidget {
   final String barberName;
   final String service;
@@ -84,6 +86,15 @@ class _BookingScreenState extends State<BookingScreen> {
         });
   }
 
+  bool _isToday(DateTime date) {
+    final now = DateTime.now();
+    return date.year == now.year && date.month == now.month && date.day == now.day;
+  }
+
+  String _getSlotLabel() {
+    return _isToday(_selectedDate) ? 'Available Today' : 'Available for Selected Date';
+  }
+
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -112,34 +123,77 @@ class _BookingScreenState extends State<BookingScreen> {
     });
 
     try {
-      await FirebaseFirestore.instance.collection('bookings').add({
+      // Check for double-booking: verify no booking exists for this barber, date, and time
+      final existingBookings = await FirebaseFirestore.instance
+          .collection('bookings')
+          .where('barberName', isEqualTo: widget.barberName)
+          .where('selectedDate', isEqualTo: _selectedDate.toIso8601String())
+          .where('selectedTime', isEqualTo: _selectedTime)
+          .limit(1)
+          .get();
+
+      if (existingBookings.docs.isNotEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('This time slot is no longer available.')),
+        );
+        if (mounted) {
+          setState(() {
+            _isSaving = false;
+          });
+        }
+        return;
+      }
+
+      // Create booking document
+      final bookingDoc = await FirebaseFirestore.instance.collection('bookings').add({
+        'bookingId': '', // Will be set to doc ID below
+        'customerId': 'customer_001', // Placeholder - would come from auth in real app
+        'barberId': '', // Will be queried from barber document
         'barberName': widget.barberName,
-        'customerName': 'Customer',
-        'service': widget.service,
-        'date': _selectedDate.toIso8601String(),
-        'time': _selectedTime,
+        'selectedDate': _selectedDate.toIso8601String(),
+        'selectedTime': _selectedTime,
+        'selectedServices': [widget.service],
         'notes': _notesController.text.trim(),
-        'status': 'pending',
+        'totalPrice': 0.0, // Placeholder - would calculate based on services
+        'paymentMethod': 'Cash',
+        'bookingStatus': 'Pending',
         'createdAt': FieldValue.serverTimestamp(),
       });
 
+      // Update with bookingId
+      await bookingDoc.update({'bookingId': bookingDoc.id});
+
+      // Get barberId from barber document
       if (_barberDocRef != null) {
+        final barberSnapshot = await _barberDocRef!.get();
+        final barberId = barberSnapshot.id;
+        await bookingDoc.update({'barberId': barberId});
+        
+        // Remove booked time from availability
         await _barberDocRef!.update({'availableSlots': FieldValue.arrayRemove([_selectedTime])});
       }
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Booking Confirmed')),
+      // Navigate to success screen
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => BookingSuccessScreen(
+            barberName: widget.barberName,
+            selectedDate: '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+            selectedTime: _selectedTime,
+            selectedService: widget.service,
+            notes: _notesController.text.trim(),
+            bookingId: bookingDoc.id,
+          ),
+        ),
       );
-
-      Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to save booking: $e')),
       );
-    } finally {
       if (mounted) {
         setState(() {
           _isSaving = false;
@@ -219,13 +273,44 @@ class _BookingScreenState extends State<BookingScreen> {
               const SizedBox(height: 8),
               if (_isLoadingSlots)
                 const Center(child: CircularProgressIndicator())
-              else
+              else ...[
+                Text(
+                  _getSlotLabel(),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 12),
                 Wrap(
                   spacing: 10,
                   runSpacing: 10,
                   children: _timeSlots.map((time) {
                     final isAvailable = _availableSlots.contains(time);
                     final isSelected = time == _selectedTime;
+                    final isToday = _isToday(_selectedDate);
+                    
+                    Color getBackgroundColor() {
+                      if (!isAvailable) {
+                        return Colors.grey.shade300;
+                      }
+                      if (isToday) {
+                        return Colors.green.shade100;
+                      }
+                      return Colors.orange.shade100;
+                    }
+
+                    Color getLabelColor() {
+                      if (!isAvailable) {
+                        return Colors.grey.shade700;
+                      }
+                      if (isSelected) {
+                        return Colors.white;
+                      }
+                      return Colors.black;
+                    }
+
                     return ChoiceChip(
                       label: Text(time),
                       selected: isSelected,
@@ -237,16 +322,15 @@ class _BookingScreenState extends State<BookingScreen> {
                             }
                           : null,
                       selectedColor: Colors.black,
-                      backgroundColor: isAvailable ? null : Colors.grey.shade300,
+                      backgroundColor: getBackgroundColor(),
                       disabledColor: Colors.grey.shade300,
                       labelStyle: TextStyle(
-                        color: isAvailable
-                            ? (isSelected ? Colors.white : Colors.black)
-                            : Colors.grey.shade700,
+                        color: getLabelColor(),
                       ),
                     );
                   }).toList(),
                 ),
+              ],
               const SizedBox(height: 24),
               const Text(
                 'Notes',

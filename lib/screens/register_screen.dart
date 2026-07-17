@@ -241,6 +241,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return;
   }
 
+  final ctx = context;
   try {
     debugPrint("START REGISTER");
     await FirebaseAuth.instance.createUserWithEmailAndPassword(
@@ -249,25 +250,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
     debugPrint("REGISTER SUCCESS");
 
-    ScaffoldMessenger.of(context).showSnackBar(
+    if (!mounted) return;
+
+    // ignore: use_build_context_synchronously
+    ScaffoldMessenger.of(ctx).showSnackBar(
       const SnackBar(
         content: Text("Account created successfully!"),
       ),
     );
 
-    Navigator.pop(context);
+    // ignore: use_build_context_synchronously
+    Navigator.pop(ctx);
   } on FirebaseAuthException catch (e) {
-    print("CODE: ${e.code}");
-    print("MESSAGE: ${e.message}");
-    print("EXCEPTION: $e");
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(e.message ?? "Something went wrong"),
-      ),
-    );
+    debugPrint("Firebase error: ${e.message}");
+    if (mounted) {
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(ctx).showSnackBar(
+        SnackBar(
+          content: Text(e.message ?? "Something went wrong"),
+        ),
+      );
+    }
   } catch (e, s) {
-    print(e);
-    print(s);
+    debugPrint("Error: $e\n$s");
 }
 },
 
