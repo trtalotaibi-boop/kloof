@@ -22,6 +22,20 @@ class BookingScreen extends StatefulWidget {
 class _BookingScreenState extends State<BookingScreen> {
   String? _selectedTime;
 
+  Future<void> _createNotification({
+    required String recipientId,
+    required String message,
+    required String bookingId,
+  }) async {
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'recipientId': recipientId,
+      'message': message,
+      'bookingId': bookingId,
+      'isRead': false,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   int _toMinutes(String time) {
     final parts = time.split(' ');
     final hm = parts.first.split(':');
@@ -219,16 +233,30 @@ class _BookingScreenState extends State<BookingScreen> {
 
       final customerId = currentUser.uid;
 
-      await FirebaseFirestore.instance.collection('bookings').add({
-        'barberId': barberId,
-        'barberName': widget.barberName,
-        'customerId': customerId,
-        'service': widget.service,
-        'selectedTime': time,
-        'bookingDate': Timestamp.fromDate(bookingDate),
-        'status': 'pending',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+      final bookingRef = await FirebaseFirestore.instance
+          .collection('bookings')
+          .add({
+            'barberId': barberId,
+            'barberName': widget.barberName,
+            'customerId': customerId,
+            'service': widget.service,
+            'selectedTime': time,
+            'bookingDate': Timestamp.fromDate(bookingDate),
+            'status': 'pending',
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+
+      await _createNotification(
+        recipientId: customerId,
+        message: 'Your booking request has been submitted.',
+        bookingId: bookingRef.id,
+      );
+
+      await _createNotification(
+        recipientId: barberId,
+        message: 'New booking request.',
+        bookingId: bookingRef.id,
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

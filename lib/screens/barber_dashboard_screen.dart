@@ -255,11 +255,51 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
     }
   }
 
+  Future<void> _createNotification({
+    required String recipientId,
+    required String message,
+    required String bookingId,
+  }) async {
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'recipientId': recipientId,
+      'message': message,
+      'bookingId': bookingId,
+      'isRead': false,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<void> _updateBookingStatus(String bookingId, String status) async {
-    await FirebaseFirestore.instance
+    final bookingRef = FirebaseFirestore.instance
         .collection('bookings')
-        .doc(bookingId)
-        .update({'status': status});
+        .doc(bookingId);
+
+    final bookingSnapshot = await bookingRef.get();
+    final bookingData = bookingSnapshot.data();
+    final customerId = bookingData?['customerId']?.toString();
+
+    await bookingRef.update({'status': status});
+
+    if (customerId == null || customerId.trim().isEmpty) {
+      return;
+    }
+
+    String? message;
+    if (status == 'accepted') {
+      message = 'Your booking has been accepted.';
+    } else if (status == 'rejected') {
+      message = 'Your booking has been rejected.';
+    } else if (status == 'completed') {
+      message = 'Your appointment has been completed.';
+    }
+
+    if (message != null) {
+      await _createNotification(
+        recipientId: customerId,
+        message: message,
+        bookingId: bookingId,
+      );
+    }
   }
 
   Color _statusChipColor(String status) {
