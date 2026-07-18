@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../data/repositories/barber_repository_impl.dart';
 import '../domain/usecases/toggle_online_status_usecase.dart';
 import '../features/barber_status_cubit.dart';
+import 'barber_profile_screen.dart';
 import 'welcome_screen.dart';
 
 class BarberDashboardScreen extends StatefulWidget {
@@ -475,6 +476,17 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
             style: const TextStyle(color: Colors.black),
           ),
           actions: [
+            IconButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const BarberProfileScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.person_outline, color: Colors.black),
+            ),
             IconButton(
               onPressed: _logout,
               icon: const Icon(Icons.logout, color: Colors.black),
