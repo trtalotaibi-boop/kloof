@@ -3,7 +3,9 @@ import 'login_screen.dart';
 import 'package:kloof/screens/register_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
-  const WelcomeScreen({super.key});
+  final String selectedRole;
+
+  const WelcomeScreen({super.key, required this.selectedRole});
 
   @override
   Widget build(BuildContext context) {
@@ -16,11 +18,7 @@ class WelcomeScreen extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
-                  Icons.content_cut,
-                  size: 100,
-                  color: Colors.black,
-                ),
+                const Icon(Icons.content_cut, size: 100, color: Colors.black),
 
                 const SizedBox(height: 30),
 
@@ -38,10 +36,7 @@ class WelcomeScreen extends StatelessWidget {
                 const Text(
                   'Book your barber in seconds.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.grey,
-                  ),
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
                 ),
 
                 const SizedBox(height: 50),
@@ -51,17 +46,15 @@ class WelcomeScreen extends StatelessWidget {
                   height: 55,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.push(
+                      Navigator.pushAndRemoveUntil(
                         context,
                         MaterialPageRoute(
                           builder: (context) => const LoginScreen(),
                         ),
+                        (route) => route.isFirst,
                       );
                     },
-                    child: const Text(
-                      'Login',
-                      style: TextStyle(fontSize: 18),
-                    ),
+                    child: const Text('Login', style: TextStyle(fontSize: 18)),
                   ),
                 ),
 
@@ -72,11 +65,13 @@ class WelcomeScreen extends StatelessWidget {
                   height: 55,
                   child: OutlinedButton(
                     onPressed: () {
-                      Navigator.push(
+                      Navigator.pushAndRemoveUntil(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const RegisterScreen(),
+                          builder: (context) =>
+                              RegisterScreen(selectedRole: selectedRole),
                         ),
+                        (route) => route.isFirst,
                       );
                     },
                     child: const Text(

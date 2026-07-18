@@ -4,13 +4,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/role_selection_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   runApp(const KloofApp());
 }
@@ -24,12 +23,10 @@ class KloofApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'KLOOF',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.black,
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.black),
         useMaterial3: true,
       ),
-      home: const AuthenticationWrapper(),
+      home: const RoleSelectionScreen(),
     );
   }
 }
@@ -53,7 +50,7 @@ class AuthenticationWrapper extends StatelessWidget {
           return const HomeScreen();
         } else {
           // User is not logged in - show Welcome Screen
-          return const WelcomeScreen();
+          return const WelcomeScreen(selectedRole: 'customer');
         }
       },
     );
