@@ -39,7 +39,7 @@ class RoleSelectionScreen extends StatelessWidget {
                   height: 56,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.push(
+                      Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
                           builder: (context) =>
@@ -66,7 +66,7 @@ class RoleSelectionScreen extends StatelessWidget {
                   height: 56,
                   child: OutlinedButton(
                     onPressed: () {
-                      Navigator.push(
+                      Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
                           builder: (context) =>

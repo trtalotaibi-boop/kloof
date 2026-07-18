@@ -5,6 +5,7 @@ import 'barber_details_screen.dart';
 import 'barber_dashboard_screen.dart';
 import 'my_bookings_screen.dart';
 import 'notifications_screen.dart';
+import 'welcome_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -64,6 +65,40 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  Future<void> _logout() async {
+    final shouldSignOut =
+        await showDialog<bool>(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('Sign out'),
+              content: const Text('Are you sure you want to sign out?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Sign Out'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+
+    if (!shouldSignOut) return;
+
+    await FirebaseAuth.instance.signOut();
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isCheckingRole) {
@@ -73,6 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F8F8),
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.white,
         elevation: 0,
         title: const Text(
@@ -182,6 +218,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 fontWeight: FontWeight.w600,
               ),
             ),
+          ),
+          IconButton(
+            onPressed: _logout,
+            icon: const Icon(Icons.logout, color: Colors.black),
           ),
         ],
       ),

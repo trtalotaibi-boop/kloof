@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../data/repositories/barber_repository_impl.dart';
 import '../domain/usecases/toggle_online_status_usecase.dart';
 import '../features/barber_status_cubit.dart';
+import 'welcome_screen.dart';
 
 class BarberDashboardScreen extends StatefulWidget {
   final String barberName;
@@ -338,6 +339,40 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
     }
   }
 
+  Future<void> _logout() async {
+    final shouldSignOut =
+        await showDialog<bool>(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('Sign out'),
+              content: const Text('Are you sure you want to sign out?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Sign Out'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+
+    if (!shouldSignOut) return;
+
+    await FirebaseAuth.instance.signOut();
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+      (route) => false,
+    );
+  }
+
   Color _statusChipColor(String status) {
     switch (status.toLowerCase()) {
       case 'accepted':
@@ -431,6 +466,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xFFF8F8F8),
         appBar: AppBar(
+          automaticallyImplyLeading: false,
           backgroundColor: Colors.white,
           elevation: 0,
           iconTheme: const IconThemeData(color: Colors.black),
@@ -438,6 +474,12 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
             widget.barberName,
             style: const TextStyle(color: Colors.black),
           ),
+          actions: [
+            IconButton(
+              onPressed: _logout,
+              icon: const Icon(Icons.logout, color: Colors.black),
+            ),
+          ],
         ),
         body: SafeArea(
           child: Padding(
