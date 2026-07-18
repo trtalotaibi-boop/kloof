@@ -14,8 +14,62 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  bool _isCheckingRole = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _enforceCustomerAccess();
+  }
+
+  Future<void> _enforceCustomerAccess() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      if (!mounted) return;
+      setState(() {
+        _isCheckingRole = false;
+      });
+      return;
+    }
+
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      final data = userDoc.data() ?? <String, dynamic>{};
+      final role = (data['role']?.toString().toLowerCase() ?? 'customer');
+      final fullName = data['fullName']?.toString().trim();
+      final barberName = (fullName != null && fullName.isNotEmpty)
+          ? fullName
+          : (user.email ?? 'Barber');
+
+      if (role == 'barber') {
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => BarberDashboardScreen(barberName: barberName),
+          ),
+        );
+        return;
+      }
+    } catch (_) {
+      // Keep customer flow if role lookup fails.
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _isCheckingRole = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_isCheckingRole) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F8F8),
       appBar: AppBar(
@@ -198,30 +252,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 30),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const BarberDashboardScreen(
-                        barberName: 'Demo Barber',
-                      ),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text('Open Barber Dashboard'),
-              ),
-            ),
             const SizedBox(height: 20),
             const Text(
               "Top Rated",

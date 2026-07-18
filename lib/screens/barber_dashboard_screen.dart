@@ -43,6 +43,8 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _barberSubscription;
 
   late final BarberStatusCubit _barberStatusCubit;
+  bool _isCheckingRole = true;
+  bool _isRoleAllowed = false;
 
   @override
   void initState() {
@@ -54,7 +56,41 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
     final useCase = ToggleOnlineStatusUseCase(repository);
     _barberStatusCubit = BarberStatusCubit(useCase);
 
-    _listenToBarberUpdates();
+    _enforceBarberAccess();
+  }
+
+  Future<void> _enforceBarberAccess() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      if (!mounted) return;
+      Navigator.pop(context);
+      return;
+    }
+
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+      final role =
+          (userDoc.data()?['role']?.toString().toLowerCase() ?? 'customer');
+
+      if (role != 'barber') {
+        if (!mounted) return;
+        Navigator.pop(context);
+        return;
+      }
+
+      _listenToBarberUpdates();
+      if (!mounted) return;
+      setState(() {
+        _isRoleAllowed = true;
+        _isCheckingRole = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      Navigator.pop(context);
+    }
   }
 
   void _listenToBarberUpdates() {
@@ -366,6 +402,14 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isCheckingRole) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (!_isRoleAllowed) {
+      return const Scaffold(body: SizedBox.shrink());
+    }
+
     final currentBarberId = FirebaseAuth.instance.currentUser?.uid ?? _barberId;
 
     if (currentBarberId == null) {
