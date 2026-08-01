@@ -21,6 +21,116 @@ class BookingScreen extends StatefulWidget {
 
 class _BookingScreenState extends State<BookingScreen> {
   String? _selectedTime;
+  bool _isLoadingServices = true;
+  List<_ServiceOption> _serviceOptions = [];
+  _ServiceOption? _selectedService;
+
+  List<String> _splitServiceNames(String raw) {
+    return raw
+        .replaceAll('•', ',')
+        .split(',')
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadServiceOptions();
+  }
+
+  Future<void> _loadServiceOptions() async {
+    try {
+      final barberSnapshot = await FirebaseFirestore.instance
+          .collection('barbers')
+          .where('name', isEqualTo: widget.barberName)
+          .limit(1)
+          .get();
+
+      final options = <_ServiceOption>[];
+      final seenNames = <String>{};
+      if (barberSnapshot.docs.isNotEmpty) {
+        final data = barberSnapshot.docs.first.data();
+        final rawServices = data['services'];
+
+        if (rawServices is List) {
+          for (final item in rawServices) {
+            if (item is Map<String, dynamic>) {
+              final priceRaw = item['price'];
+              final price = priceRaw is num
+                  ? priceRaw.toDouble()
+                  : double.tryParse(priceRaw?.toString() ?? '');
+              final names = _splitServiceNames(
+                (item['name'] ?? '').toString().trim(),
+              );
+              for (final name in names) {
+                final key = name.toLowerCase();
+                if (seenNames.contains(key)) continue;
+                seenNames.add(key);
+                options.add(_ServiceOption(name: name, price: price));
+              }
+              continue;
+            }
+
+            if (item is Map) {
+              final map = Map<String, dynamic>.from(item);
+              final priceRaw = map['price'];
+              final price = priceRaw is num
+                  ? priceRaw.toDouble()
+                  : double.tryParse(priceRaw?.toString() ?? '');
+              final names = _splitServiceNames(
+                (map['name'] ?? '').toString().trim(),
+              );
+              for (final name in names) {
+                final key = name.toLowerCase();
+                if (seenNames.contains(key)) continue;
+                seenNames.add(key);
+                options.add(_ServiceOption(name: name, price: price));
+              }
+              continue;
+            }
+
+            final names = _splitServiceNames(item.toString().trim());
+            for (final name in names) {
+              final key = name.toLowerCase();
+              if (seenNames.contains(key)) continue;
+              seenNames.add(key);
+              options.add(_ServiceOption(name: name, price: null));
+            }
+          }
+        }
+      }
+
+      if (options.isEmpty) {
+        final fallback = _splitServiceNames(widget.service);
+        for (final name in fallback) {
+          options.add(_ServiceOption(name: name, price: null));
+        }
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _serviceOptions = options;
+        _selectedService = options.isNotEmpty ? options.first : null;
+        _isLoadingServices = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingServices = false;
+      });
+    }
+  }
+
+  String _serviceLabel(_ServiceOption option) {
+    if (option.price == null) return option.name;
+    final isInt = option.price == option.price!.toInt();
+    final priceText = isInt
+        ? option.price!.toInt().toString()
+        : option.price!.toStringAsFixed(2);
+    return '${option.name} - $priceText SAR';
+  }
 
   Future<void> _createNotification({
     required String recipientId,
@@ -51,6 +161,15 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Future<void> _onConfirmBooking() async {
+    if (_selectedService == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select one service before confirming.'),
+        ),
+      );
+      return;
+    }
+
     if (_selectedTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -126,7 +245,8 @@ class _BookingScreenState extends State<BookingScreen> {
             'barberId': barberId,
             'barberName': widget.barberName,
             'customerId': customerId,
-            'service': widget.service,
+            'service': _selectedService!.name,
+            'servicePrice': _selectedService!.price,
             'selectedTime': time,
             'bookingDate': Timestamp.fromDate(bookingDate),
             'status': 'pending',
@@ -159,7 +279,8 @@ class _BookingScreenState extends State<BookingScreen> {
       MaterialPageRoute(
         builder: (context) => BookingConfirmationScreen(
           barberName: widget.barberName,
-          service: widget.service,
+          service: _selectedService!.name,
+          servicePrice: _selectedService!.price,
           selectedDate: DateTime.now(),
           selectedTime: time,
         ),
@@ -196,10 +317,41 @@ class _BookingScreenState extends State<BookingScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      'Service: ${widget.service}',
-                      style: const TextStyle(color: Colors.grey, fontSize: 15),
+                    const Text(
+                      'Select Service',
+                      style: TextStyle(color: Colors.grey, fontSize: 15),
                     ),
+                    const SizedBox(height: 12),
+                    if (_isLoadingServices)
+                      const Center(child: CircularProgressIndicator())
+                    else if (_serviceOptions.isEmpty)
+                      const Text(
+                        'No services available.',
+                        style: TextStyle(color: Colors.black54),
+                      )
+                    else
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: _serviceOptions.map((service) {
+                          final isSelected =
+                              _selectedService?.name == service.name;
+                          return ChoiceChip(
+                            label: Text(_serviceLabel(service)),
+                            selected: isSelected,
+                            onSelected: (_) {
+                              setState(() {
+                                _selectedService = service;
+                              });
+                            },
+                            selectedColor: Colors.black,
+                            backgroundColor: Colors.white,
+                            labelStyle: TextStyle(
+                              color: isSelected ? Colors.white : Colors.black,
+                            ),
+                          );
+                        }).toList(),
+                      ),
                     const SizedBox(height: 24),
                     const Text(
                       'Select Time',
@@ -257,4 +409,11 @@ class _BookingScreenState extends State<BookingScreen> {
       ),
     );
   }
+}
+
+class _ServiceOption {
+  final String name;
+  final double? price;
+
+  const _ServiceOption({required this.name, required this.price});
 }

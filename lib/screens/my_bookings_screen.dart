@@ -5,6 +5,14 @@ import 'package:flutter/material.dart';
 class MyBookingsScreen extends StatelessWidget {
   const MyBookingsScreen({super.key});
 
+  DateTime _createdAtDate(Map<String, dynamic> booking) {
+    final createdAt = booking['createdAt'];
+    if (createdAt is Timestamp) {
+      return createdAt.toDate();
+    }
+    return DateTime.fromMillisecondsSinceEpoch(0);
+  }
+
   Color _statusColor(String status) {
     switch (status.toLowerCase()) {
       case 'accepted':
@@ -161,7 +169,6 @@ class MyBookingsScreen extends StatelessWidget {
               stream: FirebaseFirestore.instance
                   .collection('bookings')
                   .where('customerId', isEqualTo: user.uid)
-                  .orderBy('createdAt', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -187,11 +194,16 @@ class MyBookingsScreen extends StatelessWidget {
                   );
                 }
 
+                final bookings = docs.map((doc) => doc.data()).toList()
+                  ..sort(
+                    (a, b) => _createdAtDate(b).compareTo(_createdAtDate(a)),
+                  );
+
                 return ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  itemCount: docs.length,
+                  itemCount: bookings.length,
                   itemBuilder: (context, index) {
-                    return _bookingCard(docs[index].data());
+                    return _bookingCard(bookings[index]);
                   },
                 );
               },

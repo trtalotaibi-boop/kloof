@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
+import 'my_bookings_screen.dart';
+
 class BookingConfirmationScreen extends StatelessWidget {
   final String barberName;
   final String service;
+  final double? servicePrice;
   final DateTime selectedDate;
   final String selectedTime;
 
@@ -10,12 +13,30 @@ class BookingConfirmationScreen extends StatelessWidget {
     super.key,
     required this.barberName,
     required this.service,
+    required this.servicePrice,
     required this.selectedDate,
     required this.selectedTime,
   });
 
   String _formattedDate() {
     return '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}';
+  }
+
+  String _singleServiceLabel() {
+    return service
+        .replaceAll('•', ',')
+        .split(',')
+        .map((item) => item.trim())
+        .firstWhere((item) => item.isNotEmpty, orElse: () => service.trim());
+  }
+
+  String _formattedPrice() {
+    if (servicePrice == null) return '-';
+    final isInt = servicePrice == servicePrice!.toInt();
+    final priceText = isInt
+        ? servicePrice!.toInt().toString()
+        : servicePrice!.toStringAsFixed(2);
+    return '$priceText SAR';
   }
 
   @override
@@ -80,11 +101,15 @@ class BookingConfirmationScreen extends StatelessWidget {
                     children: [
                       _detailRow('Barber', barberName),
                       const SizedBox(height: 10),
-                      _detailRow('Service', service),
+                      _detailRow('Service', _singleServiceLabel()),
+                      const SizedBox(height: 10),
+                      _detailRow('Price', _formattedPrice()),
                       const SizedBox(height: 10),
                       _detailRow('Date', _formattedDate()),
                       const SizedBox(height: 10),
                       _detailRow('Time', selectedTime),
+                      const SizedBox(height: 10),
+                      _detailRow('Booking Status', 'Pending'),
                     ],
                   ),
                 ),
@@ -93,7 +118,13 @@ class BookingConfirmationScreen extends StatelessWidget {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.pop(context);
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const MyBookingsScreen(),
+                        ),
+                        (route) => route.isFirst,
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.black,
