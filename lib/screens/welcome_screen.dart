@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kloof/l10n/app_localizations.dart';
 import 'login_screen.dart';
 import 'package:kloof/screens/register_screen.dart';
 
@@ -16,6 +17,8 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: showBackButton
@@ -59,8 +62,8 @@ class WelcomeScreen extends StatelessWidget {
 
                     const SizedBox(height: 15),
 
-                    const Text(
-                      'Book your barber in seconds.',
+                    Text(
+                      l10n.welcomeTagline,
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 18, color: Colors.grey),
                     ),
