@@ -82,9 +82,9 @@ class WelcomeScreen extends StatelessWidget {
                             ),
                           );
                         },
-                        child: const Text(
-                          'Login',
-                          style: TextStyle(fontSize: 18),
+                        child: Text(
+                          l10n.welcomeLogin,
+                          style: const TextStyle(fontSize: 18),
                         ),
                       ),
                     ),
@@ -104,9 +104,9 @@ class WelcomeScreen extends StatelessWidget {
                             ),
                           );
                         },
-                        child: const Text(
-                          'Create Account',
-                          style: TextStyle(fontSize: 18),
+                        child: Text(
+                          l10n.welcomeCreateAccount,
+                          style: const TextStyle(fontSize: 18),
                         ),
                       ),
                     ),
@@ -128,7 +128,7 @@ class WelcomeScreen extends StatelessWidget {
                           ),
                         );
                       },
-                      child: const Text('Barber Portal'),
+                      child: Text(l10n.welcomeBarberPortal),
                     ),
                   )
                 else

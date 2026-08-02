@@ -1,5 +1,25 @@
 {
   "@@locale": "en",
   "appTitle": "KLOOF",
-  "welcomeTagline": "Book your barber in seconds."
+  "welcomeTagline": "Book your barber in seconds.",
+  "welcomeLogin": "Login",
+  "welcomeCreateAccount": "Create Account",
+  "welcomeBarberPortal": "Barber Portal",
+  "loginWelcomeBack": "Welcome Back",
+  "loginSignInContinue": "Sign in to continue",
+  "loginEmail": "Email",
+  "loginPassword": "Password",
+  "loginForgotPassword": "Forgot Password?",
+  "loginAction": "Login",
+  "loginFailed": "Login failed",
+  "registerTitle": "Create Account",
+  "registerSubtitle": "Create your KLOOF account",
+  "registerFullName": "Full Name",
+  "registerEmail": "Email",
+  "registerPassword": "Password",
+  "registerConfirmPassword": "Confirm Password",
+  "registerAction": "Create Account",
+  "registerPasswordsDoNotMatch": "Passwords do not match",
+  "registerAccountCreated": "Account created successfully!",
+  "registerSomethingWentWrong": "Something went wrong"
 }
