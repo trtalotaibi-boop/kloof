@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:kloof/l10n/app_localizations.dart';
 import 'home_screen.dart';
 import 'barber_dashboard_screen.dart';
 
@@ -19,6 +20,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(backgroundColor: Colors.white, elevation: 0),
       backgroundColor: Colors.white,
@@ -34,15 +37,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 20),
 
-                const Text(
-                  "Welcome Back",
+                Text(
+                  l10n.loginWelcomeBack,
                   style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
                 ),
 
                 const SizedBox(height: 8),
 
-                const Text(
-                  "Sign in to continue",
+                Text(
+                  l10n.loginSignInContinue,
                   style: TextStyle(color: Colors.grey, fontSize: 16),
                 ),
 
@@ -51,7 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextField(
                   controller: emailController,
                   decoration: InputDecoration(
-                    hintText: "Email",
+                    hintText: l10n.loginEmail,
                     prefixIcon: const Icon(Icons.email_outlined),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(15),
@@ -64,7 +67,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: passwordController,
                   obscureText: obscurePassword,
                   decoration: InputDecoration(
-                    hintText: "Password",
+                    hintText: l10n.loginPassword,
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -87,10 +90,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 15),
 
                 Align(
-                  alignment: Alignment.centerRight,
+                  alignment: AlignmentDirectional.centerEnd,
                   child: TextButton(
                     onPressed: () {},
-                    child: const Text("Forgot Password?"),
+                    child: Text(l10n.loginForgotPassword),
                   ),
                 ),
 
@@ -171,7 +174,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           // ignore: use_build_context_synchronously
                           ScaffoldMessenger.of(ctx).showSnackBar(
                             SnackBar(
-                              content: Text(e.message ?? "Login failed"),
+                              content: Text(e.message ?? l10n.loginFailed),
                             ),
                           );
                         }
@@ -181,7 +184,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       }
                       debugPrint('[LOGIN] onPressed END');
                     },
-                    child: const Text("Login", style: TextStyle(fontSize: 18)),
+                    child: Text(
+                      l10n.loginAction,
+                      style: const TextStyle(fontSize: 18),
+                    ),
                   ),
                 ),
               ],

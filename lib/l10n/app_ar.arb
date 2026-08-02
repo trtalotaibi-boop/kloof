@@ -1,5 +1,25 @@
 {
   "@@locale": "ar",
   "appTitle": "كلوف",
-  "welcomeTagline": "احجز حلاقك في ثوانٍ."
+  "welcomeTagline": "احجز حلاقك في ثوانٍ.",
+  "welcomeLogin": "تسجيل الدخول",
+  "welcomeCreateAccount": "إنشاء حساب",
+  "welcomeBarberPortal": "بوابة الحلاق",
+  "loginWelcomeBack": "مرحبًا بعودتك",
+  "loginSignInContinue": "سجّل الدخول للمتابعة",
+  "loginEmail": "البريد الإلكتروني",
+  "loginPassword": "كلمة المرور",
+  "loginForgotPassword": "هل نسيت كلمة المرور؟",
+  "loginAction": "تسجيل الدخول",
+  "loginFailed": "فشل تسجيل الدخول",
+  "registerTitle": "إنشاء حساب",
+  "registerSubtitle": "أنشئ حسابك في KLOOF",
+  "registerFullName": "الاسم الكامل",
+  "registerEmail": "البريد الإلكتروني",
+  "registerPassword": "كلمة المرور",
+  "registerConfirmPassword": "تأكيد كلمة المرور",
+  "registerAction": "إنشاء حساب",
+  "registerPasswordsDoNotMatch": "كلمتا المرور غير متطابقتين",
+  "registerAccountCreated": "تم إنشاء الحساب بنجاح!",
+  "registerSomethingWentWrong": "حدث خطأ ما"
 }

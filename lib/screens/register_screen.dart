@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:kloof/l10n/app_localizations.dart';
 import 'barber_dashboard_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -30,6 +31,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(backgroundColor: Colors.white, elevation: 0),
 
@@ -47,16 +50,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               const SizedBox(height: 20),
 
-              const Text(
-                "Create Account",
+              Text(
+                l10n.registerTitle,
 
                 style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold),
               ),
 
               const SizedBox(height: 10),
 
-              const Text(
-                "Create your KLOOF account",
+              Text(
+                l10n.registerSubtitle,
 
                 style: TextStyle(fontSize: 18, color: Colors.grey),
               ),
@@ -66,12 +69,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
               TextField(
                 controller: fullNameController,
 
-                decoration: const InputDecoration(
-                  labelText: "Full Name",
+                decoration: InputDecoration(
+                  labelText: l10n.registerFullName,
 
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
 
-                  prefixIcon: Icon(Icons.person),
+                  prefixIcon: const Icon(Icons.person),
                 ),
               ),
 
@@ -80,12 +83,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
               TextField(
                 controller: emailController,
 
-                decoration: const InputDecoration(
-                  labelText: "Email",
+                decoration: InputDecoration(
+                  labelText: l10n.registerEmail,
 
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
 
-                  prefixIcon: Icon(Icons.email),
+                  prefixIcon: const Icon(Icons.email),
                 ),
               ),
 
@@ -97,7 +100,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 obscureText: obscurePassword,
 
                 decoration: InputDecoration(
-                  labelText: "Password",
+                  labelText: l10n.registerPassword,
 
                   border: const OutlineInputBorder(),
 
@@ -125,7 +128,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 obscureText: obscureConfirmPassword,
 
                 decoration: InputDecoration(
-                  labelText: "Confirm Password",
+                  labelText: l10n.registerConfirmPassword,
 
                   border: const OutlineInputBorder(),
 
@@ -159,7 +162,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     if (passwordController.text !=
                         confirmPasswordController.text) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Passwords do not match")),
+                        SnackBar(
+                          content: Text(l10n.registerPasswordsDoNotMatch),
+                        ),
                       );
                       return;
                     }
@@ -219,8 +224,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                       // ignore: use_build_context_synchronously
                       ScaffoldMessenger.of(ctx).showSnackBar(
-                        const SnackBar(
-                          content: Text("Account created successfully!"),
+                        SnackBar(
+                          content: Text(l10n.registerAccountCreated),
                         ),
                       );
 
@@ -243,7 +248,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         // ignore: use_build_context_synchronously
                         ScaffoldMessenger.of(ctx).showSnackBar(
                           SnackBar(
-                            content: Text(e.message ?? "Something went wrong"),
+                            content: Text(
+                              e.message ?? l10n.registerSomethingWentWrong,
+                            ),
                           ),
                         );
                       }
@@ -252,10 +259,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     }
                   },
 
-                  child: const Text(
-                    "Create Account",
+                  child: Text(
+                    l10n.registerAction,
 
-                    style: TextStyle(fontSize: 18),
+                    style: const TextStyle(fontSize: 18),
                   ),
                 ),
               ),
