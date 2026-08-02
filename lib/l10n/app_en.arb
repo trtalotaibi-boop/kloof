@@ -21,5 +21,27 @@
   "registerAction": "Create Account",
   "registerPasswordsDoNotMatch": "Passwords do not match",
   "registerAccountCreated": "Account created successfully!",
-  "registerSomethingWentWrong": "Something went wrong"
+  "registerSomethingWentWrong": "Something went wrong",
+  "bookingTitle": "Book Appointment",
+  "bookingSelectService": "Select Service",
+  "bookingNoServicesAvailable": "No services available.",
+  "bookingSelectTime": "Select Time",
+  "bookingConfirmAction": "Confirm Booking",
+  "bookingSelectServiceError": "Please select one service before confirming.",
+  "bookingSelectTimeError": "Please select a time slot before confirming.",
+  "bookingBarberNotFound": "Barber not found. Please try again.",
+  "bookingSlotAlreadyBooked": "This slot is already booked for today.",
+  "bookingConfirmFailed": "Failed to confirm booking.",
+  "bookingServicePriceLabel": "{service} - {price} SAR",
+  "@bookingServicePriceLabel": {
+    "placeholders": {
+      "service": {},
+      "price": {}
+    }
+  },
+  "serviceHaircut": "Haircut",
+  "serviceBeard": "Beard",
+  "serviceShave": "Shave",
+  "serviceColor": "Color",
+  "serviceKids": "Kids"
 }

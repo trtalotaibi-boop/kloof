@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:kloof/l10n/app_localizations.dart';
 
 import 'booking_confirmation_screen.dart';
 import 'login_screen.dart';
@@ -124,12 +125,35 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   String _serviceLabel(_ServiceOption option) {
-    if (option.price == null) return option.name;
+    final l10n = AppLocalizations.of(context);
+    final localizedServiceName = _localizedServiceName(option.name, l10n);
+    if (option.price == null) return localizedServiceName;
     final isInt = option.price == option.price!.toInt();
     final priceText = isInt
         ? option.price!.toInt().toString()
         : option.price!.toStringAsFixed(2);
-    return '${option.name} - $priceText SAR';
+    return l10n.bookingServicePriceLabel(localizedServiceName, priceText);
+  }
+
+  String _localizedServiceName(String rawName, AppLocalizations l10n) {
+    final replacements = <String, String>{
+      'haircut': l10n.serviceHaircut,
+      'beard': l10n.serviceBeard,
+      'shave': l10n.serviceShave,
+      'color': l10n.serviceColor,
+      'kids': l10n.serviceKids,
+    };
+
+    var displayName = rawName;
+    for (final entry in replacements.entries) {
+      final pattern = RegExp(
+        '\\b${RegExp.escape(entry.key)}\\b',
+        caseSensitive: false,
+      );
+      displayName = displayName.replaceAllMapped(pattern, (_) => entry.value);
+    }
+
+    return displayName;
   }
 
   Future<void> _createNotification({
@@ -161,10 +185,12 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Future<void> _onConfirmBooking() async {
+    final l10n = AppLocalizations.of(context);
+
     if (_selectedService == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select one service before confirming.'),
+        SnackBar(
+          content: Text(l10n.bookingSelectServiceError),
         ),
       );
       return;
@@ -172,8 +198,8 @@ class _BookingScreenState extends State<BookingScreen> {
 
     if (_selectedTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a time slot before confirming.'),
+        SnackBar(
+          content: Text(l10n.bookingSelectTimeError),
         ),
       );
       return;
@@ -204,7 +230,7 @@ class _BookingScreenState extends State<BookingScreen> {
       if (barberSnapshot.docs.isEmpty) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Barber not found. Please try again.')),
+          SnackBar(content: Text(l10n.bookingBarberNotFound)),
         );
         return;
       }
@@ -230,8 +256,8 @@ class _BookingScreenState extends State<BookingScreen> {
       if (bookedSlots.contains(time)) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('This slot is already booked for today.'),
+          SnackBar(
+            content: Text(l10n.bookingSlotAlreadyBooked),
           ),
         );
         return;
@@ -267,7 +293,7 @@ class _BookingScreenState extends State<BookingScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to confirm booking.')),
+        SnackBar(content: Text(l10n.bookingConfirmFailed)),
       );
       return;
     }
@@ -290,14 +316,16 @@ class _BookingScreenState extends State<BookingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F8F8),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
-        title: const Text(
-          'Book Appointment',
+        title: Text(
+          l10n.bookingTitle,
           style: TextStyle(color: Colors.black),
         ),
       ),
@@ -317,16 +345,16 @@ class _BookingScreenState extends State<BookingScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Select Service',
+                    Text(
+                      l10n.bookingSelectService,
                       style: TextStyle(color: Colors.grey, fontSize: 15),
                     ),
                     const SizedBox(height: 12),
                     if (_isLoadingServices)
                       const Center(child: CircularProgressIndicator())
                     else if (_serviceOptions.isEmpty)
-                      const Text(
-                        'No services available.',
+                      Text(
+                        l10n.bookingNoServicesAvailable,
                         style: TextStyle(color: Colors.black54),
                       )
                     else
@@ -353,8 +381,8 @@ class _BookingScreenState extends State<BookingScreen> {
                         }).toList(),
                       ),
                     const SizedBox(height: 24),
-                    const Text(
-                      'Select Time',
+                    Text(
+                      l10n.bookingSelectTime,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -372,7 +400,7 @@ class _BookingScreenState extends State<BookingScreen> {
                         ),
                         child: Text(
                           _selectedTime == null
-                              ? 'Select Time'
+                              ? l10n.bookingSelectTime
                               : _selectedTime!,
                         ),
                       ),
@@ -397,8 +425,8 @@ class _BookingScreenState extends State<BookingScreen> {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: const Text(
-                    'Confirm Booking',
+                  child: Text(
+                    l10n.bookingConfirmAction,
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
