@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kloof/l10n/app_localizations.dart';
 
 import 'booking_screen.dart';
 
@@ -41,6 +42,28 @@ class BarberDetailsScreen extends StatelessWidget {
 
     final fallback = 25 + (index * 5);
     return '\$$fallback';
+  }
+
+  String _localizedServiceDisplayName(String service, AppLocalizations l10n) {
+    final replacements = <String, String>{
+      'haircut': l10n.serviceHaircut,
+      'beard trim': l10n.barberDetailsFallbackServiceBeardTrim,
+      'beard': l10n.homeCategoryBeard,
+      'shave': l10n.serviceShave,
+      'color': l10n.serviceColor,
+      'kids': l10n.serviceKids,
+    };
+
+    var displayName = service;
+    for (final entry in replacements.entries) {
+      final pattern = RegExp(
+        '\\b${RegExp.escape(entry.key)}\\b',
+        caseSensitive: false,
+      );
+      displayName = displayName.replaceAllMapped(pattern, (_) => entry.value);
+    }
+
+    return displayName;
   }
 
   Widget _sectionTitle(String title) {
@@ -110,6 +133,7 @@ class BarberDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final serviceList = _serviceNames().isEmpty
         ? <String>['Haircut', 'Beard Trim']
         : _serviceNames();
@@ -218,12 +242,16 @@ class BarberDetailsScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _sectionTitle('Services & Prices'),
+                          _sectionTitle(l10n.barberDetailsServicesAndPrices),
                           const SizedBox(height: 8),
                           ...List.generate(serviceList.length, (index) {
                             final serviceName = serviceList[index];
-                            return _serviceRow(
+                            final displayName = _localizedServiceDisplayName(
                               serviceName,
+                              l10n,
+                            );
+                            return _serviceRow(
+                              displayName,
                               _priceForService(serviceName, index),
                             );
                           }),
@@ -240,14 +268,20 @@ class BarberDetailsScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _sectionTitle('Working Hours'),
+                          _sectionTitle(l10n.barberDetailsWorkingHours),
                           const SizedBox(height: 8),
                           _workingHourRow(
-                            'Monday - Friday',
-                            '09:00 AM - 08:00 PM',
+                            l10n.barberDetailsMondayToFriday,
+                            l10n.barberDetailsHoursWeekday,
                           ),
-                          _workingHourRow('Saturday', '10:00 AM - 06:00 PM'),
-                          _workingHourRow('Sunday', 'Closed'),
+                          _workingHourRow(
+                            l10n.barberDetailsSaturday,
+                            l10n.barberDetailsHoursSaturday,
+                          ),
+                          _workingHourRow(
+                            l10n.barberDetailsSunday,
+                            l10n.barberDetailsClosed,
+                          ),
                         ],
                       ),
                     ),
@@ -277,9 +311,12 @@ class BarberDetailsScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: const Text(
-                    'Book Appointment',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  child: Text(
+                    l10n.barberDetailsBookAppointment,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
