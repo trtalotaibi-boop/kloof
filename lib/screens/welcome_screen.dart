@@ -51,8 +51,8 @@ class WelcomeScreen extends StatelessWidget {
 
                     const SizedBox(height: 30),
 
-                    const Text(
-                      'KLOOF',
+                    Text(
+                      l10n.appTitle,
                       style: TextStyle(
                         fontSize: 42,
                         fontWeight: FontWeight.bold,
