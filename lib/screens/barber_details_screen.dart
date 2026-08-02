@@ -34,14 +34,14 @@ class BarberDetailsScreen extends StatelessWidget {
 
   String _priceForService(String service, int index) {
     final lower = service.toLowerCase();
-    if (lower.contains('haircut')) return r'$40';
-    if (lower.contains('beard')) return r'$25';
-    if (lower.contains('shave')) return r'$20';
-    if (lower.contains('color')) return r'$35';
-    if (lower.contains('kids')) return r'$30';
+    if (lower.contains('haircut')) return '40';
+    if (lower.contains('beard')) return '25';
+    if (lower.contains('shave')) return '20';
+    if (lower.contains('color')) return '35';
+    if (lower.contains('kids')) return '30';
 
     final fallback = 25 + (index * 5);
-    return '\$$fallback';
+    return fallback.toString();
   }
 
   String _localizedServiceDisplayName(String service, AppLocalizations l10n) {
@@ -79,7 +79,7 @@ class BarberDetailsScreen extends StatelessWidget {
 
   Widget _serviceRow(String service, String price) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsetsDirectional.symmetric(vertical: 8),
       child: Row(
         children: [
           const Icon(Icons.content_cut, size: 18, color: Colors.black54),
@@ -87,6 +87,8 @@ class BarberDetailsScreen extends StatelessWidget {
           Expanded(
             child: Text(
               service,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 15,
                 color: Colors.black87,
@@ -109,7 +111,7 @@ class BarberDetailsScreen extends StatelessWidget {
 
   Widget _workingHourRow(String day, String hours) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsetsDirectional.symmetric(vertical: 6),
       child: Row(
         children: [
           Expanded(
@@ -137,6 +139,9 @@ class BarberDetailsScreen extends StatelessWidget {
     final serviceList = _serviceNames().isEmpty
         ? <String>['Haircut', 'Beard Trim']
         : _serviceNames();
+    final displayAddress = address.trim().isEmpty
+      ? l10n.homeAddressNotAvailable
+      : address;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F8F8),
@@ -222,7 +227,7 @@ class BarberDetailsScreen extends StatelessWidget {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              address,
+                              displayAddress,
                               style: const TextStyle(
                                 color: Colors.black87,
                                 fontSize: 14,
@@ -250,9 +255,12 @@ class BarberDetailsScreen extends StatelessWidget {
                               serviceName,
                               l10n,
                             );
+                            final price = l10n.bookingConfirmationPriceValue(
+                              _priceForService(serviceName, index),
+                            );
                             return _serviceRow(
                               displayName,
-                              _priceForService(serviceName, index),
+                              price,
                             );
                           }),
                         ],
@@ -290,7 +298,7 @@ class BarberDetailsScreen extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 20),
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
