@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:kloof/l10n/app_localizations.dart';
 
 class BarberBookingsScreen extends StatelessWidget {
   const BarberBookingsScreen({super.key});
@@ -19,16 +21,25 @@ class BarberBookingsScreen extends StatelessWidget {
     }
   }
 
-  String _statusLabel(String status) {
+  String _statusLabel(String status, AppLocalizations l10n) {
     final lower = status.toLowerCase();
-    if (lower.isEmpty) return 'Pending';
-    return '${lower[0].toUpperCase()}${lower.substring(1)}';
+    switch (lower) {
+      case 'accepted':
+        return l10n.myBookingsStatusAccepted;
+      case 'rejected':
+        return l10n.myBookingsStatusRejected;
+      case 'completed':
+        return l10n.myBookingsStatusCompleted;
+      case 'pending':
+      default:
+        return l10n.myBookingsStatusPending;
+    }
   }
 
-  String _formatDate(Timestamp? timestamp) {
+  String _formatDate(Timestamp? timestamp, AppLocalizations l10n) {
     if (timestamp == null) return '-';
     final date = timestamp.toDate();
-    return '${date.day}/${date.month}/${date.year}';
+    return DateFormat.yMd(l10n.localeName).format(date);
   }
 
   String _formatPrice(dynamic rawPrice) {
@@ -37,15 +48,34 @@ class BarberBookingsScreen extends StatelessWidget {
     if (rawPrice is num) {
       final value = rawPrice.toDouble();
       final isInt = value == value.toInt();
-      final text = isInt ? value.toInt().toString() : value.toStringAsFixed(2);
-      return '$text SAR';
+      return isInt ? value.toInt().toString() : value.toStringAsFixed(2);
     }
 
     final parsed = double.tryParse(rawPrice.toString());
     if (parsed == null) return '-';
     final isInt = parsed == parsed.toInt();
-    final text = isInt ? parsed.toInt().toString() : parsed.toStringAsFixed(2);
-    return '$text SAR';
+    return isInt ? parsed.toInt().toString() : parsed.toStringAsFixed(2);
+  }
+
+  String _localizedServiceName(String rawName, AppLocalizations l10n) {
+    final replacements = <String, String>{
+      'haircut': l10n.serviceHaircut,
+      'beard': l10n.serviceBeard,
+      'shave': l10n.serviceShave,
+      'color': l10n.serviceColor,
+      'kids': l10n.serviceKids,
+    };
+
+    var displayName = rawName;
+    for (final entry in replacements.entries) {
+      final pattern = RegExp(
+        '\\b${RegExp.escape(entry.key)}\\b',
+        caseSensitive: false,
+      );
+      displayName = displayName.replaceAllMapped(pattern, (_) => entry.value);
+    }
+
+    return displayName;
   }
 
   DateTime _createdAtDate(Map<String, dynamic> booking) {
@@ -59,13 +89,14 @@ class BarberBookingsScreen extends StatelessWidget {
   Future<String> _resolveCustomerName(
     String customerId,
     String? fallbackName,
+    AppLocalizations l10n,
   ) async {
     if (fallbackName != null && fallbackName.trim().isNotEmpty) {
       return fallbackName;
     }
 
     if (customerId.trim().isEmpty) {
-      return 'Customer';
+      return l10n.barberBookingsCustomerFallback;
     }
 
     try {
@@ -83,7 +114,7 @@ class BarberBookingsScreen extends StatelessWidget {
       // Fall through to fallback.
     }
 
-    return 'Customer';
+    return l10n.barberBookingsCustomerFallback;
   }
 
   Future<void> _updateBookingStatus(String bookingId, String status) async {
@@ -96,6 +127,7 @@ class BarberBookingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F8F8),
@@ -103,16 +135,16 @@ class BarberBookingsScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
-        title: const Text(
-          'Booking Requests',
+        title: Text(
+          l10n.barberBookingsTitle,
           style: TextStyle(color: Colors.black),
         ),
       ),
       body: currentUser == null
-          ? const Center(
+          ? Center(
               child: Text(
-                'Barber is not signed in.',
-                style: TextStyle(color: Colors.black54),
+                l10n.barberBookingsSignedOut,
+                style: const TextStyle(color: Colors.black54),
               ),
             )
           : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
@@ -126,20 +158,20 @@ class BarberBookingsScreen extends StatelessWidget {
                 }
 
                 if (snapshot.hasError) {
-                  return const Center(
+                  return Center(
                     child: Text(
-                      'Failed to load bookings.',
-                      style: TextStyle(color: Colors.black54),
+                      l10n.barberBookingsLoadFailed,
+                      style: const TextStyle(color: Colors.black54),
                     ),
                   );
                 }
 
                 final docs = snapshot.data?.docs ?? [];
                 if (docs.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Text(
-                      'No booking requests yet.',
-                      style: TextStyle(color: Colors.black54),
+                      l10n.barberBookingsEmpty,
+                      style: const TextStyle(color: Colors.black54),
                     ),
                   );
                 }
@@ -152,7 +184,7 @@ class BarberBookingsScreen extends StatelessWidget {
                       );
 
                 return ListView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsetsDirectional.all(16),
                   itemCount: bookings.length,
                   itemBuilder: (context, index) {
                     final booking = bookings[index];
@@ -161,21 +193,26 @@ class BarberBookingsScreen extends StatelessWidget {
                     final customerId = booking['customerId']?.toString() ?? '';
                     final customerName = booking['customerName']?.toString();
                     final service = booking['service']?.toString() ?? '-';
-                    final price = _formatPrice(booking['servicePrice']);
+                    final localizedService = _localizedServiceName(service, l10n);
+                    final rawPrice = _formatPrice(booking['servicePrice']);
+                    final price = rawPrice == '-'
+                        ? rawPrice
+                        : l10n.bookingConfirmationPriceValue(rawPrice);
                     final date = _formatDate(
                       booking['bookingDate'] as Timestamp?,
+                      l10n,
                     );
                     final time = booking['selectedTime']?.toString() ?? '-';
                     final isPending = status.toLowerCase() == 'pending';
 
                     return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
+                      margin: const EdgeInsetsDirectional.only(bottom: 12),
                       elevation: 1.5,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.all(14),
+                        padding: const EdgeInsetsDirectional.all(14),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -187,10 +224,11 @@ class BarberBookingsScreen extends StatelessWidget {
                                     future: _resolveCustomerName(
                                       customerId,
                                       customerName,
+                                      l10n,
                                     ),
                                     builder: (context, nameSnapshot) {
                                       final displayName =
-                                          nameSnapshot.data ?? 'Customer';
+                                          nameSnapshot.data ?? l10n.barberBookingsCustomerFallback;
                                       return Text(
                                         displayName,
                                         style: const TextStyle(
@@ -216,7 +254,7 @@ class BarberBookingsScreen extends StatelessWidget {
                                     ),
                                   ),
                                   child: Text(
-                                    _statusLabel(status),
+                                    _statusLabel(status, l10n),
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: _statusChipColor(status),
@@ -227,13 +265,33 @@ class BarberBookingsScreen extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 8),
-                            Text('Service: $service'),
+                            Text(
+                              l10n.myBookingsValueRow(
+                                l10n.myBookingsServiceLabel,
+                                localizedService,
+                              ),
+                            ),
                             const SizedBox(height: 4),
-                            Text('Price: $price'),
+                            Text(
+                              l10n.myBookingsValueRow(
+                                l10n.bookingConfirmationLabelPrice,
+                                price,
+                              ),
+                            ),
                             const SizedBox(height: 4),
-                            Text('Date: $date'),
+                            Text(
+                              l10n.myBookingsValueRow(
+                                l10n.myBookingsDateLabel,
+                                date,
+                              ),
+                            ),
                             const SizedBox(height: 4),
-                            Text('Time: $time'),
+                            Text(
+                              l10n.myBookingsValueRow(
+                                l10n.myBookingsTimeLabel,
+                                time,
+                              ),
+                            ),
                             if (isPending) ...[
                               const SizedBox(height: 12),
                               Row(
@@ -246,7 +304,7 @@ class BarberBookingsScreen extends StatelessWidget {
                                               bookingId,
                                               'accepted',
                                             ),
-                                      child: const Text('Accept'),
+                                      child: Text(l10n.barberBookingsAccept),
                                     ),
                                   ),
                                   const SizedBox(width: 10),
@@ -258,7 +316,7 @@ class BarberBookingsScreen extends StatelessWidget {
                                               bookingId,
                                               'rejected',
                                             ),
-                                      child: const Text('Reject'),
+                                      child: Text(l10n.barberBookingsReject),
                                     ),
                                   ),
                                 ],
