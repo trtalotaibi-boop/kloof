@@ -43,7 +43,24 @@
   "serviceBeard": "Beard",
   "serviceShave": "Shave",
   "serviceColor": "Color",
-  "serviceKids": "Kids"
+  "serviceKids": "Kids",
+  "bookingConfirmationTitle": "Booking Confirmation",
+  "bookingConfirmationReceivedTitle": "Booking Request Received",
+  "bookingConfirmationReceivedBody": "Your booking request has been received successfully.",
+  "bookingConfirmationLabelBarber": "Barber",
+  "bookingConfirmationLabelService": "Service",
+  "bookingConfirmationLabelPrice": "Price",
+  "bookingConfirmationLabelDate": "Date",
+  "bookingConfirmationLabelTime": "Time",
+  "bookingConfirmationLabelStatus": "Booking Status",
+  "bookingConfirmationStatusPending": "Pending",
+  "bookingConfirmationDone": "Done",
+  "bookingConfirmationPriceValue": "{price} SAR",
+  "@bookingConfirmationPriceValue": {
+    "placeholders": {
+      "price": {}
+    }
+  },
   "myBookingsTitle": "My Bookings",
   "myBookingsEmpty": "You have no bookings yet.",
   "myBookingsLoadFailed": "Failed to load bookings.",

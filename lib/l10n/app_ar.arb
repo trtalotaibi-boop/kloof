@@ -43,7 +43,24 @@
   "serviceBeard": "لحية",
   "serviceShave": "حلاقة كاملة",
   "serviceColor": "صبغة",
-  "serviceKids": "أطفال"
+  "serviceKids": "أطفال",
+  "bookingConfirmationTitle": "تأكيد الحجز",
+  "bookingConfirmationReceivedTitle": "تم استلام طلب الحجز",
+  "bookingConfirmationReceivedBody": "تم استلام طلب الحجز بنجاح.",
+  "bookingConfirmationLabelBarber": "الحلاق",
+  "bookingConfirmationLabelService": "الخدمة",
+  "bookingConfirmationLabelPrice": "السعر",
+  "bookingConfirmationLabelDate": "التاريخ",
+  "bookingConfirmationLabelTime": "الوقت",
+  "bookingConfirmationLabelStatus": "حالة الحجز",
+  "bookingConfirmationStatusPending": "قيد الانتظار",
+  "bookingConfirmationDone": "تم",
+  "bookingConfirmationPriceValue": "{price} ر.س",
+  "@bookingConfirmationPriceValue": {
+    "placeholders": {
+      "price": {}
+    }
+  },
   "myBookingsTitle": "حجوزاتي",
   "myBookingsEmpty": "ليس لديك حجوزات بعد.",
   "myBookingsLoadFailed": "فشل تحميل الحجوزات.",

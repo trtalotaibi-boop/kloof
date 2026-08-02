@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:kloof/l10n/app_localizations.dart';
 
 import 'my_bookings_screen.dart';
 
@@ -18,30 +20,53 @@ class BookingConfirmationScreen extends StatelessWidget {
     required this.selectedTime,
   });
 
-  String _formattedDate() {
-    return '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}';
+  String _formattedDate(AppLocalizations l10n) {
+    return DateFormat.yMd(l10n.localeName).format(selectedDate);
   }
 
-  String _singleServiceLabel() {
-    return service
+  String _singleServiceLabel(AppLocalizations l10n) {
+    final displayService = service
         .replaceAll('•', ',')
         .split(',')
         .map((item) => item.trim())
         .firstWhere((item) => item.isNotEmpty, orElse: () => service.trim());
+
+    return _localizedServiceName(displayService, l10n);
   }
 
-  String _formattedPrice() {
+  String _formattedPrice(AppLocalizations l10n) {
     if (servicePrice == null) return '-';
     final isInt = servicePrice == servicePrice!.toInt();
     final priceText = isInt
         ? servicePrice!.toInt().toString()
         : servicePrice!.toStringAsFixed(2);
-    return '$priceText SAR';
+    return l10n.bookingConfirmationPriceValue(priceText);
+  }
+
+  String _localizedServiceName(String rawName, AppLocalizations l10n) {
+    final replacements = <String, String>{
+      'haircut': l10n.serviceHaircut,
+      'beard': l10n.serviceBeard,
+      'shave': l10n.serviceShave,
+      'color': l10n.serviceColor,
+      'kids': l10n.serviceKids,
+    };
+
+    var displayName = rawName;
+    for (final entry in replacements.entries) {
+      final pattern = RegExp(
+        '\\b${RegExp.escape(entry.key)}\\b',
+        caseSensitive: false,
+      );
+      displayName = displayName.replaceAllMapped(pattern, (_) => entry.value);
+    }
+
+    return displayName;
   }
 
   @override
   Widget build(BuildContext context) {
-    final isRtl = Directionality.of(context) == TextDirection.rtl;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F8F8),
@@ -49,102 +74,105 @@ class BookingConfirmationScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
-        title: const Text(
-          'Booking Confirmation',
+        title: Text(
+          l10n.bookingConfirmationTitle,
           style: TextStyle(color: Colors.black),
         ),
       ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsetsDirectional.all(20),
-          child: Directionality(
-            textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Spacer(),
-                const Icon(
-                  Icons.check_circle_rounded,
-                  size: 92,
-                  color: Colors.green,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Spacer(),
+              const Icon(
+                Icons.check_circle_rounded,
+                size: 92,
+                color: Colors.green,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                l10n.bookingConfirmationReceivedTitle,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
                 ),
-                const SizedBox(height: 20),
-                Text(
-                  'Booking Request Received',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                l10n.bookingConfirmationReceivedBody,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 15, color: Colors.black54),
+              ),
+              const SizedBox(height: 28),
+              Container(
+                padding: const EdgeInsetsDirectional.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  'Your booking request has been received successfully.',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 15, color: Colors.black54),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'تم استلام طلب الحجز بنجاح.',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 15, color: Colors.black54),
-                ),
-                const SizedBox(height: 28),
-                Container(
-                  padding: const EdgeInsetsDirectional.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Column(
-                    children: [
-                      _detailRow('Barber', barberName),
-                      const SizedBox(height: 10),
-                      _detailRow('Service', _singleServiceLabel()),
-                      const SizedBox(height: 10),
-                      _detailRow('Price', _formattedPrice()),
-                      const SizedBox(height: 10),
-                      _detailRow('Date', _formattedDate()),
-                      const SizedBox(height: 10),
-                      _detailRow('Time', selectedTime),
-                      const SizedBox(height: 10),
-                      _detailRow('Booking Status', 'Pending'),
-                    ],
-                  ),
-                ),
-                const Spacer(),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const MyBookingsScreen(),
-                        ),
-                        (route) => route.isFirst,
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
+                child: Column(
+                  children: [
+                    _detailRow(l10n.bookingConfirmationLabelBarber, barberName),
+                    const SizedBox(height: 10),
+                    _detailRow(
+                      l10n.bookingConfirmationLabelService,
+                      _singleServiceLabel(l10n),
                     ),
-                    child: const Text(
-                      'Done',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                    const SizedBox(height: 10),
+                    _detailRow(
+                      l10n.bookingConfirmationLabelPrice,
+                      _formattedPrice(l10n),
+                    ),
+                    const SizedBox(height: 10),
+                    _detailRow(
+                      l10n.bookingConfirmationLabelDate,
+                      _formattedDate(l10n),
+                    ),
+                    const SizedBox(height: 10),
+                    _detailRow(l10n.bookingConfirmationLabelTime, selectedTime),
+                    const SizedBox(height: 10),
+                    _detailRow(
+                      l10n.bookingConfirmationLabelStatus,
+                      l10n.bookingConfirmationStatusPending,
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const MyBookingsScreen(),
                       ),
+                      (route) => route.isFirst,
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
                     ),
                   ),
+                  child: Text(
+                    l10n.bookingConfirmationDone,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
