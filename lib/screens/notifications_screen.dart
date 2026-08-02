@@ -6,6 +6,37 @@ import 'package:kloof/l10n/app_localizations.dart';
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
 
+  String _localizedNotificationMessage(String rawMessage, AppLocalizations l10n) {
+    final normalized = rawMessage.trim();
+    if (normalized.isEmpty) return rawMessage;
+
+    const messageKeys = <String, String>{
+      'Your booking request has been submitted.': 'submitted',
+      'New booking request.': 'newRequest',
+      'Your booking has been accepted.': 'accepted',
+      'Your booking has been rejected.': 'rejected',
+      'Your appointment has been completed.': 'completed',
+    };
+
+    final mapped = messageKeys[normalized];
+    if (mapped == null) return rawMessage;
+
+    switch (mapped) {
+      case 'submitted':
+        return l10n.notificationMessageBookingSubmitted;
+      case 'newRequest':
+        return l10n.notificationMessageNewBookingRequest;
+      case 'accepted':
+        return l10n.notificationMessageBookingAccepted;
+      case 'rejected':
+        return l10n.notificationMessageBookingRejected;
+      case 'completed':
+        return l10n.notificationMessageAppointmentCompleted;
+      default:
+        return rawMessage;
+    }
+  }
+
   Future<void> _markAsRead(String notificationId) async {
     await FirebaseFirestore.instance
         .collection('notifications')
@@ -87,6 +118,8 @@ class NotificationsScreen extends StatelessWidget {
                     final doc = snapshot.data!.docs[index];
                     final data = doc.data();
                     final message = data['message']?.toString() ?? '-';
+                    final localizedMessage =
+                        _localizedNotificationMessage(message, l10n);
                     final isRead = data['isRead'] == true;
 
                     return Card(
@@ -102,7 +135,7 @@ class NotificationsScreen extends StatelessWidget {
                           color: isRead ? Colors.black45 : Colors.black,
                         ),
                         title: Text(
-                          message,
+                          localizedMessage,
                           style: TextStyle(
                             color: Colors.black,
                             fontWeight: isRead
