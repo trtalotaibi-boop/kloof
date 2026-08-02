@@ -106,6 +106,27 @@
   "barberDetailsClosed": "مغلق",
   "barberDetailsBookAppointment": "احجز موعدًا",
   "barberDetailsFallbackServiceBeardTrim": "تشذيب اللحية",
+  "barberProfileTitle": "ملف الحلاق",
+  "barberProfileLoadFailed": "فشل تحميل الملف الشخصي.",
+  "barberProfileLabelBarberName": "اسم الحلاق",
+  "barberProfileLabelShopName": "اسم المحل",
+  "barberProfileLabelPhone": "الهاتف",
+  "barberProfileLabelCity": "المدينة",
+  "barberProfileLabelAddress": "العنوان",
+  "barberProfileLabelBio": "نبذة",
+  "barberProfileServices": "الخدمات",
+  "barberProfilePriceLabel": "السعر",
+  "barberProfileDurationLabel": "المدة",
+  "barberProfileEditProfile": "تعديل الملف الشخصي",
+  "barberProfileServiceHaircutAndBeard": "حلاقة + لحية",
+  "barberProfileServiceKidsHaircut": "حلاقة أطفال",
+  "barberProfileServiceFullHeadShaveZeroCut": "حلاقة كاملة للرأس (زيرو)",
+  "barberProfileDurationMinutes": "{minutes} دقيقة",
+  "@barberProfileDurationMinutes": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
   "myBookingsTitle": "حجوزاتي",
   "myBookingsEmpty": "ليس لديك حجوزات بعد.",
   "myBookingsLoadFailed": "فشل تحميل الحجوزات.",

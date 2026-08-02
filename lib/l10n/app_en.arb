@@ -106,6 +106,27 @@
   "barberDetailsClosed": "Closed",
   "barberDetailsBookAppointment": "Book Appointment",
   "barberDetailsFallbackServiceBeardTrim": "Beard Trim",
+  "barberProfileTitle": "Barber Profile",
+  "barberProfileLoadFailed": "Failed to load profile.",
+  "barberProfileLabelBarberName": "Barber Name",
+  "barberProfileLabelShopName": "Shop Name",
+  "barberProfileLabelPhone": "Phone",
+  "barberProfileLabelCity": "City",
+  "barberProfileLabelAddress": "Address",
+  "barberProfileLabelBio": "Bio",
+  "barberProfileServices": "Services",
+  "barberProfilePriceLabel": "Price",
+  "barberProfileDurationLabel": "Duration",
+  "barberProfileEditProfile": "Edit Profile",
+  "barberProfileServiceHaircutAndBeard": "Haircut + Beard",
+  "barberProfileServiceKidsHaircut": "Kids Haircut",
+  "barberProfileServiceFullHeadShaveZeroCut": "Full Head Shave (Zero Cut)",
+  "barberProfileDurationMinutes": "{minutes} min",
+  "@barberProfileDurationMinutes": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
   "myBookingsTitle": "My Bookings",
   "myBookingsEmpty": "You have no bookings yet.",
   "myBookingsLoadFailed": "Failed to load bookings.",
