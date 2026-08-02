@@ -347,11 +347,13 @@ class _BookingScreenState extends State<BookingScreen> {
           children: [
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsetsDirectional.all(20),
                 child: ListView(
                   children: [
                     Text(
                       widget.barberName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -378,7 +380,10 @@ class _BookingScreenState extends State<BookingScreen> {
                           final isSelected =
                               _selectedService?.name == service.name;
                           return ChoiceChip(
-                            label: Text(_serviceLabel(service)),
+                            label: Text(
+                              _serviceLabel(service),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                             selected: isSelected,
                             onSelected: (_) {
                               setState(() {
@@ -425,7 +430,7 @@ class _BookingScreenState extends State<BookingScreen> {
             ),
             Container(
               color: const Color(0xFFF8F8F8),
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 8, 20, 20),
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
