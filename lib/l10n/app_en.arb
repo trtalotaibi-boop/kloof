@@ -44,4 +44,24 @@
   "serviceShave": "Shave",
   "serviceColor": "Color",
   "serviceKids": "Kids"
+  "myBookingsTitle": "My Bookings",
+  "myBookingsEmpty": "You have no bookings yet.",
+  "myBookingsLoadFailed": "Failed to load bookings.",
+  "myBookingsUnknownBarber": "Unknown Barber",
+  "myBookingsLoading": "Loading...",
+  "myBookingsNotAvailable": "N/A",
+  "myBookingsServiceLabel": "Service",
+  "myBookingsDateLabel": "Date",
+  "myBookingsTimeLabel": "Time",
+  "myBookingsStatusPending": "Pending",
+  "myBookingsStatusAccepted": "Accepted",
+  "myBookingsStatusRejected": "Rejected",
+  "myBookingsStatusCompleted": "Completed",
+  "myBookingsValueRow": "{label}: {value}",
+  "@myBookingsValueRow": {
+    "placeholders": {
+      "label": {},
+      "value": {}
+    }
+  }
 }

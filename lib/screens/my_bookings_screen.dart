@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:kloof/l10n/app_localizations.dart';
 
 class MyBookingsScreen extends StatelessWidget {
   const MyBookingsScreen({super.key});
@@ -27,27 +29,36 @@ class MyBookingsScreen extends StatelessWidget {
     }
   }
 
-  String _statusLabel(String status) {
-    final normalized = status.toLowerCase();
-    if (normalized.isEmpty) return 'Pending';
-    return '${normalized[0].toUpperCase()}${normalized.substring(1)}';
+  String _localizedStatusLabel(String status, AppLocalizations l10n) {
+    switch (status.toLowerCase()) {
+      case 'accepted':
+        return l10n.myBookingsStatusAccepted;
+      case 'rejected':
+        return l10n.myBookingsStatusRejected;
+      case 'completed':
+        return l10n.myBookingsStatusCompleted;
+      case 'pending':
+      default:
+        return l10n.myBookingsStatusPending;
+    }
   }
 
-  String _formatDate(Timestamp? timestamp) {
-    if (timestamp == null) return 'N/A';
+  String _formatDate(Timestamp? timestamp, AppLocalizations l10n) {
+    if (timestamp == null) return l10n.myBookingsNotAvailable;
     final date = timestamp.toDate();
-    return '${date.day}/${date.month}/${date.year}';
+    return DateFormat.yMd(l10n.localeName).format(date);
   }
 
   Future<String> _resolveBarberName(
     String barberId,
     String? fallbackName,
+    AppLocalizations l10n,
   ) async {
     if (fallbackName != null && fallbackName.trim().isNotEmpty) {
       return fallbackName;
     }
     if (barberId.trim().isEmpty) {
-      return 'Unknown Barber';
+      return l10n.myBookingsUnknownBarber;
     }
 
     try {
@@ -64,21 +75,47 @@ class MyBookingsScreen extends StatelessWidget {
       // Fall through to default label.
     }
 
-    return 'Unknown Barber';
+    return l10n.myBookingsUnknownBarber;
   }
 
-  Widget _bookingCard(Map<String, dynamic> booking) {
+  String _localizedServiceName(String rawName, AppLocalizations l10n) {
+    final replacements = <String, String>{
+      'haircut': l10n.serviceHaircut,
+      'beard': l10n.serviceBeard,
+      'shave': l10n.serviceShave,
+      'color': l10n.serviceColor,
+      'kids': l10n.serviceKids,
+    };
+
+    var displayName = rawName;
+    for (final entry in replacements.entries) {
+      final pattern = RegExp(
+        '\\b${RegExp.escape(entry.key)}\\b',
+        caseSensitive: false,
+      );
+      displayName = displayName.replaceAllMapped(pattern, (_) => entry.value);
+    }
+
+    return displayName;
+  }
+
+  Widget _bookingCard(BuildContext context, Map<String, dynamic> booking) {
+    final l10n = AppLocalizations.of(context);
     final barberId = (booking['barberId'] as String?) ?? '';
     final fallbackBarberName = booking['barberName'] as String?;
-    final service = (booking['service'] as String?) ?? 'N/A';
-    final selectedTime = (booking['selectedTime'] as String?) ?? 'N/A';
+    final service =
+        (booking['service'] as String?) ?? l10n.myBookingsNotAvailable;
+    final selectedTime =
+        (booking['selectedTime'] as String?) ?? l10n.myBookingsNotAvailable;
     final bookingDate = booking['bookingDate'] as Timestamp?;
     final status = (booking['status'] as String?) ?? 'pending';
+    final localizedService = _localizedServiceName(service, l10n);
 
     return FutureBuilder<String>(
-      future: _resolveBarberName(barberId, fallbackBarberName),
+      future: _resolveBarberName(barberId, fallbackBarberName, l10n),
       builder: (context, snapshot) {
-        final barberName = snapshot.data ?? fallbackBarberName ?? 'Loading...';
+        final barberName =
+            snapshot.data ?? fallbackBarberName ?? l10n.myBookingsLoading;
 
         return Card(
           color: Colors.white,
@@ -102,22 +139,31 @@ class MyBookingsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Service: $service',
+                  l10n.myBookingsValueRow(
+                    l10n.myBookingsServiceLabel,
+                    localizedService,
+                  ),
                   style: const TextStyle(color: Colors.black87, fontSize: 14),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Date: ${_formatDate(bookingDate)}',
+                  l10n.myBookingsValueRow(
+                    l10n.myBookingsDateLabel,
+                    _formatDate(bookingDate, l10n),
+                  ),
                   style: const TextStyle(color: Colors.black87, fontSize: 14),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Time: $selectedTime',
+                  l10n.myBookingsValueRow(
+                    l10n.myBookingsTimeLabel,
+                    selectedTime,
+                  ),
                   style: const TextStyle(color: Colors.black87, fontSize: 14),
                 ),
                 const SizedBox(height: 10),
                 Align(
-                  alignment: Alignment.centerLeft,
+                  alignment: AlignmentDirectional.centerStart,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
@@ -129,7 +175,7 @@ class MyBookingsScreen extends StatelessWidget {
                       border: Border.all(color: _statusColor(status)),
                     ),
                     child: Text(
-                      _statusLabel(status),
+                      _localizedStatusLabel(status, l10n),
                       style: TextStyle(
                         color: _statusColor(status),
                         fontWeight: FontWeight.w700,
@@ -148,6 +194,7 @@ class MyBookingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
@@ -156,12 +203,12 @@ class MyBookingsScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
-        title: const Text('My Bookings', style: TextStyle(color: Colors.black)),
+        title: Text(l10n.myBookingsTitle, style: const TextStyle(color: Colors.black)),
       ),
       body: user == null
-          ? const Center(
+          ? Center(
               child: Text(
-                'You have no bookings yet.',
+                l10n.myBookingsEmpty,
                 style: TextStyle(color: Colors.black54, fontSize: 16),
               ),
             )
@@ -176,9 +223,9 @@ class MyBookingsScreen extends StatelessWidget {
                 }
 
                 if (snapshot.hasError) {
-                  return const Center(
+                  return Center(
                     child: Text(
-                      'Failed to load bookings.',
+                      l10n.myBookingsLoadFailed,
                       style: TextStyle(color: Colors.black54),
                     ),
                   );
@@ -186,9 +233,9 @@ class MyBookingsScreen extends StatelessWidget {
 
                 final docs = snapshot.data?.docs ?? [];
                 if (docs.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Text(
-                      'You have no bookings yet.',
+                      l10n.myBookingsEmpty,
                       style: TextStyle(color: Colors.black54, fontSize: 16),
                     ),
                   );
@@ -203,7 +250,7 @@ class MyBookingsScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   itemCount: bookings.length,
                   itemBuilder: (context, index) {
-                    return _bookingCard(bookings[index]);
+                    return _bookingCard(context, bookings[index]);
                   },
                 );
               },

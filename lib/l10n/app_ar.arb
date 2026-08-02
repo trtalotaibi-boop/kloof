@@ -44,4 +44,24 @@
   "serviceShave": "حلاقة كاملة",
   "serviceColor": "صبغة",
   "serviceKids": "أطفال"
+  "myBookingsTitle": "حجوزاتي",
+  "myBookingsEmpty": "ليس لديك حجوزات بعد.",
+  "myBookingsLoadFailed": "فشل تحميل الحجوزات.",
+  "myBookingsUnknownBarber": "حلاق غير معروف",
+  "myBookingsLoading": "جارٍ التحميل...",
+  "myBookingsNotAvailable": "غير متاح",
+  "myBookingsServiceLabel": "الخدمة",
+  "myBookingsDateLabel": "التاريخ",
+  "myBookingsTimeLabel": "الوقت",
+  "myBookingsStatusPending": "قيد الانتظار",
+  "myBookingsStatusAccepted": "مقبول",
+  "myBookingsStatusRejected": "مرفوض",
+  "myBookingsStatusCompleted": "مكتمل",
+  "myBookingsValueRow": "{label}: {value}",
+  "@myBookingsValueRow": {
+    "placeholders": {
+      "label": {},
+      "value": {}
+    }
+  }
 }
