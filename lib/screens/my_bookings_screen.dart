@@ -99,6 +99,52 @@ class MyBookingsScreen extends StatelessWidget {
     return displayName;
   }
 
+  String _toWesternDigits(String input) {
+    const arabicIndic = '٠١٢٣٤٥٦٧٨٩';
+    const western = '0123456789';
+    final buffer = StringBuffer();
+
+    for (final char in input.split('')) {
+      final index = arabicIndic.indexOf(char);
+      buffer.write(index == -1 ? char : western[index]);
+    }
+
+    return buffer.toString();
+  }
+
+  String _localizedBookingTime(String rawTime, AppLocalizations l10n) {
+    final original = rawTime.trim();
+    if (original.isEmpty) return original;
+
+    final normalized = _toWesternDigits(original)
+        .replaceAll('ص', 'AM')
+        .replaceAll('م', 'PM')
+        .replaceAll(RegExp(r'\bam\b', caseSensitive: false), 'AM')
+        .replaceAll(RegExp(r'\bpm\b', caseSensitive: false), 'PM')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+
+    const parsePatterns = <String>[
+      'h:mm a',
+      'hh:mm a',
+      'a h:mm',
+      'a hh:mm',
+      'H:mm',
+      'HH:mm',
+    ];
+
+    for (final pattern in parsePatterns) {
+      try {
+        final parsed = DateFormat(pattern, 'en').parseStrict(normalized);
+        return DateFormat.jm(l10n.localeName).format(parsed);
+      } catch (_) {
+        // Keep trying known legacy formats.
+      }
+    }
+
+    return rawTime;
+  }
+
   Widget _bookingCard(BuildContext context, Map<String, dynamic> booking) {
     final l10n = AppLocalizations.of(context);
     final barberId = (booking['barberId'] as String?) ?? '';
@@ -107,6 +153,7 @@ class MyBookingsScreen extends StatelessWidget {
         (booking['service'] as String?) ?? l10n.myBookingsNotAvailable;
     final selectedTime =
         (booking['selectedTime'] as String?) ?? l10n.myBookingsNotAvailable;
+    final localizedTime = _localizedBookingTime(selectedTime, l10n);
     final bookingDate = booking['bookingDate'] as Timestamp?;
     final status = (booking['status'] as String?) ?? 'pending';
     final localizedService = _localizedServiceName(service, l10n);
@@ -157,7 +204,7 @@ class MyBookingsScreen extends StatelessWidget {
                 Text(
                   l10n.myBookingsValueRow(
                     l10n.myBookingsTimeLabel,
-                    selectedTime,
+                    localizedTime,
                   ),
                   style: const TextStyle(color: Colors.black87, fontSize: 14),
                 ),
