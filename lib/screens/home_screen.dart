@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:kloof/l10n/app_localizations.dart';
 import 'barber_details_screen.dart';
 import 'barber_dashboard_screen.dart';
 import 'my_bookings_screen.dart';
@@ -66,21 +67,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _logout() async {
+    final l10n = AppLocalizations.of(context);
     final shouldSignOut =
         await showDialog<bool>(
           context: context,
           builder: (context) {
             return AlertDialog(
-              title: const Text('Sign out'),
-              content: const Text('Are you sure you want to sign out?'),
+              title: Text(l10n.homeSignOutTitle),
+              content: Text(l10n.homeSignOutConfirm),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Cancel'),
+                  child: Text(l10n.commonCancel),
                 ),
                 TextButton(
                   onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Sign Out'),
+                  child: Text(l10n.homeSignOutAction),
                 ),
               ],
             );
@@ -101,6 +103,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     if (_isCheckingRole) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -111,8 +115,8 @@ class _HomeScreenState extends State<HomeScreen> {
         automaticallyImplyLeading: false,
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          "KLOOF",
+        title: Text(
+          l10n.appTitle,
           style: TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.bold,
@@ -211,8 +215,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               );
             },
-            child: const Text(
-              'My Bookings',
+            child: Text(
+              l10n.myBookingsTitle,
               style: TextStyle(
                 color: Colors.black,
                 fontWeight: FontWeight.w600,
@@ -232,16 +236,16 @@ class _HomeScreenState extends State<HomeScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  "Current Location",
+                Text(
+                  l10n.homeCurrentLocation,
                   style: TextStyle(color: Colors.grey),
                 ),
                 Row(
-                  children: const [
+                  children: [
                     Icon(Icons.location_on, color: Colors.red),
                     SizedBox(width: 5),
                     Text(
-                      "Makkah",
+                      l10n.homeCityMakkah,
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ],
@@ -249,13 +253,13 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             const SizedBox(height: 25),
-            const Text(
-              "👋 Welcome",
+            Text(
+              l10n.homeWelcome,
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-            const Text(
-              "Categories",
+            Text(
+              l10n.homeCategories,
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 15),
@@ -263,25 +267,25 @@ class _HomeScreenState extends State<HomeScreen> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _categoryChip("Haircut"),
+                  _categoryChip(l10n.serviceHaircut),
                   const SizedBox(width: 10),
-                  _categoryChip("Beard"),
+                  _categoryChip(l10n.homeCategoryBeard),
                   const SizedBox(width: 10),
-                  _categoryChip("Kids"),
+                  _categoryChip(l10n.serviceKids),
                   const SizedBox(width: 10),
-                  _categoryChip("VIP"),
+                  _categoryChip(l10n.homeCategoryVip),
                 ],
               ),
             ),
             const SizedBox(height: 30),
-            const Text(
-              "Find your favorite barber",
+            Text(
+              l10n.homeFindFavoriteBarber,
               style: TextStyle(color: Colors.grey, fontSize: 16),
             ),
             const SizedBox(height: 25),
             TextField(
               decoration: InputDecoration(
-                hintText: "Search...",
+                hintText: l10n.homeSearchHint,
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: Colors.white,
@@ -293,8 +297,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 30),
             const SizedBox(height: 20),
-            const Text(
-              "Top Rated",
+            Text(
+              l10n.homeTopRated,
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 15),
@@ -308,7 +312,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
 
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Text("No barbers found");
+                  return Text(l10n.homeNoBarbersFound);
                 }
 
                 final barbers = snapshot.data!.docs
@@ -336,7 +340,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       final imageUrl = barberData['imageUrl']?.toString() ?? '';
                       final address =
                           barberData['address']?.toString() ??
-                          'Address not available';
+                          l10n.homeAddressNotAvailable;
                       final latitude = barberData['latitude'] is num
                           ? (barberData['latitude'] as num).toDouble()
                           : null;
@@ -369,6 +373,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 return Column(
                   children: barbers.map((barber) {
                     return _barberCard(
+                      l10n,
                       barber['name'] as String,
                       barber['rating'] as String,
                       imageUrl: barber['imageUrl'] as String,
@@ -389,6 +394,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _barberCard(
+    AppLocalizations l10n,
     String name,
     String rating, {
     String? imageUrl,
@@ -409,8 +415,8 @@ class _HomeScreenState extends State<HomeScreen> {
               name: name,
               rating: rating,
               imageUrl: imageUrl ?? '',
-              services: services ?? 'Haircut • Beard',
-              address: address ?? 'Address not available',
+              services: services ?? l10n.homeDefaultServices,
+              address: address ?? l10n.homeAddressNotAvailable,
               latitude: latitude,
               longitude: longitude,
             ),
@@ -469,8 +475,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 color: Colors.grey.shade300,
                                 borderRadius: BorderRadius.circular(20),
                               ),
-                              child: const Text(
-                                'Offline',
+                              child: Text(
+                                l10n.homeOfflineStatus,
                                 style: TextStyle(
                                   color: Colors.black54,
                                   fontSize: 12,
@@ -489,8 +495,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       const SizedBox(height: 5),
-                      const Text(
-                        "Haircut • Beard",
+                      Text(
+                        l10n.homeDefaultServices,
                         style: TextStyle(color: Colors.grey),
                       ),
                     ],
