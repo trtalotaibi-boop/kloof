@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kloof/l10n/app_localizations.dart';
 
 class BookingSuccessScreen extends StatefulWidget {
   final String barberName;
@@ -23,6 +24,27 @@ class BookingSuccessScreen extends StatefulWidget {
 }
 
 class _BookingSuccessScreenState extends State<BookingSuccessScreen> {
+  String _localizedServiceName(String rawName, AppLocalizations l10n) {
+    final replacements = <String, String>{
+      'haircut': l10n.serviceHaircut,
+      'beard': l10n.serviceBeard,
+      'shave': l10n.serviceShave,
+      'color': l10n.serviceColor,
+      'kids': l10n.serviceKids,
+    };
+
+    var displayName = rawName;
+    for (final entry in replacements.entries) {
+      final pattern = RegExp(
+        '\\b${RegExp.escape(entry.key)}\\b',
+        caseSensitive: false,
+      );
+      displayName = displayName.replaceAllMapped(pattern, (_) => entry.value);
+    }
+
+    return displayName;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -36,6 +58,8 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F8F8),
       body: SafeArea(
@@ -60,8 +84,8 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              const Text(
-                'Booking Confirmed!',
+              Text(
+                l10n.bookingSuccessTitle,
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -69,8 +93,8 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Your appointment has been successfully booked.',
+              Text(
+                l10n.bookingSuccessSubtitle,
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.grey,
@@ -87,19 +111,22 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildDetailRow('Barber', widget.barberName),
+                    _buildDetailRow(l10n.bookingConfirmationLabelBarber, widget.barberName),
                     const SizedBox(height: 12),
-                    _buildDetailRow('Service', widget.selectedService),
+                    _buildDetailRow(
+                      l10n.bookingConfirmationLabelService,
+                      _localizedServiceName(widget.selectedService, l10n),
+                    ),
                     const SizedBox(height: 12),
-                    _buildDetailRow('Date', widget.selectedDate),
+                    _buildDetailRow(l10n.bookingConfirmationLabelDate, widget.selectedDate),
                     const SizedBox(height: 12),
-                    _buildDetailRow('Time', widget.selectedTime),
+                    _buildDetailRow(l10n.bookingConfirmationLabelTime, widget.selectedTime),
                     if (widget.notes.isNotEmpty) ...[
                       const SizedBox(height: 12),
-                      _buildDetailRow('Notes', widget.notes),
+                      _buildDetailRow(l10n.bookingSuccessLabelNotes, widget.notes),
                     ],
                     const SizedBox(height: 12),
-                    _buildDetailRow('Booking ID', widget.bookingId),
+                    _buildDetailRow(l10n.bookingSuccessLabelBookingId, widget.bookingId),
                   ],
                 ),
               ),
@@ -118,12 +145,12 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen> {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: const Text('Back to Home'),
+                  child: Text(l10n.bookingSuccessBackToHome),
                 ),
               ),
               const SizedBox(height: 16),
               Text(
-                'Redirecting in 3 seconds...',
+                l10n.bookingSuccessRedirecting,
                 style: TextStyle(
                   fontSize: 13,
                   color: Colors.grey.shade500,

@@ -64,6 +64,12 @@
       "price": {}
     }
   },
+  "bookingSuccessTitle": "تم تأكيد الحجز!",
+  "bookingSuccessSubtitle": "تم حجز موعدك بنجاح.",
+  "bookingSuccessLabelNotes": "ملاحظات",
+  "bookingSuccessLabelBookingId": "رقم الحجز",
+  "bookingSuccessBackToHome": "العودة للرئيسية",
+  "bookingSuccessRedirecting": "سيتم التحويل خلال 3 ثوانٍ...",
   "myBookingsTitle": "حجوزاتي",
   "myBookingsEmpty": "ليس لديك حجوزات بعد.",
   "myBookingsLoadFailed": "فشل تحميل الحجوزات.",

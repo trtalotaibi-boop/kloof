@@ -64,6 +64,12 @@
       "price": {}
     }
   },
+  "bookingSuccessTitle": "Booking Confirmed!",
+  "bookingSuccessSubtitle": "Your appointment has been successfully booked.",
+  "bookingSuccessLabelNotes": "Notes",
+  "bookingSuccessLabelBookingId": "Booking ID",
+  "bookingSuccessBackToHome": "Back to Home",
+  "bookingSuccessRedirecting": "Redirecting in 3 seconds...",
   "myBookingsTitle": "My Bookings",
   "myBookingsEmpty": "You have no bookings yet.",
   "myBookingsLoadFailed": "Failed to load bookings.",
