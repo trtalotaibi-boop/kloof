@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:kloof/l10n/app_localizations.dart';
 
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
@@ -14,6 +15,7 @@ class NotificationsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final currentUser = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
@@ -22,16 +24,16 @@ class NotificationsScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
-        title: const Text(
-          'Notifications',
-          style: TextStyle(color: Colors.black),
+        title: Text(
+          l10n.notificationsTitle,
+          style: const TextStyle(color: Colors.black),
         ),
       ),
       body: currentUser == null
-          ? const Center(
+          ? Center(
               child: Text(
-                'No notifications.',
-                style: TextStyle(color: Colors.black54, fontSize: 15),
+                l10n.notificationsEmpty,
+                style: const TextStyle(color: Colors.black54, fontSize: 15),
               ),
             )
           : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
@@ -42,14 +44,38 @@ class NotificationsScreen extends StatelessWidget {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 12),
+                        Text(
+                          l10n.notificationsLoading,
+                          style: const TextStyle(
+                            color: Colors.black54,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      l10n.notificationsLoadFailed,
+                      style: const TextStyle(color: Colors.black54, fontSize: 15),
+                    ),
+                  );
                 }
 
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Text(
-                      'No notifications.',
-                      style: TextStyle(color: Colors.black54, fontSize: 15),
+                      l10n.notificationsEmpty,
+                      style: const TextStyle(color: Colors.black54, fontSize: 15),
                     ),
                   );
                 }
