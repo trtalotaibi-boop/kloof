@@ -23,6 +23,7 @@ class BookingScreen extends StatefulWidget {
 class _BookingScreenState extends State<BookingScreen> {
   String? _selectedTime;
   bool _isLoadingServices = true;
+  bool _isSubmitting = false;
   List<_ServiceOption> _serviceOptions = [];
   _ServiceOption? _selectedService;
 
@@ -187,6 +188,8 @@ class _BookingScreenState extends State<BookingScreen> {
   Future<void> _onConfirmBooking() async {
     final l10n = AppLocalizations.of(context);
 
+    if (_isSubmitting) return;
+
     if (_selectedService == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -216,6 +219,10 @@ class _BookingScreenState extends State<BookingScreen> {
       );
       return;
     }
+
+    setState(() {
+      _isSubmitting = true;
+    });
 
     try {
       final now = DateTime.now();
@@ -296,6 +303,12 @@ class _BookingScreenState extends State<BookingScreen> {
         SnackBar(content: Text(l10n.bookingConfirmFailed)),
       );
       return;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
     }
 
     if (!mounted) return;
@@ -416,7 +429,7 @@ class _BookingScreenState extends State<BookingScreen> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _onConfirmBooking,
+                  onPressed: _isSubmitting ? null : _onConfirmBooking,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
                     foregroundColor: Colors.white,
