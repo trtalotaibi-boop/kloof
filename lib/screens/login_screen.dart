@@ -141,7 +141,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     .isNotEmpty ==
                                 true
                             ? userData['fullName'].toString().trim()
-                            : (signedInUser.email ?? 'Barber');
+                          : (signedInUser.email ?? l10n.bookingConfirmationLabelBarber);
 
                         if (role == 'barber') {
                           debugPrint(
