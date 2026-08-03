@@ -13,14 +13,6 @@ class BarberProfileScreen extends StatefulWidget {
 }
 
 class _BarberProfileScreenState extends State<BarberProfileScreen> {
-  static const List<String> _defaultServiceNames = [
-    'Haircut',
-    'Beard Trim',
-    'Haircut + Beard',
-    'Kids Haircut',
-    'Full Head Shave (Zero Cut)',
-  ];
-
   Future<DocumentReference<Map<String, dynamic>>> _ensureProfileDoc() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -41,15 +33,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
         'address': '',
         'bio': '',
         'profileImage': '',
-        'services': _defaultServiceNames
-            .map(
-              (name) => <String, dynamic>{
-                'name': name,
-                'price': null,
-                'duration': null,
-              },
-            )
-            .toList(),
+        'services': <Map<String, dynamic>>[],
         'createdAt': FieldValue.serverTimestamp(),
       });
     }
@@ -132,43 +116,57 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
         return l10n.barberProfileServiceKidsHaircut;
       case 'full head shave (zero cut)':
         return l10n.barberProfileServiceFullHeadShaveZeroCut;
+      case 'beard machine shave':
+        return l10n.barberProfileServiceBeardMachineShave;
       default:
         return canonical;
     }
   }
 
+  String _localizedCityName(String rawCity, AppLocalizations l10n) {
+    switch (rawCity.trim().toLowerCase()) {
+      case 'makkah':
+        return l10n.homeCityMakkah;
+      case 'jeddah':
+        return l10n.editBarberProfileCityJeddah;
+      case 'madinah':
+        return l10n.editBarberProfileCityMadinah;
+      case 'riyadh':
+        return l10n.editBarberProfileCityRiyadh;
+      case 'dammam':
+        return l10n.editBarberProfileCityDammam;
+      default:
+        return rawCity;
+    }
+  }
+
   List<Map<String, dynamic>> _readServices(dynamic raw) {
     if (raw is! List || raw.isEmpty) {
-      return _defaultServiceNames
-          .map(
-            (name) => <String, dynamic>{
-              'name': name,
-              'price': null,
-              'duration': null,
-            },
-          )
-          .toList();
+      return <Map<String, dynamic>>[];
     }
 
-    return raw.map<Map<String, dynamic>>((item) {
-      if (item is Map<String, dynamic>) {
-        return {
-          'name': (item['name'] ?? '').toString(),
-          'price': item['price'],
-          'duration': item['duration'],
-        };
-      }
+    return raw
+        .map<Map<String, dynamic>>((item) {
+          if (item is Map<String, dynamic>) {
+            return {
+              'name': (item['name'] ?? '').toString(),
+              'price': item['price'],
+              'duration': item['duration'],
+            };
+          }
 
-      if (item is Map) {
-        return {
-          'name': (item['name'] ?? '').toString(),
-          'price': item['price'],
-          'duration': item['duration'],
-        };
-      }
+          if (item is Map) {
+            return {
+              'name': (item['name'] ?? '').toString(),
+              'price': item['price'],
+              'duration': item['duration'],
+            };
+          }
 
-      return {'name': item.toString(), 'price': null, 'duration': null};
-    }).toList();
+          return {'name': item.toString(), 'price': null, 'duration': null};
+        })
+        .where((service) => service['name'].toString().trim().isNotEmpty)
+        .toList();
   }
 
   @override
@@ -245,7 +243,10 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                     _profileRow(l10n.barberProfileLabelBarberName, fullName),
                     _profileRow(l10n.barberProfileLabelShopName, shopName),
                     _profileRow(l10n.barberProfileLabelPhone, phone),
-                    _profileRow(l10n.barberProfileLabelCity, city),
+                    _profileRow(
+                      l10n.barberProfileLabelCity,
+                      _localizedCityName(city, l10n),
+                    ),
                     _profileRow(l10n.barberProfileLabelAddress, address),
                     _profileRow(l10n.barberProfileLabelBio, bio),
                     const SizedBox(height: 6),
@@ -268,6 +269,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                         final name = (service['name'] ?? '').toString().trim();
                         final displayName = _localizedServiceName(name, l10n);
                         return Container(
+                          width: double.infinity,
                           margin: const EdgeInsetsDirectional.only(bottom: 10),
                           padding: const EdgeInsetsDirectional.all(12),
                           decoration: BoxDecoration(

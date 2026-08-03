@@ -7,11 +7,13 @@ import 'booking_confirmation_screen.dart';
 import 'login_screen.dart';
 
 class BookingScreen extends StatefulWidget {
+  final String barberId;
   final String barberName;
   final String service;
 
   const BookingScreen({
     super.key,
+    required this.barberId,
     required this.barberName,
     required this.service,
   });
@@ -23,8 +25,11 @@ class BookingScreen extends StatefulWidget {
 class _BookingScreenState extends State<BookingScreen> {
   String? _selectedTime;
   bool _isLoadingServices = true;
+  bool _isLoadingAvailability = true;
   bool _isSubmitting = false;
+  bool _isBarberOnline = false;
   List<_ServiceOption> _serviceOptions = [];
+  List<String> _availableTimes = [];
   _ServiceOption? _selectedService;
 
   List<String> _splitServiceNames(String raw) {
@@ -44,16 +49,18 @@ class _BookingScreenState extends State<BookingScreen> {
 
   Future<void> _loadServiceOptions() async {
     try {
-      final barberSnapshot = await FirebaseFirestore.instance
+      final barberDoc = await FirebaseFirestore.instance
           .collection('barbers')
-          .where('name', isEqualTo: widget.barberName)
-          .limit(1)
+          .doc(widget.barberId)
           .get();
 
       final options = <_ServiceOption>[];
       final seenNames = <String>{};
-      if (barberSnapshot.docs.isNotEmpty) {
-        final data = barberSnapshot.docs.first.data();
+      var isOnline = false;
+      var availableTimes = <String>[];
+      if (barberDoc.exists) {
+        final data = barberDoc.data() ?? <String, dynamic>{};
+        isOnline = data['isOnline'] == true;
         final rawServices = data['services'];
 
         if (rawServices is List) {
@@ -102,6 +109,10 @@ class _BookingScreenState extends State<BookingScreen> {
             }
           }
         }
+
+        if (isOnline) {
+          availableTimes = await _loadAvailableTimes(widget.barberId, data);
+        }
       }
 
       if (options.isEmpty) {
@@ -115,14 +126,114 @@ class _BookingScreenState extends State<BookingScreen> {
       setState(() {
         _serviceOptions = options;
         _selectedService = options.isNotEmpty ? options.first : null;
+        _isBarberOnline = isOnline;
+        _availableTimes = availableTimes;
         _isLoadingServices = false;
+        _isLoadingAvailability = false;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _isLoadingServices = false;
+        _isLoadingAvailability = false;
       });
     }
+  }
+
+  TimeOfDay? _parseSavedTime(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    final parts = value.trim().split(' ');
+    final hourMinute = parts.first.split(':');
+    if (hourMinute.length != 2) return null;
+
+    var hour = int.tryParse(hourMinute[0]);
+    final minute = int.tryParse(hourMinute[1]);
+    if (hour == null || minute == null) return null;
+
+    if (parts.length > 1) {
+      final period = parts[1].toUpperCase();
+      if (period == 'PM' && hour != 12) hour += 12;
+      if (period == 'AM' && hour == 12) hour = 0;
+    }
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+    return TimeOfDay(hour: hour, minute: minute);
+  }
+
+  int _minutesOfDay(TimeOfDay time) => (time.hour * 60) + time.minute;
+
+  Future<List<String>> _loadAvailableTimes(
+    String barberId,
+    Map<String, dynamic> barberData,
+  ) async {
+    final materialLocalizations = MaterialLocalizations.of(context);
+    final now = DateTime.now();
+    final bookingDate = DateTime(now.year, now.month, now.day);
+    final workingHours = Map<String, dynamic>.from(
+      barberData['workingHours'] ?? <String, dynamic>{},
+    );
+    const dayCodes = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final workingDays = List<String>.from(
+      workingHours['workingDays'] ?? dayCodes,
+    );
+    if (!workingDays.contains(dayCodes[now.weekday - 1])) return <String>[];
+
+    final opening = _parseSavedTime(
+      workingHours['openingTime']?.toString(),
+    ) ?? const TimeOfDay(hour: 8, minute: 0);
+    final closing = _parseSavedTime(
+      workingHours['closingTime']?.toString(),
+    ) ?? const TimeOfDay(hour: 23, minute: 0);
+    final durationRaw = workingHours['appointmentDuration'];
+    final duration = durationRaw is num && durationRaw.toInt() > 0
+        ? durationRaw.toInt()
+        : 30;
+    final breakStart = _parseSavedTime(
+      workingHours['breakStart']?.toString(),
+    );
+    final breakEnd = _parseSavedTime(workingHours['breakEnd']?.toString());
+
+    final existingSnapshot = await FirebaseFirestore.instance
+        .collection('bookings')
+        .where('barberId', isEqualTo: barberId)
+        .where('bookingDate', isEqualTo: Timestamp.fromDate(bookingDate))
+        .limit(100)
+        .get();
+    final bookedSlots = existingSnapshot.docs
+        .where(
+          (doc) =>
+              (doc.data()['status']?.toString() ?? 'pending') != 'rejected',
+        )
+        .map((doc) => doc.data()['selectedTime']?.toString() ?? '')
+        .where((slot) => slot.isNotEmpty)
+        .toSet();
+
+    final openingMinutes = _minutesOfDay(opening);
+    final closingMinutes = _minutesOfDay(closing);
+    final nowMinutes = (now.hour * 60) + now.minute;
+    final breakStartMinutes = breakStart == null
+        ? null
+        : _minutesOfDay(breakStart);
+    final breakEndMinutes = breakEnd == null ? null : _minutesOfDay(breakEnd);
+    final slots = <String>[];
+
+    for (
+      var start = openingMinutes;
+      start + duration <= closingMinutes;
+      start += duration
+    ) {
+      if (start <= nowMinutes) continue;
+      final overlapsBreak =
+          breakStartMinutes != null &&
+          breakEndMinutes != null &&
+          start < breakEndMinutes &&
+          start + duration > breakStartMinutes;
+      if (overlapsBreak) continue;
+
+      final time = TimeOfDay(hour: start ~/ 60, minute: start % 60);
+      final label = materialLocalizations.formatTimeOfDay(time);
+      if (!bookedSlots.contains(label)) slots.add(label);
+    }
+    return slots;
   }
 
   String _serviceLabel(_ServiceOption option) {
@@ -137,6 +248,31 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   String _localizedServiceName(String rawName, AppLocalizations l10n) {
+    final normalized = rawName.trim().toLowerCase();
+    switch (normalized) {
+      case 'haircut':
+      case 'حلاقة الرأس':
+        return l10n.serviceHaircut;
+      case 'beard trim':
+      case 'لحية trim':
+      case 'حلاقة الدقن':
+        return l10n.barberDetailsFallbackServiceBeardTrim;
+      case 'haircut + beard':
+      case 'حلاقة الرأس والدقن':
+        return l10n.barberProfileServiceHaircutAndBeard;
+      case 'full head shave (zero cut)':
+      case 'حلاقة كاملة':
+      case 'حلاقة الرأس بالمكينة':
+        return l10n.barberProfileServiceFullHeadShaveZeroCut;
+      case 'beard machine shave':
+      case 'حلاقة الدقن بالمكينة':
+        return l10n.barberProfileServiceBeardMachineShave;
+      case 'kids haircut':
+      case 'أطفال حلاقة الرأس':
+      case 'حلاقة أطفال':
+        return l10n.barberProfileServiceKidsHaircut;
+    }
+
     final replacements = <String, String>{
       'haircut': l10n.serviceHaircut,
       'beard': l10n.serviceBeard,
@@ -154,7 +290,7 @@ class _BookingScreenState extends State<BookingScreen> {
       displayName = displayName.replaceAllMapped(pattern, (_) => entry.value);
     }
 
-    return displayName;
+    return displayName.trim().replaceAll(RegExp(r'\s+'), ' ');
   }
 
   Future<void> _createNotification({
@@ -168,20 +304,6 @@ class _BookingScreenState extends State<BookingScreen> {
       'bookingId': bookingId,
       'isRead': false,
       'createdAt': FieldValue.serverTimestamp(),
-    });
-  }
-
-  Future<void> _pickTime() async {
-    final now = DateTime.now();
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay(hour: now.hour, minute: now.minute),
-    );
-
-    if (picked == null || !mounted) return;
-
-    setState(() {
-      _selectedTime = picked.format(context);
     });
   }
 
@@ -228,13 +350,12 @@ class _BookingScreenState extends State<BookingScreen> {
       final now = DateTime.now();
       final bookingDate = DateTime(now.year, now.month, now.day);
 
-      final barberSnapshot = await FirebaseFirestore.instance
+      final barberDoc = await FirebaseFirestore.instance
           .collection('barbers')
-          .where('name', isEqualTo: widget.barberName)
-          .limit(1)
+          .doc(widget.barberId)
           .get();
 
-      if (barberSnapshot.docs.isEmpty) {
+      if (!barberDoc.exists) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.bookingBarberNotFound)),
@@ -242,7 +363,15 @@ class _BookingScreenState extends State<BookingScreen> {
         return;
       }
 
-      final barberId = barberSnapshot.docs.first.id;
+      if (barberDoc.data()?['isOnline'] != true) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.bookingBarberOffline)),
+        );
+        return;
+      }
+
+      final barberId = widget.barberId;
 
       final existingSnapshot = await FirebaseFirestore.instance
           .collection('bookings')
@@ -400,29 +529,47 @@ class _BookingScreenState extends State<BookingScreen> {
                       ),
                     const SizedBox(height: 24),
                     Text(
-                      l10n.bookingSelectTime,
+                      l10n.bookingAvailableTimes,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        onPressed: _pickTime,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.black,
-                          side: const BorderSide(color: Colors.black26),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        child: Text(
-                          _selectedTime == null
-                              ? l10n.bookingSelectTime
-                              : _selectedTime!,
-                        ),
+                    if (_isLoadingAvailability)
+                      const Center(child: CircularProgressIndicator())
+                    else if (!_isBarberOnline)
+                      Text(
+                        l10n.bookingBarberOffline,
+                        style: const TextStyle(color: Colors.black54),
+                      )
+                    else if (_availableTimes.isEmpty)
+                      Text(
+                        l10n.bookingNoAvailableTimesToday,
+                        style: const TextStyle(color: Colors.black54),
+                      )
+                    else
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _availableTimes.map((time) {
+                          final isSelected = _selectedTime == time;
+                          return ChoiceChip(
+                            label: Text(time),
+                            selected: isSelected,
+                            onSelected: (_) {
+                              setState(() {
+                                _selectedTime = time;
+                              });
+                            },
+                            selectedColor: Colors.black,
+                            backgroundColor: Colors.white,
+                            labelStyle: TextStyle(
+                              color: isSelected ? Colors.white : Colors.black,
+                            ),
+                          );
+                        }).toList(),
                       ),
-                    ),
                     const SizedBox(height: 24),
                   ],
                 ),

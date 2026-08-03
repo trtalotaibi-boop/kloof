@@ -4,17 +4,21 @@ import 'package:kloof/l10n/app_localizations.dart';
 import 'booking_screen.dart';
 
 class BarberDetailsScreen extends StatelessWidget {
+  final String barberId;
   final String name;
+  final String shopName;
   final String rating;
   final String imageUrl;
-  final String services;
+  final Object? services;
   final String address;
   final double? latitude;
   final double? longitude;
 
   const BarberDetailsScreen({
     super.key,
+    required this.barberId,
     required this.name,
+    required this.shopName,
     required this.rating,
     required this.imageUrl,
     required this.services,
@@ -23,47 +27,63 @@ class BarberDetailsScreen extends StatelessWidget {
     this.longitude,
   });
 
-  List<String> _serviceNames() {
-    return services
-        .replaceAll('•', ',')
-        .split(',')
-        .map((item) => item.trim())
-        .where((item) => item.isNotEmpty)
+  List<_ServiceDisplayData> _serviceEntries() {
+    if (services is String) {
+      return (services as String)
+          .replaceAll('•', ',')
+          .split(',')
+          .map((name) => name.trim())
+          .where((name) => name.isNotEmpty)
+          .map((name) => _ServiceDisplayData(name: name, price: null))
+          .toList();
+    }
+    if (services is! List) return <_ServiceDisplayData>[];
+    return (services as List)
+        .map((service) {
+          if (service is Map) {
+            final name = (service['name'] ?? '').toString().trim();
+            final rawPrice = service['price'];
+            final price = rawPrice is num
+                ? rawPrice.toDouble()
+                : double.tryParse(rawPrice?.toString() ?? '');
+            return _ServiceDisplayData(name: name, price: price);
+          }
+          return _ServiceDisplayData(
+            name: service.toString().trim(),
+            price: null,
+          );
+        })
+        .where((service) => service.name.isNotEmpty)
         .toList();
   }
 
-  String _priceForService(String service, int index) {
-    final lower = service.toLowerCase();
-    if (lower.contains('haircut')) return '40';
-    if (lower.contains('beard')) return '25';
-    if (lower.contains('shave')) return '20';
-    if (lower.contains('color')) return '35';
-    if (lower.contains('kids')) return '30';
-
-    final fallback = 25 + (index * 5);
-    return fallback.toString();
-  }
-
   String _localizedServiceDisplayName(String service, AppLocalizations l10n) {
-    final replacements = <String, String>{
-      'haircut': l10n.serviceHaircut,
-      'beard trim': l10n.barberDetailsFallbackServiceBeardTrim,
-      'beard': l10n.homeCategoryBeard,
-      'shave': l10n.serviceShave,
-      'color': l10n.serviceColor,
-      'kids': l10n.serviceKids,
-    };
-
-    var displayName = service;
-    for (final entry in replacements.entries) {
-      final pattern = RegExp(
-        '\\b${RegExp.escape(entry.key)}\\b',
-        caseSensitive: false,
-      );
-      displayName = displayName.replaceAllMapped(pattern, (_) => entry.value);
+    final normalized = service.trim().toLowerCase();
+    switch (normalized) {
+      case 'haircut':
+      case 'حلاقة الرأس':
+        return l10n.serviceHaircut;
+      case 'beard trim':
+      case 'لحية trim':
+      case 'حلاقة الدقن':
+        return l10n.barberDetailsFallbackServiceBeardTrim;
+      case 'haircut + beard':
+      case 'حلاقة الرأس والدقن':
+        return l10n.barberProfileServiceHaircutAndBeard;
+      case 'full head shave (zero cut)':
+      case 'حلاقة كاملة':
+      case 'حلاقة الرأس بالمكينة':
+        return l10n.barberProfileServiceFullHeadShaveZeroCut;
+      case 'beard machine shave':
+      case 'حلاقة الدقن بالمكينة':
+        return l10n.barberProfileServiceBeardMachineShave;
+      case 'kids haircut':
+      case 'أطفال حلاقة الرأس':
+      case 'حلاقة أطفال':
+        return l10n.barberProfileServiceKidsHaircut;
+      default:
+        return service.trim().replaceAll(RegExp(r'\s+'), ' ');
     }
-
-    return displayName;
   }
 
   Widget _sectionTitle(String title) {
@@ -77,7 +97,11 @@ class BarberDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _serviceRow(String service, String price) {
+  Widget _serviceRow(
+    String service,
+    double? price,
+    AppLocalizations l10n,
+  ) {
     return Padding(
       padding: const EdgeInsetsDirectional.symmetric(vertical: 8),
       child: Row(
@@ -96,14 +120,19 @@ class BarberDetailsScreen extends StatelessWidget {
               ),
             ),
           ),
-          Text(
-            price,
-            style: const TextStyle(
-              fontSize: 15,
-              color: Colors.black,
-              fontWeight: FontWeight.bold,
+          if (price != null)
+            Text(
+              l10n.bookingConfirmationPriceValue(
+                price == price.toInt()
+                    ? price.toInt().toString()
+                    : price.toStringAsFixed(2),
+              ),
+              style: const TextStyle(
+                fontSize: 15,
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -136,9 +165,7 @@ class BarberDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final serviceList = _serviceNames().isEmpty
-        ? <String>['Haircut', 'Beard Trim']
-        : _serviceNames();
+    final serviceList = _serviceEntries();
     final displayAddress = address.trim().isEmpty
       ? l10n.homeAddressNotAvailable
       : address;
@@ -190,6 +217,17 @@ class BarberDetailsScreen extends StatelessWidget {
                         color: Colors.black,
                       ),
                     ),
+                    if (shopName.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        shopName,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          color: Colors.black54,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 8),
                     Row(
                       children: [
@@ -249,18 +287,18 @@ class BarberDetailsScreen extends StatelessWidget {
                         children: [
                           _sectionTitle(l10n.barberDetailsServicesAndPrices),
                           const SizedBox(height: 8),
-                          ...List.generate(serviceList.length, (index) {
-                            final serviceName = serviceList[index];
+                          if (serviceList.isEmpty)
+                            Text(l10n.bookingNoServicesAvailable)
+                          else
+                          ...serviceList.map((service) {
                             final displayName = _localizedServiceDisplayName(
-                              serviceName,
+                              service.name,
                               l10n,
-                            );
-                            final price = l10n.bookingConfirmationPriceValue(
-                              _priceForService(serviceName, index),
                             );
                             return _serviceRow(
                               displayName,
-                              price,
+                              service.price,
+                              l10n,
                             );
                           }),
                         ],
@@ -307,7 +345,13 @@ class BarberDetailsScreen extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) =>
-                            BookingScreen(barberName: name, service: services),
+                            BookingScreen(
+                              barberId: barberId,
+                              barberName: name,
+                              service: serviceList
+                                  .map((service) => service.name)
+                                  .join(','),
+                            ),
                       ),
                     );
                   },
@@ -334,4 +378,11 @@ class BarberDetailsScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ServiceDisplayData {
+  final String name;
+  final double? price;
+
+  const _ServiceDisplayData({required this.name, required this.price});
 }

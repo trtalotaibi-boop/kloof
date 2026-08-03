@@ -7,6 +7,7 @@ import 'barber_dashboard_screen.dart';
 import 'my_bookings_screen.dart';
 import 'notifications_screen.dart';
 import 'welcome_screen.dart';
+import '../widgets/whatsapp_feedback_button.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,6 +18,56 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _isCheckingRole = true;
+
+  List<String> _serviceNames(dynamic rawServices) {
+    if (rawServices is String) {
+      return rawServices
+          .replaceAll('•', ',')
+          .split(',')
+          .map((name) => name.trim())
+          .where((name) => name.isNotEmpty)
+          .toList();
+    }
+    if (rawServices is! List) return <String>[];
+    return rawServices
+        .map((service) {
+          if (service is Map) {
+            return (service['name'] ?? '').toString().trim();
+          }
+          return service.toString().trim();
+        })
+        .where((name) => name.isNotEmpty)
+        .toList();
+  }
+
+  String _localizedServiceName(String rawName, AppLocalizations l10n) {
+    final normalized = rawName.trim().toLowerCase();
+    switch (normalized) {
+      case 'haircut':
+      case 'حلاقة الرأس':
+        return l10n.serviceHaircut;
+      case 'beard trim':
+      case 'لحية trim':
+      case 'حلاقة الدقن':
+        return l10n.barberDetailsFallbackServiceBeardTrim;
+      case 'haircut + beard':
+      case 'حلاقة الرأس والدقن':
+        return l10n.barberProfileServiceHaircutAndBeard;
+      case 'full head shave (zero cut)':
+      case 'حلاقة كاملة':
+      case 'حلاقة الرأس بالمكينة':
+        return l10n.barberProfileServiceFullHeadShaveZeroCut;
+      case 'beard machine shave':
+      case 'حلاقة الدقن بالمكينة':
+        return l10n.barberProfileServiceBeardMachineShave;
+      case 'kids haircut':
+      case 'أطفال حلاقة الرأس':
+      case 'حلاقة أطفال':
+        return l10n.barberProfileServiceKidsHaircut;
+      default:
+        return rawName.trim().replaceAll(RegExp(r'\s+'), ' ');
+    }
+  }
 
   @override
   void initState() {
@@ -257,27 +308,9 @@ class _HomeScreenState extends State<HomeScreen> {
               l10n.homeWelcome,
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 10),
-            Text(
-              l10n.homeCategories,
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 15),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _categoryChip(l10n.serviceHaircut),
-                  const SizedBox(width: 10),
-                  _categoryChip(l10n.homeCategoryBeard),
-                  const SizedBox(width: 10),
-                  _categoryChip(l10n.serviceKids),
-                  const SizedBox(width: 10),
-                  _categoryChip(l10n.homeCategoryVip),
-                ],
-              ),
-            ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 12),
+            const WhatsAppFeedbackButton(),
+            const SizedBox(height: 20),
             Text(
               l10n.homeFindFavoriteBarber,
               style: TextStyle(color: Colors.grey, fontSize: 16),
@@ -296,7 +329,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 30),
-            const SizedBox(height: 20),
             Text(
               l10n.homeTopRated,
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
@@ -318,14 +350,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 final barbers = snapshot.data!.docs
                     .map((doc) {
                       final barberData = doc.data() as Map<String, dynamic>;
-                      final name = barberData['name']?.toString();
+                      final fullName = barberData['fullName']
+                          ?.toString()
+                          .trim();
+                      final legacyName = barberData['name']?.toString().trim();
+                      final name = fullName != null && fullName.isNotEmpty
+                          ? fullName
+                          : legacyName;
+                      final shopName =
+                          barberData['shopName']?.toString().trim() ?? '';
                       final rawRating = barberData['rating'];
-                      final services = barberData['services']?.toString();
+                      final services = barberData['services'];
 
                       if (name == null ||
-                          name.trim().isEmpty ||
-                          services == null ||
-                          services.trim().isEmpty) {
+                          name.trim().isEmpty) {
                         return null;
                       }
 
@@ -350,7 +388,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       final isOnline = barberData['isOnline'] == true;
 
                       return {
+                        'id': doc.id,
                         'name': name,
+                        'shopName': shopName,
                         'rating': "⭐ $ratingText",
                         'imageUrl': imageUrl,
                         'services': services,
@@ -374,10 +414,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: barbers.map((barber) {
                     return _barberCard(
                       l10n,
+                      barber['id'] as String,
                       barber['name'] as String,
                       barber['rating'] as String,
+                      shopName: barber['shopName'] as String,
                       imageUrl: barber['imageUrl'] as String,
-                      services: barber['services'] as String,
+                      services: barber['services'],
                       address: barber['address'] as String,
                       latitude: barber['latitude'] as double?,
                       longitude: barber['longitude'] as double?,
@@ -395,10 +437,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _barberCard(
     AppLocalizations l10n,
+    String barberId,
     String name,
     String rating, {
+    required String shopName,
     String? imageUrl,
-    String? services,
+    Object? services,
     String? address,
     double? latitude,
     double? longitude,
@@ -412,10 +456,12 @@ class _HomeScreenState extends State<HomeScreen> {
           context,
           MaterialPageRoute(
             builder: (context) => BarberDetailsScreen(
+              barberId: barberId,
               name: name,
+              shopName: shopName,
               rating: rating,
               imageUrl: imageUrl ?? '',
-              services: services ?? l10n.homeDefaultServices,
+              services: services,
               address: address ?? l10n.homeAddressNotAvailable,
               latitude: latitude,
               longitude: longitude,
@@ -486,6 +532,19 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                         ],
                       ),
+                      if (shopName.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          shopName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.black54,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 5),
                       Text(
                         rating,
@@ -495,10 +554,18 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       const SizedBox(height: 5),
-                      Text(
-                        l10n.homeDefaultServices,
-                        style: TextStyle(color: Colors.grey),
-                      ),
+                      if (_serviceNames(services).isNotEmpty) ...[
+                        const SizedBox(height: 5),
+                        Text(
+                          _serviceNames(services)
+                              .take(2)
+                              .map((name) => _localizedServiceName(name, l10n))
+                              .join(' • '),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -510,20 +577,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _categoryChip(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(25),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
 }

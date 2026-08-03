@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:kloof/l10n/app_localizations.dart';
@@ -19,6 +20,13 @@ class _LoginScreenState extends State<LoginScreen> {
   bool obscurePassword = true;
 
   @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
@@ -29,8 +37,9 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 30),
           child: SingleChildScrollView(
-            child: Column(
-              children: [
+            child: AutofillGroup(
+              child: Column(
+                children: [
                 const SizedBox(height: 70),
 
                 const Icon(Icons.content_cut, size: 90, color: Colors.black),
@@ -53,6 +62,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 TextField(
                   controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  autofillHints: const [
+                    AutofillHints.username,
+                    AutofillHints.email,
+                  ],
+                  autocorrect: false,
                   decoration: InputDecoration(
                     hintText: l10n.loginEmail,
                     prefixIcon: const Icon(Icons.email_outlined),
@@ -66,6 +82,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextField(
                   controller: passwordController,
                   obscureText: obscurePassword,
+                  textInputAction: TextInputAction.done,
+                  autofillHints: const [AutofillHints.password],
+                  enableSuggestions: false,
+                  autocorrect: false,
                   decoration: InputDecoration(
                     hintText: l10n.loginPassword,
                     prefixIcon: const Icon(Icons.lock_outline),
@@ -105,7 +125,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: ElevatedButton(
                     onPressed: () async {
                       debugPrint('[LOGIN] onPressed START');
-                      final ctx = context;
                       try {
                         debugPrint(
                           '[LOGIN] calling signInWithEmailAndPassword...',
@@ -117,19 +136,19 @@ class _LoginScreenState extends State<LoginScreen> {
                         debugPrint(
                           '[LOGIN] signInWithEmailAndPassword returned',
                         );
-                        print('Login success');
-
-                        if (!mounted) return;
+                        if (!context.mounted) return;
 
                         final signedInUser = FirebaseAuth.instance.currentUser;
                         if (signedInUser == null) {
                           return;
                         }
+                        TextInput.finishAutofillContext(shouldSave: true);
 
                         final userDoc = await FirebaseFirestore.instance
                             .collection('users')
                             .doc(signedInUser.uid)
                             .get();
+                        if (!context.mounted) return;
                         final userData = userDoc.data() ?? <String, dynamic>{};
                         final role =
                             (userData['role']?.toString().toLowerCase() ??
@@ -141,15 +160,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                     .isNotEmpty ==
                                 true
                             ? userData['fullName'].toString().trim()
-                            : (signedInUser.email ?? 'Barber');
+                          : (signedInUser.email ?? l10n.bookingConfirmationLabelBarber);
 
                         if (role == 'barber') {
                           debugPrint(
                             '[LOGIN] navigating to BarberDashboardScreen',
                           );
-                          // ignore: use_build_context_synchronously
                           Navigator.pushReplacement(
-                            ctx,
+                            context,
                             MaterialPageRoute(
                               builder: (_) =>
                                   BarberDashboardScreen(barberName: fullName),
@@ -157,9 +175,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           );
                         } else {
                           debugPrint('[LOGIN] navigating to HomeScreen');
-                          // ignore: use_build_context_synchronously
                           Navigator.pushReplacement(
-                            ctx,
+                            context,
                             MaterialPageRoute(
                               builder: (_) => const HomeScreen(),
                             ),
@@ -169,10 +186,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         debugPrint(
                           '[LOGIN] FirebaseAuthException: ${e.code} - ${e.message}',
                         );
-                        print('Login error: ${e.code} - ${e.message}');
-                        if (mounted) {
-                          // ignore: use_build_context_synchronously
-                          ScaffoldMessenger.of(ctx).showSnackBar(
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(e.message ?? l10n.loginFailed),
                             ),
@@ -190,7 +205,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

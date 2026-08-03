@@ -13,6 +13,7 @@ import '../features/barber_status_cubit.dart';
 import 'barber_bookings_screen.dart';
 import 'barber_profile_screen.dart';
 import 'welcome_screen.dart';
+import '../widgets/whatsapp_feedback_button.dart';
 
 class BarberDashboardScreen extends StatefulWidget {
   final String barberName;
@@ -557,7 +558,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
           ],
         ),
         body: SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -575,21 +576,47 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                     _OnlineStatusToggle(barberId: _barberId!),
                   ],
                 ),
+                const SizedBox(height: 12),
+                Semantics(
+                  enabled: false,
+                  child: Opacity(
+                    opacity: 0.45,
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: null,
+                        icon: const Icon(Icons.workspace_premium_outlined),
+                        label: Text(l10n.barberSubscriptionUnavailable),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const WhatsAppFeedbackButton(),
                 const SizedBox(height: 20),
                 Text(
                   l10n.barberDashboardWorkingHours,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: Colors.black45,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                Semantics(
+                  enabled: false,
+                  child: IgnorePointer(
+                    child: Opacity(
+                      opacity: 0.45,
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
@@ -782,7 +809,10 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                                 : Text(l10n.barberDashboardSaveWorkingHours),
                         ),
                       ),
-                    ],
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -810,21 +840,22 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 10),
-                Expanded(
-                  child: StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('bookings')
-                        .where('barberId', isEqualTo: currentBarberId)
-                        .orderBy('createdAt', descending: true)
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                        return Center(child: Text(l10n.barberDashboardNoBookings));
-                      }
-                      return ListView(
+                StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('bookings')
+                      .where('barberId', isEqualTo: currentBarberId)
+                      .orderBy('createdAt', descending: true)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                      return Center(child: Text(l10n.barberDashboardNoBookings));
+                    }
+                    return ListView(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
                         children: snapshot.data!.docs.map((doc) {
                           final data = doc.data() as Map<String, dynamic>;
                           final status =
@@ -960,9 +991,8 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                             ),
                           );
                         }).toList(),
-                      );
-                    },
-                  ),
+                    );
+                  },
                 ),
               ],
             ),

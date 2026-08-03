@@ -79,6 +79,31 @@ class MyBookingsScreen extends StatelessWidget {
   }
 
   String _localizedServiceName(String rawName, AppLocalizations l10n) {
+    final normalized = rawName.trim().toLowerCase();
+    switch (normalized) {
+      case 'haircut':
+      case 'حلاقة الرأس':
+        return l10n.serviceHaircut;
+      case 'beard trim':
+      case 'لحية trim':
+      case 'حلاقة الدقن':
+        return l10n.barberDetailsFallbackServiceBeardTrim;
+      case 'haircut + beard':
+      case 'حلاقة الرأس والدقن':
+        return l10n.barberProfileServiceHaircutAndBeard;
+      case 'full head shave (zero cut)':
+      case 'حلاقة كاملة':
+      case 'حلاقة الرأس بالمكينة':
+        return l10n.barberProfileServiceFullHeadShaveZeroCut;
+      case 'beard machine shave':
+      case 'حلاقة الدقن بالمكينة':
+        return l10n.barberProfileServiceBeardMachineShave;
+      case 'kids haircut':
+      case 'أطفال حلاقة الرأس':
+      case 'حلاقة أطفال':
+        return l10n.barberProfileServiceKidsHaircut;
+    }
+
     final replacements = <String, String>{
       'haircut': l10n.serviceHaircut,
       'beard': l10n.serviceBeard,
@@ -96,7 +121,7 @@ class MyBookingsScreen extends StatelessWidget {
       displayName = displayName.replaceAllMapped(pattern, (_) => entry.value);
     }
 
-    return displayName;
+    return displayName.trim().replaceAll(RegExp(r'\s+'), ' ');
   }
 
   String _toWesternDigits(String input) {
