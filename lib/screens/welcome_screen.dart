@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kloof/l10n/app_localizations.dart';
 import 'login_screen.dart';
 import 'package:kloof/screens/register_screen.dart';
 
@@ -16,6 +17,8 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: showBackButton
@@ -48,8 +51,8 @@ class WelcomeScreen extends StatelessWidget {
 
                     const SizedBox(height: 30),
 
-                    const Text(
-                      'KLOOF',
+                    Text(
+                      l10n.appTitle,
                       style: TextStyle(
                         fontSize: 42,
                         fontWeight: FontWeight.bold,
@@ -59,8 +62,8 @@ class WelcomeScreen extends StatelessWidget {
 
                     const SizedBox(height: 15),
 
-                    const Text(
-                      'Book your barber in seconds.',
+                    Text(
+                      l10n.welcomeTagline,
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 18, color: Colors.grey),
                     ),
@@ -79,9 +82,9 @@ class WelcomeScreen extends StatelessWidget {
                             ),
                           );
                         },
-                        child: const Text(
-                          'Login',
-                          style: TextStyle(fontSize: 18),
+                        child: Text(
+                          l10n.welcomeLogin,
+                          style: const TextStyle(fontSize: 18),
                         ),
                       ),
                     ),
@@ -101,9 +104,9 @@ class WelcomeScreen extends StatelessWidget {
                             ),
                           );
                         },
-                        child: const Text(
-                          'Create Account',
-                          style: TextStyle(fontSize: 18),
+                        child: Text(
+                          l10n.welcomeCreateAccount,
+                          style: const TextStyle(fontSize: 18),
                         ),
                       ),
                     ),
@@ -125,7 +128,7 @@ class WelcomeScreen extends StatelessWidget {
                           ),
                         );
                       },
-                      child: const Text('Barber Portal'),
+                      child: Text(l10n.welcomeBarberPortal),
                     ),
                   )
                 else

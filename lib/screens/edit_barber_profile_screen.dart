@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:kloof/l10n/app_localizations.dart';
 
 class EditBarberProfileScreen extends StatefulWidget {
   const EditBarberProfileScreen({super.key});
@@ -26,8 +27,9 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
     'Haircut',
     'Beard Trim',
     'Haircut + Beard',
-    'Kids Haircut',
     'Full Head Shave (Zero Cut)',
+    'Beard Machine Shave',
+    'Kids Haircut',
   ];
 
   final _fullNameController = TextEditingController();
@@ -43,6 +45,15 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
   XFile? _pickedImage;
 
   final List<_ServiceFormData> _serviceForms = [];
+
+  static const String _errorCustomServiceNameRequired =
+      'Custom service name is required.';
+  static const String _errorInvalidNumericPrice =
+      'Please enter a valid numeric price.';
+  static const String _errorPricePositive =
+      'Service price must be greater than zero.';
+  static const String _errorDurationPositive =
+      'Duration must be a valid positive number.';
 
   @override
   void initState() {
@@ -73,15 +84,7 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
           'address': '',
           'bio': '',
           'profileImage': '',
-          'services': _defaultServiceNames
-              .map(
-                (name) => <String, dynamic>{
-                  'name': name,
-                  'price': null,
-                  'duration': null,
-                },
-              )
-              .toList(),
+          'services': <Map<String, dynamic>>[],
           'createdAt': FieldValue.serverTimestamp(),
         });
       }
@@ -112,25 +115,10 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
         }
       }
 
-      for (final defaultName in _defaultServiceNames) {
-        final match = parsedServices.firstWhere(
-          (item) => (item['name'] ?? '').toString().trim() == defaultName,
-          orElse: () => <String, dynamic>{},
-        );
-
-        _serviceForms.add(
-          _ServiceFormData(
-            name: defaultName,
-            price: (match['price'] ?? '').toString(),
-            duration: (match['duration'] ?? '').toString(),
-            isDefault: true,
-          ),
-        );
-      }
-
+      _serviceForms.clear();
       for (final item in parsedServices) {
         final name = (item['name'] ?? '').toString().trim();
-        if (name.isEmpty || _defaultServiceNames.contains(name)) {
+        if (name.isEmpty) {
           continue;
         }
 
@@ -139,15 +127,17 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
             name: name,
             price: (item['price'] ?? '').toString(),
             duration: (item['duration'] ?? '').toString(),
-            isDefault: false,
+            isDefault: _defaultServiceNames.any(
+              (defaultName) => defaultName.toLowerCase() == name.toLowerCase(),
+            ),
           ),
         );
       }
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Failed to load profile.')));
+      final l10n = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.barberProfileLoadFailed)));
     } finally {
       if (mounted) {
         setState(() {
@@ -214,21 +204,17 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
         }
 
         if (!service.isDefault && name.isEmpty) {
-          throw Exception('Custom service name is required.');
-        }
-
-        if (service.isDefault && priceText.isEmpty) {
-          throw Exception('Price is required for default services.');
+          throw Exception(_errorCustomServiceNameRequired);
         }
 
         final parsedPrice = priceText.isEmpty
             ? null
             : double.tryParse(priceText);
         if (priceText.isNotEmpty && parsedPrice == null) {
-          throw Exception('Please enter a valid numeric price.');
+          throw Exception(_errorInvalidNumericPrice);
         }
-        if (service.isDefault && (parsedPrice == null || parsedPrice <= 0)) {
-          throw Exception('Default service price must be greater than zero.');
+        if (parsedPrice != null && parsedPrice <= 0) {
+          throw Exception(_errorPricePositive);
         }
 
         final parsedDuration = durationText.isEmpty
@@ -236,12 +222,12 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
             : int.tryParse(durationText);
         if (durationText.isNotEmpty &&
             (parsedDuration == null || parsedDuration <= 0)) {
-          throw Exception('Duration must be a valid positive number.');
+          throw Exception(_errorDurationPositive);
         }
 
         services.add({
           'name': name,
-          'price': parsedPrice ?? 0,
+          'price': parsedPrice,
           'duration': parsedDuration,
         });
       }
@@ -261,15 +247,23 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            e.toString().startsWith('Exception: ')
-                ? e.toString().replaceFirst('Exception: ', '')
-                : 'Failed to save profile.',
-          ),
-        ),
-      );
+      final l10n = AppLocalizations.of(context);
+      final rawMessage = e.toString().startsWith('Exception: ')
+          ? e.toString().replaceFirst('Exception: ', '')
+          : '';
+      final localizedMessage = switch (rawMessage) {
+        _errorCustomServiceNameRequired =>
+          l10n.editBarberProfileValidationCustomServiceNameRequired,
+        _errorInvalidNumericPrice =>
+          l10n.editBarberProfileValidationInvalidPrice,
+        _errorPricePositive => l10n.editBarberProfileValidationPricePositive,
+        _errorDurationPositive =>
+          l10n.editBarberProfileValidationDurationPositive,
+        _ => l10n.editBarberProfileSaveFailed,
+      };
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(localizedMessage)));
     } finally {
       if (mounted) {
         setState(() {
@@ -284,19 +278,112 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
     required TextEditingController controller,
     int maxLines = 1,
     bool readOnly = false,
+    String? hintText,
+    TextInputType? keyboardType,
+    bool compact = false,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: EdgeInsetsDirectional.only(bottom: compact ? 8 : 14),
       child: TextField(
         controller: controller,
         maxLines: maxLines,
         readOnly: readOnly,
+        keyboardType: keyboardType,
         decoration: InputDecoration(
           labelText: label,
+          hintText: hintText,
+          isDense: compact,
+          contentPadding: compact
+              ? const EdgeInsetsDirectional.symmetric(
+                  horizontal: 10,
+                  vertical: 10,
+                )
+              : null,
           border: const OutlineInputBorder(),
         ),
       ),
     );
+  }
+
+  String _localizedServiceName(String rawName, AppLocalizations l10n) {
+    final canonical = rawName.trim();
+    switch (canonical.toLowerCase()) {
+      case 'haircut':
+        return l10n.serviceHaircut;
+      case 'beard trim':
+        return l10n.barberDetailsFallbackServiceBeardTrim;
+      case 'haircut + beard':
+        return l10n.barberProfileServiceHaircutAndBeard;
+      case 'kids haircut':
+        return l10n.barberProfileServiceKidsHaircut;
+      case 'full head shave (zero cut)':
+        return l10n.barberProfileServiceFullHeadShaveZeroCut;
+      case 'beard machine shave':
+        return l10n.barberProfileServiceBeardMachineShave;
+      default:
+        return canonical;
+    }
+  }
+
+  Future<void> _addService() async {
+    final l10n = AppLocalizations.of(context);
+    final existingNames = _serviceForms
+        .map((service) => service.defaultName.trim().toLowerCase())
+        .toSet();
+    final availableCatalogServices = _defaultServiceNames.where(
+      (name) => !existingNames.contains(name.toLowerCase()),
+    );
+
+    final selectedName = await showModalBottomSheet<String>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            ...availableCatalogServices.map(
+              (name) => ListTile(
+                title: Text(_localizedServiceName(name, l10n)),
+                onTap: () => Navigator.pop(sheetContext, name),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.add),
+              title: Text(l10n.editBarberProfileCustomService),
+              onTap: () => Navigator.pop(sheetContext, ''),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (selectedName == null || !mounted) return;
+
+    setState(() {
+      _serviceForms.add(
+        _ServiceFormData(
+          name: selectedName,
+          price: '',
+          duration: '',
+          isDefault: selectedName.isNotEmpty,
+        ),
+      );
+    });
+  }
+
+  String _localizedCityName(String city, AppLocalizations l10n) {
+    switch (city.trim().toLowerCase()) {
+      case 'makkah':
+        return l10n.homeCityMakkah;
+      case 'jeddah':
+        return l10n.editBarberProfileCityJeddah;
+      case 'madinah':
+        return l10n.editBarberProfileCityMadinah;
+      case 'riyadh':
+        return l10n.editBarberProfileCityRiyadh;
+      case 'dammam':
+        return l10n.editBarberProfileCityDammam;
+      default:
+        return city;
+    }
   }
 
   @override
@@ -314,10 +401,11 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
 
   Widget _serviceItem(int index) {
     final service = _serviceForms[index];
+    final l10n = AppLocalizations.of(context);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsetsDirectional.only(bottom: 8),
+      padding: const EdgeInsetsDirectional.all(10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
@@ -328,31 +416,57 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
             children: [
               Expanded(
                 child: Text(
-                  service.isDefault ? 'Default Service' : 'Service',
+                  service.nameController.text.trim().isEmpty
+                      ? l10n.editBarberProfileService
+                      : _localizedServiceName(
+                          service.nameController.text,
+                          l10n,
+                        ),
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
-              if (!service.isDefault)
-                IconButton(
-                  onPressed: () {
-                    setState(() {
-                      final removed = _serviceForms.removeAt(index);
-                      removed.dispose();
-                    });
-                  },
-                  icon: const Icon(Icons.delete_outline, color: Colors.black54),
-                ),
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    final removed = _serviceForms.removeAt(index);
+                    removed.dispose();
+                  });
+                },
+                icon: const Icon(Icons.delete_outline, color: Colors.black54),
+              ),
             ],
           ),
-          _field(
-            label: 'Service Name',
-            controller: service.nameController,
-            readOnly: service.isDefault,
-          ),
-          _field(label: 'Price (SAR)', controller: service.priceController),
-          _field(
-            label: 'Duration (minutes)',
-            controller: service.durationController,
+          if (!service.isDefault)
+            _field(
+              label: l10n.editBarberProfileServiceName,
+              controller: service.nameController,
+              compact: true,
+            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _field(
+                  label: l10n.editBarberProfilePriceInputLabel,
+                  controller: service.priceController,
+                  hintText: l10n.editBarberProfileNotSetHint,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  compact: true,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _field(
+                  label: l10n.editBarberProfileDurationInputLabel,
+                  controller: service.durationController,
+                  hintText: l10n.editBarberProfileNotSetHint,
+                  keyboardType: TextInputType.number,
+                  compact: true,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -361,14 +475,16 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F8F8),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
-        title: const Text(
-          'Edit Barber Profile',
+        title: Text(
+          l10n.editBarberProfileTitle,
           style: TextStyle(color: Colors.black),
         ),
       ),
@@ -376,7 +492,7 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
           ? const Center(child: CircularProgressIndicator())
           : SafeArea(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsetsDirectional.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -404,25 +520,31 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
                     Center(
                       child: TextButton(
                         onPressed: _pickImageFromGallery,
-                        child: const Text('Select Profile Image'),
+                        child: Text(l10n.editBarberProfileSelectProfileImage),
                       ),
                     ),
                     const SizedBox(height: 8),
                     _field(
-                      label: 'Barber Name',
+                      label: l10n.barberProfileLabelBarberName,
                       controller: _fullNameController,
                     ),
-                    _field(label: 'Shop Name', controller: _shopNameController),
-                    _field(label: 'Phone', controller: _phoneController),
+                    _field(
+                      label: l10n.barberProfileLabelShopName,
+                      controller: _shopNameController,
+                    ),
+                    _field(
+                      label: l10n.barberProfileLabelPhone,
+                      controller: _phoneController,
+                    ),
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 14),
+                      padding: const EdgeInsetsDirectional.only(bottom: 14),
                       child: DropdownButtonFormField<String>(
-                        value: _selectedCity,
+                        initialValue: _selectedCity,
                         items: _cities
                             .map(
                               (city) => DropdownMenuItem<String>(
                                 value: city,
-                                child: Text(city),
+                                child: Text(_localizedCityName(city, l10n)),
                               ),
                             )
                             .toList(),
@@ -432,21 +554,24 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
                             _selectedCity = value;
                           });
                         },
-                        decoration: const InputDecoration(
-                          labelText: 'City',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: l10n.barberProfileLabelCity,
+                          border: const OutlineInputBorder(),
                         ),
                       ),
                     ),
-                    _field(label: 'Address', controller: _addressController),
                     _field(
-                      label: 'Bio',
+                      label: l10n.barberProfileLabelAddress,
+                      controller: _addressController,
+                    ),
+                    _field(
+                      label: l10n.barberProfileLabelBio,
                       controller: _bioController,
                       maxLines: 3,
                     ),
                     const SizedBox(height: 4),
-                    const Text(
-                      'Services',
+                    Text(
+                      l10n.barberProfileServices,
                       style: TextStyle(
                         color: Colors.black,
                         fontSize: 16,
@@ -456,22 +581,11 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
                     const SizedBox(height: 8),
                     ...List.generate(_serviceForms.length, _serviceItem),
                     Align(
-                      alignment: Alignment.centerLeft,
+                      alignment: AlignmentDirectional.centerStart,
                       child: TextButton.icon(
-                        onPressed: () {
-                          setState(() {
-                            _serviceForms.add(
-                              _ServiceFormData(
-                                name: '',
-                                price: '',
-                                duration: '',
-                                isDefault: false,
-                              ),
-                            );
-                          });
-                        },
+                        onPressed: _addService,
                         icon: const Icon(Icons.add),
-                        label: const Text('Add New Service'),
+                        label: Text(l10n.editBarberProfileAddNewService),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -492,7 +606,7 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text('Save Profile'),
+                            : Text(l10n.editBarberProfileSaveProfile),
                       ),
                     ),
                   ],

@@ -1,4 +1,4 @@
-package com.example.kloof
+package com.kloof.booking
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:kloof/l10n/app_localizations.dart';
 
 import 'edit_barber_profile_screen.dart';
 
@@ -12,14 +13,6 @@ class BarberProfileScreen extends StatefulWidget {
 }
 
 class _BarberProfileScreenState extends State<BarberProfileScreen> {
-  static const List<String> _defaultServiceNames = [
-    'Haircut',
-    'Beard Trim',
-    'Haircut + Beard',
-    'Kids Haircut',
-    'Full Head Shave (Zero Cut)',
-  ];
-
   Future<DocumentReference<Map<String, dynamic>>> _ensureProfileDoc() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -40,15 +33,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
         'address': '',
         'bio': '',
         'profileImage': '',
-        'services': _defaultServiceNames
-            .map(
-              (name) => <String, dynamic>{
-                'name': name,
-                'price': null,
-                'duration': null,
-              },
-            )
-            .toList(),
+        'services': <Map<String, dynamic>>[],
         'createdAt': FieldValue.serverTimestamp(),
       });
     }
@@ -57,8 +42,9 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
   }
 
   Widget _profileRow(String label, String value) {
+    final displayValue = value.trim().isEmpty ? '-' : value;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsetsDirectional.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -72,7 +58,9 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            value.trim().isEmpty ? '-' : value,
+            displayValue,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Colors.black,
               fontSize: 16,
@@ -88,73 +76,111 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
     if (price == null) return '-';
     if (price is num) {
       if (price == price.toInt()) {
-        return '${price.toInt()} SAR';
+        return price.toInt().toString();
       }
-      return '${price.toStringAsFixed(2)} SAR';
+      return price.toStringAsFixed(2);
     }
 
     final parsed = double.tryParse(price.toString());
     if (parsed == null) {
-      return '${price.toString()} SAR';
+      return price.toString();
     }
     if (parsed == parsed.toInt()) {
-      return '${parsed.toInt()} SAR';
+      return parsed.toInt().toString();
     }
-    return '${parsed.toStringAsFixed(2)} SAR';
+    return parsed.toStringAsFixed(2);
   }
 
-  String _formatDuration(dynamic duration) {
+  String _formatDuration(dynamic duration, AppLocalizations l10n) {
     if (duration == null) return '-';
-    if (duration is num) return '${duration.toInt()} min';
+    if (duration is num) {
+      return l10n.barberProfileDurationMinutes(duration.toInt().toString());
+    }
     final parsed = int.tryParse(duration.toString());
     if (parsed == null) return duration.toString();
-    return '$parsed min';
+    return l10n.barberProfileDurationMinutes(parsed.toString());
+  }
+
+  String _localizedServiceName(String rawName, AppLocalizations l10n) {
+    final canonical = rawName.trim();
+    if (canonical.isEmpty) return canonical;
+
+    switch (canonical.toLowerCase()) {
+      case 'haircut':
+        return l10n.serviceHaircut;
+      case 'beard trim':
+        return l10n.barberDetailsFallbackServiceBeardTrim;
+      case 'haircut + beard':
+        return l10n.barberProfileServiceHaircutAndBeard;
+      case 'kids haircut':
+        return l10n.barberProfileServiceKidsHaircut;
+      case 'full head shave (zero cut)':
+        return l10n.barberProfileServiceFullHeadShaveZeroCut;
+      case 'beard machine shave':
+        return l10n.barberProfileServiceBeardMachineShave;
+      default:
+        return canonical;
+    }
+  }
+
+  String _localizedCityName(String rawCity, AppLocalizations l10n) {
+    switch (rawCity.trim().toLowerCase()) {
+      case 'makkah':
+        return l10n.homeCityMakkah;
+      case 'jeddah':
+        return l10n.editBarberProfileCityJeddah;
+      case 'madinah':
+        return l10n.editBarberProfileCityMadinah;
+      case 'riyadh':
+        return l10n.editBarberProfileCityRiyadh;
+      case 'dammam':
+        return l10n.editBarberProfileCityDammam;
+      default:
+        return rawCity;
+    }
   }
 
   List<Map<String, dynamic>> _readServices(dynamic raw) {
     if (raw is! List || raw.isEmpty) {
-      return _defaultServiceNames
-          .map(
-            (name) => <String, dynamic>{
-              'name': name,
-              'price': null,
-              'duration': null,
-            },
-          )
-          .toList();
+      return <Map<String, dynamic>>[];
     }
 
-    return raw.map<Map<String, dynamic>>((item) {
-      if (item is Map<String, dynamic>) {
-        return {
-          'name': (item['name'] ?? '').toString(),
-          'price': item['price'],
-          'duration': item['duration'],
-        };
-      }
+    return raw
+        .map<Map<String, dynamic>>((item) {
+          if (item is Map<String, dynamic>) {
+            return {
+              'name': (item['name'] ?? '').toString(),
+              'price': item['price'],
+              'duration': item['duration'],
+            };
+          }
 
-      if (item is Map) {
-        return {
-          'name': (item['name'] ?? '').toString(),
-          'price': item['price'],
-          'duration': item['duration'],
-        };
-      }
+          if (item is Map) {
+            return {
+              'name': (item['name'] ?? '').toString(),
+              'price': item['price'],
+              'duration': item['duration'],
+            };
+          }
 
-      return {'name': item.toString(), 'price': null, 'duration': null};
-    }).toList();
+          return {'name': item.toString(), 'price': null, 'duration': null};
+        })
+        .where((service) => service['name'].toString().trim().isNotEmpty)
+        .toList();
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F8F8),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
-        title: const Text(
-          'Barber Profile',
+        title: Text(
+          l10n.barberProfileTitle,
           style: TextStyle(color: Colors.black),
         ),
       ),
@@ -166,10 +192,10 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
           }
 
           if (refSnapshot.hasError || !refSnapshot.hasData) {
-            return const Center(
+            return Center(
               child: Text(
-                'Failed to load profile.',
-                style: TextStyle(color: Colors.black54),
+                l10n.barberProfileLoadFailed,
+                style: const TextStyle(color: Colors.black54),
               ),
             );
           }
@@ -193,7 +219,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
               final services = _readServices(data['services']);
 
               return SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsetsDirectional.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -214,15 +240,18 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    _profileRow('Barber Name', fullName),
-                    _profileRow('Shop Name', shopName),
-                    _profileRow('Phone', phone),
-                    _profileRow('City', city),
-                    _profileRow('Address', address),
-                    _profileRow('Bio', bio),
+                    _profileRow(l10n.barberProfileLabelBarberName, fullName),
+                    _profileRow(l10n.barberProfileLabelShopName, shopName),
+                    _profileRow(l10n.barberProfileLabelPhone, phone),
+                    _profileRow(
+                      l10n.barberProfileLabelCity,
+                      _localizedCityName(city, l10n),
+                    ),
+                    _profileRow(l10n.barberProfileLabelAddress, address),
+                    _profileRow(l10n.barberProfileLabelBio, bio),
                     const SizedBox(height: 6),
-                    const Text(
-                      'Services',
+                    Text(
+                      l10n.barberProfileServices,
                       style: TextStyle(
                         color: Colors.black,
                         fontSize: 16,
@@ -238,9 +267,11 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                     else
                       ...services.map((service) {
                         final name = (service['name'] ?? '').toString().trim();
+                        final displayName = _localizedServiceName(name, l10n);
                         return Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.all(12),
+                          width: double.infinity,
+                          margin: const EdgeInsetsDirectional.only(bottom: 10),
+                          padding: const EdgeInsetsDirectional.all(12),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(10),
@@ -249,7 +280,9 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                name.isEmpty ? '-' : name,
+                                displayName.isEmpty ? '-' : displayName,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   color: Colors.black,
                                   fontSize: 15,
@@ -258,14 +291,14 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                'Price: ${_formatPrice(service['price'])}',
+                                '${l10n.barberProfilePriceLabel}: ${l10n.bookingConfirmationPriceValue(_formatPrice(service['price']))}',
                                 style: const TextStyle(
                                   color: Colors.black87,
                                   fontSize: 14,
                                 ),
                               ),
                               Text(
-                                'Duration: ${_formatDuration(service['duration'])}',
+                                '${l10n.barberProfileDurationLabel}: ${_formatDuration(service['duration'], l10n)}',
                                 style: const TextStyle(
                                   color: Colors.black87,
                                   fontSize: 14,
@@ -291,7 +324,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                           backgroundColor: Colors.black,
                           foregroundColor: Colors.white,
                         ),
-                        child: const Text('Edit Profile'),
+                        child: Text(l10n.barberProfileEditProfile),
                       ),
                     ),
                   ],

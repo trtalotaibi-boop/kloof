@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kloof/l10n/app_localizations.dart';
 
 import 'welcome_screen.dart';
 
@@ -7,6 +8,8 @@ class RoleSelectionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -18,8 +21,8 @@ class RoleSelectionScreen extends StatelessWidget {
               children: [
                 const Icon(Icons.content_cut, size: 95, color: Colors.black),
                 const SizedBox(height: 24),
-                const Text(
-                  'KLOOF',
+                Text(
+                  l10n.appTitle,
                   style: TextStyle(
                     fontSize: 40,
                     fontWeight: FontWeight.bold,
@@ -28,10 +31,10 @@ class RoleSelectionScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  'Choose your role to continue',
+                Text(
+                  l10n.roleSelectionPrompt,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey, fontSize: 16),
+                  style: const TextStyle(color: Colors.grey, fontSize: 16),
                 ),
                 const SizedBox(height: 42),
                 SizedBox(
@@ -54,9 +57,9 @@ class RoleSelectionScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
-                      'Continue as Customer',
-                      style: TextStyle(fontSize: 18),
+                    child: Text(
+                      l10n.roleSelectionContinueCustomer,
+                      style: const TextStyle(fontSize: 18),
                     ),
                   ),
                 ),
@@ -81,9 +84,9 @@ class RoleSelectionScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
-                      'Continue as Barber',
-                      style: TextStyle(fontSize: 18),
+                    child: Text(
+                      l10n.roleSelectionContinueBarber,
+                      style: const TextStyle(fontSize: 18),
                     ),
                   ),
                 ),

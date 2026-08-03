@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:kloof/l10n/app_localizations.dart';
 import 'home_screen.dart';
 import 'barber_dashboard_screen.dart';
 
@@ -18,7 +20,16 @@ class _LoginScreenState extends State<LoginScreen> {
   bool obscurePassword = true;
 
   @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(backgroundColor: Colors.white, elevation: 0),
       backgroundColor: Colors.white,
@@ -26,23 +37,24 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 30),
           child: SingleChildScrollView(
-            child: Column(
-              children: [
+            child: AutofillGroup(
+              child: Column(
+                children: [
                 const SizedBox(height: 70),
 
                 const Icon(Icons.content_cut, size: 90, color: Colors.black),
 
                 const SizedBox(height: 20),
 
-                const Text(
-                  "Welcome Back",
+                Text(
+                  l10n.loginWelcomeBack,
                   style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
                 ),
 
                 const SizedBox(height: 8),
 
-                const Text(
-                  "Sign in to continue",
+                Text(
+                  l10n.loginSignInContinue,
                   style: TextStyle(color: Colors.grey, fontSize: 16),
                 ),
 
@@ -50,8 +62,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 TextField(
                   controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  autofillHints: const [
+                    AutofillHints.username,
+                    AutofillHints.email,
+                  ],
+                  autocorrect: false,
                   decoration: InputDecoration(
-                    hintText: "Email",
+                    hintText: l10n.loginEmail,
                     prefixIcon: const Icon(Icons.email_outlined),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(15),
@@ -63,8 +82,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextField(
                   controller: passwordController,
                   obscureText: obscurePassword,
+                  textInputAction: TextInputAction.done,
+                  autofillHints: const [AutofillHints.password],
+                  enableSuggestions: false,
+                  autocorrect: false,
                   decoration: InputDecoration(
-                    hintText: "Password",
+                    hintText: l10n.loginPassword,
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -87,10 +110,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 15),
 
                 Align(
-                  alignment: Alignment.centerRight,
+                  alignment: AlignmentDirectional.centerEnd,
                   child: TextButton(
                     onPressed: () {},
-                    child: const Text("Forgot Password?"),
+                    child: Text(l10n.loginForgotPassword),
                   ),
                 ),
 
@@ -102,7 +125,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: ElevatedButton(
                     onPressed: () async {
                       debugPrint('[LOGIN] onPressed START');
-                      final ctx = context;
                       try {
                         debugPrint(
                           '[LOGIN] calling signInWithEmailAndPassword...',
@@ -114,19 +136,19 @@ class _LoginScreenState extends State<LoginScreen> {
                         debugPrint(
                           '[LOGIN] signInWithEmailAndPassword returned',
                         );
-                        print('Login success');
-
-                        if (!mounted) return;
+                        if (!context.mounted) return;
 
                         final signedInUser = FirebaseAuth.instance.currentUser;
                         if (signedInUser == null) {
                           return;
                         }
+                        TextInput.finishAutofillContext(shouldSave: true);
 
                         final userDoc = await FirebaseFirestore.instance
                             .collection('users')
                             .doc(signedInUser.uid)
                             .get();
+                        if (!context.mounted) return;
                         final userData = userDoc.data() ?? <String, dynamic>{};
                         final role =
                             (userData['role']?.toString().toLowerCase() ??
@@ -138,15 +160,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                     .isNotEmpty ==
                                 true
                             ? userData['fullName'].toString().trim()
-                            : (signedInUser.email ?? 'Barber');
+                          : (signedInUser.email ?? l10n.bookingConfirmationLabelBarber);
 
                         if (role == 'barber') {
                           debugPrint(
                             '[LOGIN] navigating to BarberDashboardScreen',
                           );
-                          // ignore: use_build_context_synchronously
                           Navigator.pushReplacement(
-                            ctx,
+                            context,
                             MaterialPageRoute(
                               builder: (_) =>
                                   BarberDashboardScreen(barberName: fullName),
@@ -154,9 +175,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           );
                         } else {
                           debugPrint('[LOGIN] navigating to HomeScreen');
-                          // ignore: use_build_context_synchronously
                           Navigator.pushReplacement(
-                            ctx,
+                            context,
                             MaterialPageRoute(
                               builder: (_) => const HomeScreen(),
                             ),
@@ -166,12 +186,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         debugPrint(
                           '[LOGIN] FirebaseAuthException: ${e.code} - ${e.message}',
                         );
-                        print('Login error: ${e.code} - ${e.message}');
-                        if (mounted) {
-                          // ignore: use_build_context_synchronously
-                          ScaffoldMessenger.of(ctx).showSnackBar(
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(e.message ?? "Login failed"),
+                              content: Text(e.message ?? l10n.loginFailed),
                             ),
                           );
                         }
@@ -181,10 +199,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       }
                       debugPrint('[LOGIN] onPressed END');
                     },
-                    child: const Text("Login", style: TextStyle(fontSize: 18)),
+                    child: Text(
+                      l10n.loginAction,
+                      style: const TextStyle(fontSize: 18),
+                    ),
                   ),
                 ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

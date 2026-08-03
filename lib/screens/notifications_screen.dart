@@ -1,9 +1,41 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:kloof/l10n/app_localizations.dart';
 
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
+
+  String _localizedNotificationMessage(String rawMessage, AppLocalizations l10n) {
+    final normalized = rawMessage.trim();
+    if (normalized.isEmpty) return rawMessage;
+
+    const messageKeys = <String, String>{
+      'Your booking request has been submitted.': 'submitted',
+      'New booking request.': 'newRequest',
+      'Your booking has been accepted.': 'accepted',
+      'Your booking has been rejected.': 'rejected',
+      'Your appointment has been completed.': 'completed',
+    };
+
+    final mapped = messageKeys[normalized];
+    if (mapped == null) return rawMessage;
+
+    switch (mapped) {
+      case 'submitted':
+        return l10n.notificationMessageBookingSubmitted;
+      case 'newRequest':
+        return l10n.notificationMessageNewBookingRequest;
+      case 'accepted':
+        return l10n.notificationMessageBookingAccepted;
+      case 'rejected':
+        return l10n.notificationMessageBookingRejected;
+      case 'completed':
+        return l10n.notificationMessageAppointmentCompleted;
+      default:
+        return rawMessage;
+    }
+  }
 
   Future<void> _markAsRead(String notificationId) async {
     await FirebaseFirestore.instance
@@ -14,6 +46,7 @@ class NotificationsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final currentUser = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
@@ -22,16 +55,16 @@ class NotificationsScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
-        title: const Text(
-          'Notifications',
-          style: TextStyle(color: Colors.black),
+        title: Text(
+          l10n.notificationsTitle,
+          style: const TextStyle(color: Colors.black),
         ),
       ),
       body: currentUser == null
-          ? const Center(
+          ? Center(
               child: Text(
-                'No notifications.',
-                style: TextStyle(color: Colors.black54, fontSize: 15),
+                l10n.notificationsEmpty,
+                style: const TextStyle(color: Colors.black54, fontSize: 15),
               ),
             )
           : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
@@ -42,14 +75,38 @@ class NotificationsScreen extends StatelessWidget {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 12),
+                        Text(
+                          l10n.notificationsLoading,
+                          style: const TextStyle(
+                            color: Colors.black54,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      l10n.notificationsLoadFailed,
+                      style: const TextStyle(color: Colors.black54, fontSize: 15),
+                    ),
+                  );
                 }
 
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Text(
-                      'No notifications.',
-                      style: TextStyle(color: Colors.black54, fontSize: 15),
+                      l10n.notificationsEmpty,
+                      style: const TextStyle(color: Colors.black54, fontSize: 15),
                     ),
                   );
                 }
@@ -61,6 +118,8 @@ class NotificationsScreen extends StatelessWidget {
                     final doc = snapshot.data!.docs[index];
                     final data = doc.data();
                     final message = data['message']?.toString() ?? '-';
+                    final localizedMessage =
+                        _localizedNotificationMessage(message, l10n);
                     final isRead = data['isRead'] == true;
 
                     return Card(
@@ -76,7 +135,7 @@ class NotificationsScreen extends StatelessWidget {
                           color: isRead ? Colors.black45 : Colors.black,
                         ),
                         title: Text(
-                          message,
+                          localizedMessage,
                           style: TextStyle(
                             color: Colors.black,
                             fontWeight: isRead

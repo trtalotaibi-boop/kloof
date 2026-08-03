@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:kloof/l10n/app_localizations.dart';
 import 'barber_details_screen.dart';
 import 'barber_dashboard_screen.dart';
 import 'my_bookings_screen.dart';
 import 'notifications_screen.dart';
 import 'welcome_screen.dart';
+import '../widgets/whatsapp_feedback_button.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,6 +18,56 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _isCheckingRole = true;
+
+  List<String> _serviceNames(dynamic rawServices) {
+    if (rawServices is String) {
+      return rawServices
+          .replaceAll('•', ',')
+          .split(',')
+          .map((name) => name.trim())
+          .where((name) => name.isNotEmpty)
+          .toList();
+    }
+    if (rawServices is! List) return <String>[];
+    return rawServices
+        .map((service) {
+          if (service is Map) {
+            return (service['name'] ?? '').toString().trim();
+          }
+          return service.toString().trim();
+        })
+        .where((name) => name.isNotEmpty)
+        .toList();
+  }
+
+  String _localizedServiceName(String rawName, AppLocalizations l10n) {
+    final normalized = rawName.trim().toLowerCase();
+    switch (normalized) {
+      case 'haircut':
+      case 'حلاقة الرأس':
+        return l10n.serviceHaircut;
+      case 'beard trim':
+      case 'لحية trim':
+      case 'حلاقة الدقن':
+        return l10n.barberDetailsFallbackServiceBeardTrim;
+      case 'haircut + beard':
+      case 'حلاقة الرأس والدقن':
+        return l10n.barberProfileServiceHaircutAndBeard;
+      case 'full head shave (zero cut)':
+      case 'حلاقة كاملة':
+      case 'حلاقة الرأس بالمكينة':
+        return l10n.barberProfileServiceFullHeadShaveZeroCut;
+      case 'beard machine shave':
+      case 'حلاقة الدقن بالمكينة':
+        return l10n.barberProfileServiceBeardMachineShave;
+      case 'kids haircut':
+      case 'أطفال حلاقة الرأس':
+      case 'حلاقة أطفال':
+        return l10n.barberProfileServiceKidsHaircut;
+      default:
+        return rawName.trim().replaceAll(RegExp(r'\s+'), ' ');
+    }
+  }
 
   @override
   void initState() {
@@ -66,21 +118,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _logout() async {
+    final l10n = AppLocalizations.of(context);
     final shouldSignOut =
         await showDialog<bool>(
           context: context,
           builder: (context) {
             return AlertDialog(
-              title: const Text('Sign out'),
-              content: const Text('Are you sure you want to sign out?'),
+              title: Text(l10n.homeSignOutTitle),
+              content: Text(l10n.homeSignOutConfirm),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Cancel'),
+                  child: Text(l10n.commonCancel),
                 ),
                 TextButton(
                   onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Sign Out'),
+                  child: Text(l10n.homeSignOutAction),
                 ),
               ],
             );
@@ -101,6 +154,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     if (_isCheckingRole) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -111,8 +166,8 @@ class _HomeScreenState extends State<HomeScreen> {
         automaticallyImplyLeading: false,
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          "KLOOF",
+        title: Text(
+          l10n.appTitle,
           style: TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.bold,
@@ -211,8 +266,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               );
             },
-            child: const Text(
-              'My Bookings',
+            child: Text(
+              l10n.myBookingsTitle,
               style: TextStyle(
                 color: Colors.black,
                 fontWeight: FontWeight.w600,
@@ -232,16 +287,16 @@ class _HomeScreenState extends State<HomeScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  "Current Location",
+                Text(
+                  l10n.homeCurrentLocation,
                   style: TextStyle(color: Colors.grey),
                 ),
                 Row(
-                  children: const [
+                  children: [
                     Icon(Icons.location_on, color: Colors.red),
                     SizedBox(width: 5),
                     Text(
-                      "Makkah",
+                      l10n.homeCityMakkah,
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ],
@@ -249,39 +304,21 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             const SizedBox(height: 25),
-            const Text(
-              "👋 Welcome",
+            Text(
+              l10n.homeWelcome,
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 10),
-            const Text(
-              "Categories",
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 15),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _categoryChip("Haircut"),
-                  const SizedBox(width: 10),
-                  _categoryChip("Beard"),
-                  const SizedBox(width: 10),
-                  _categoryChip("Kids"),
-                  const SizedBox(width: 10),
-                  _categoryChip("VIP"),
-                ],
-              ),
-            ),
-            const SizedBox(height: 30),
-            const Text(
-              "Find your favorite barber",
+            const SizedBox(height: 12),
+            const WhatsAppFeedbackButton(),
+            const SizedBox(height: 20),
+            Text(
+              l10n.homeFindFavoriteBarber,
               style: TextStyle(color: Colors.grey, fontSize: 16),
             ),
             const SizedBox(height: 25),
             TextField(
               decoration: InputDecoration(
-                hintText: "Search...",
+                hintText: l10n.homeSearchHint,
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: Colors.white,
@@ -292,9 +329,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 30),
-            const SizedBox(height: 20),
-            const Text(
-              "Top Rated",
+            Text(
+              l10n.homeTopRated,
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 15),
@@ -308,20 +344,26 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
 
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Text("No barbers found");
+                  return Text(l10n.homeNoBarbersFound);
                 }
 
                 final barbers = snapshot.data!.docs
                     .map((doc) {
                       final barberData = doc.data() as Map<String, dynamic>;
-                      final name = barberData['name']?.toString();
+                      final fullName = barberData['fullName']
+                          ?.toString()
+                          .trim();
+                      final legacyName = barberData['name']?.toString().trim();
+                      final name = fullName != null && fullName.isNotEmpty
+                          ? fullName
+                          : legacyName;
+                      final shopName =
+                          barberData['shopName']?.toString().trim() ?? '';
                       final rawRating = barberData['rating'];
-                      final services = barberData['services']?.toString();
+                      final services = barberData['services'];
 
                       if (name == null ||
-                          name.trim().isEmpty ||
-                          services == null ||
-                          services.trim().isEmpty) {
+                          name.trim().isEmpty) {
                         return null;
                       }
 
@@ -336,7 +378,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       final imageUrl = barberData['imageUrl']?.toString() ?? '';
                       final address =
                           barberData['address']?.toString() ??
-                          'Address not available';
+                          l10n.homeAddressNotAvailable;
                       final latitude = barberData['latitude'] is num
                           ? (barberData['latitude'] as num).toDouble()
                           : null;
@@ -346,7 +388,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       final isOnline = barberData['isOnline'] == true;
 
                       return {
+                        'id': doc.id,
                         'name': name,
+                        'shopName': shopName,
                         'rating': "⭐ $ratingText",
                         'imageUrl': imageUrl,
                         'services': services,
@@ -369,10 +413,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 return Column(
                   children: barbers.map((barber) {
                     return _barberCard(
+                      l10n,
+                      barber['id'] as String,
                       barber['name'] as String,
                       barber['rating'] as String,
+                      shopName: barber['shopName'] as String,
                       imageUrl: barber['imageUrl'] as String,
-                      services: barber['services'] as String,
+                      services: barber['services'],
                       address: barber['address'] as String,
                       latitude: barber['latitude'] as double?,
                       longitude: barber['longitude'] as double?,
@@ -389,10 +436,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _barberCard(
+    AppLocalizations l10n,
+    String barberId,
     String name,
     String rating, {
+    required String shopName,
     String? imageUrl,
-    String? services,
+    Object? services,
     String? address,
     double? latitude,
     double? longitude,
@@ -406,11 +456,13 @@ class _HomeScreenState extends State<HomeScreen> {
           context,
           MaterialPageRoute(
             builder: (context) => BarberDetailsScreen(
+              barberId: barberId,
               name: name,
+              shopName: shopName,
               rating: rating,
               imageUrl: imageUrl ?? '',
-              services: services ?? 'Haircut • Beard',
-              address: address ?? 'Address not available',
+              services: services,
+              address: address ?? l10n.homeAddressNotAvailable,
               latitude: latitude,
               longitude: longitude,
             ),
@@ -469,8 +521,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 color: Colors.grey.shade300,
                                 borderRadius: BorderRadius.circular(20),
                               ),
-                              child: const Text(
-                                'Offline',
+                              child: Text(
+                                l10n.homeOfflineStatus,
                                 style: TextStyle(
                                   color: Colors.black54,
                                   fontSize: 12,
@@ -480,6 +532,19 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                         ],
                       ),
+                      if (shopName.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          shopName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.black54,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 5),
                       Text(
                         rating,
@@ -489,10 +554,18 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       const SizedBox(height: 5),
-                      const Text(
-                        "Haircut • Beard",
-                        style: TextStyle(color: Colors.grey),
-                      ),
+                      if (_serviceNames(services).isNotEmpty) ...[
+                        const SizedBox(height: 5),
+                        Text(
+                          _serviceNames(services)
+                              .take(2)
+                              .map((name) => _localizedServiceName(name, l10n))
+                              .join(' • '),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -504,20 +577,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _categoryChip(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(25),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
 }
