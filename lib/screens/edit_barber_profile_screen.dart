@@ -6,6 +6,8 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../utils/barber_document_utils.dart';
+
 class EditBarberProfileScreen extends StatefulWidget {
   const EditBarberProfileScreen({super.key});
 
@@ -89,7 +91,7 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
       final data = (await docRef.get()).data() ?? <String, dynamic>{};
       final servicesRaw = (data['services'] as List?) ?? <dynamic>[];
 
-      _fullNameController.text = (data['fullName'] ?? '').toString();
+      _fullNameController.text = barberDisplayName(data);
       _shopNameController.text = (data['shopName'] ?? '').toString();
       _phoneController.text = (data['phone'] ?? '').toString();
       final loadedCity = (data['city'] ?? '').toString().trim();

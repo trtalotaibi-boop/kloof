@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../utils/barber_document_utils.dart';
 import 'edit_barber_profile_screen.dart';
 
 class BarberProfileScreen extends StatefulWidget {
@@ -183,7 +184,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
 
               final data = snapshot.data?.data() ?? <String, dynamic>{};
 
-              final fullName = (data['fullName'] ?? '').toString();
+              final fullName = barberDisplayName(data);
               final shopName = (data['shopName'] ?? '').toString();
               final phone = (data['phone'] ?? '').toString();
               final city = (data['city'] ?? '').toString();

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../utils/barber_document_utils.dart';
 import 'barber_details_screen.dart';
 import 'barber_dashboard_screen.dart';
 import 'my_bookings_screen.dart';
@@ -314,14 +315,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 final barbers = snapshot.data!.docs
                     .map((doc) {
                       final barberData = doc.data() as Map<String, dynamic>;
-                      final name = barberData['name']?.toString();
+                      final name = barberDisplayName(barberData);
                       final rawRating = barberData['rating'];
-                      final services = barberData['services']?.toString();
+                      final services = barberServicesSummary(
+                        barberData,
+                        fallback: '',
+                      );
 
-                      if (name == null ||
-                          name.trim().isEmpty ||
-                          services == null ||
-                          services.trim().isEmpty) {
+                      if (name.trim().isEmpty || services.trim().isEmpty) {
                         return null;
                       }
 
@@ -343,7 +344,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       final longitude = barberData['longitude'] is num
                           ? (barberData['longitude'] as num).toDouble()
                           : null;
-                      final isOnline = barberData['isOnline'] == true;
+                      final isOnline = barberIsOnline(barberData);
 
                       return {
                         'barberId': doc.id,

@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../data/repositories/barber_repository_impl.dart';
 import '../domain/usecases/toggle_online_status_usecase.dart';
 import '../features/barber_status_cubit.dart';
+import '../utils/barber_document_utils.dart';
 import 'barber_profile_screen.dart';
 import 'welcome_screen.dart';
 
@@ -31,7 +32,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
     'Sun',
   ];
 
-  DocumentReference? _barberDocRef;
+  DocumentReference<Map<String, dynamic>>? _barberDocRef;
   String? _barberId;
 
   Set<String> _workingDays = _allDays.toSet();
@@ -42,7 +43,8 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
   TimeOfDay? _breakEndTime;
   bool _isSavingWorkingHours = false;
 
-  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _barberSubscription;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
+  _barberSubscription;
 
   late final BarberStatusCubit _barberStatusCubit;
   bool _isCheckingRole = true;
@@ -122,9 +124,8 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
       }
 
       final data = snapshot.data()!;
-      final workingHours = Map<String, dynamic>.from(
-        data['workingHours'] ?? <String, dynamic>{},
-      );
+      final workingHours = barberWorkingHoursData(data);
+      final isOnline = barberIsOnline(data);
 
       final savedDays = List<String>.from(
         workingHours['workingDays'] ?? _allDays,
@@ -155,6 +156,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
         _breakStartTime = breakStart;
         _breakEndTime = breakEnd;
       });
+      _barberStatusCubit.syncOnlineStatus(isOnline);
     });
   }
 

@@ -23,6 +23,11 @@ class BarberStatusCubit extends Cubit<BarberStatusState> {
     });
   }
 
+  void syncOnlineStatus(bool isOnline) {
+    if (state.isOnline == isOnline) return;
+    emit(BarberStatusSuccess(isOnline: isOnline));
+  }
+
   Future<void> _commitStatus({required String barberId, required bool isOnline}) async {
     final result = await toggleOnlineStatusUseCase(
       ToggleOnlineParams(barberId: barberId, isOnline: isOnline),
