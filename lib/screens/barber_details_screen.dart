@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'booking_screen.dart';
 
 class BarberDetailsScreen extends StatelessWidget {
+  final String barberId;
   final String name;
   final String rating;
   final String imageUrl;
@@ -13,6 +14,7 @@ class BarberDetailsScreen extends StatelessWidget {
 
   const BarberDetailsScreen({
     super.key,
+    required this.barberId,
     required this.name,
     required this.rating,
     required this.imageUrl,
@@ -265,7 +267,7 @@ class BarberDetailsScreen extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) =>
-                            BookingScreen(barberName: name, service: services),
+                            BookingScreen(barberId: barberId, barberName: name, service: services),
                       ),
                     );
                   },

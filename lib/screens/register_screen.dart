@@ -189,6 +189,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             'createdAt': FieldValue.serverTimestamp(),
                           });
                         }
+
+                        // Create barbers/{uid} document so the barber UID is
+                        // the canonical Firestore document ID from the start.
+                        if (widget.selectedRole == 'barber') {
+                          final barberDocRef = FirebaseFirestore.instance
+                              .collection('barbers')
+                              .doc(user.uid);
+                          final barberDoc = await barberDocRef.get();
+                          if (!barberDoc.exists) {
+                            await barberDocRef.set({
+                              'name': fullNameController.text.trim(),
+                              'fullName': fullNameController.text.trim(),
+                              'isOnline': false,
+                              'createdAt': FieldValue.serverTimestamp(),
+                            });
+                          }
+                        }
                       }
 
                       debugPrint("REGISTER SUCCESS");
