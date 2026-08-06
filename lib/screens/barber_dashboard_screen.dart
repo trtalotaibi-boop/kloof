@@ -98,68 +98,64 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
   void _listenToBarberUpdates() {
     _barberSubscription?.cancel();
 
-    _barberSubscription = FirebaseFirestore.instance
-        .collection('barbers')
-        .where('name', isEqualTo: widget.barberName)
-        .limit(1)
-        .snapshots()
-        .listen((snapshot) {
-          if (!mounted) return;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
 
-          if (snapshot.docs.isEmpty) {
-            final docRef = FirebaseFirestore.instance
-                .collection('barbers')
-                .doc(widget.barberName);
-            _barberDocRef = docRef;
-            setState(() {
-              _barberId = docRef.id;
-              _workingDays = _allDays.toSet();
-              _openingTime = const TimeOfDay(hour: 8, minute: 0);
-              _closingTime = const TimeOfDay(hour: 23, minute: 0);
-              _appointmentDuration = 30;
-              _breakStartTime = null;
-              _breakEndTime = null;
-            });
-            return;
-          }
+    final docRef = FirebaseFirestore.instance.collection('barbers').doc(uid);
+    _barberDocRef = docRef;
 
-          final barberDoc = snapshot.docs.first;
-          _barberDocRef = barberDoc.reference;
-          final data = barberDoc.data();
-          final workingHours = Map<String, dynamic>.from(
-            data['workingHours'] ?? <String, dynamic>{},
-          );
+    _barberSubscription = docRef.snapshots().listen((snapshot) {
+      if (!mounted) return;
 
-          final savedDays = List<String>.from(
-            workingHours['workingDays'] ?? _allDays,
-          ).where(_allDays.contains).toSet();
-          final openingTime =
-              _parseTimeLabel(workingHours['openingTime']?.toString()) ??
-              const TimeOfDay(hour: 8, minute: 0);
-          final closingTime =
-              _parseTimeLabel(workingHours['closingTime']?.toString()) ??
-              const TimeOfDay(hour: 23, minute: 0);
-          final durationRaw = workingHours['appointmentDuration'];
-          final duration = durationRaw is num ? durationRaw.toInt() : 30;
-          final breakStart = _parseTimeLabel(
-            workingHours['breakStart']?.toString(),
-          );
-          final breakEnd = _parseTimeLabel(
-            workingHours['breakEnd']?.toString(),
-          );
-
-          setState(() {
-            _barberId = barberDoc.id;
-            _workingDays = savedDays.isEmpty ? _allDays.toSet() : savedDays;
-            _openingTime = openingTime;
-            _closingTime = closingTime;
-            _appointmentDuration = [15, 30, 45, 60].contains(duration)
-                ? duration
-                : 30;
-            _breakStartTime = breakStart;
-            _breakEndTime = breakEnd;
-          });
+      if (!snapshot.exists) {
+        // Document doesn't exist yet; use the UID-based ref and defaults.
+        setState(() {
+          _barberId = uid;
+          _workingDays = _allDays.toSet();
+          _openingTime = const TimeOfDay(hour: 8, minute: 0);
+          _closingTime = const TimeOfDay(hour: 23, minute: 0);
+          _appointmentDuration = 30;
+          _breakStartTime = null;
+          _breakEndTime = null;
         });
+        return;
+      }
+
+      final data = snapshot.data()!;
+      final workingHours = Map<String, dynamic>.from(
+        data['workingHours'] ?? <String, dynamic>{},
+      );
+
+      final savedDays = List<String>.from(
+        workingHours['workingDays'] ?? _allDays,
+      ).where(_allDays.contains).toSet();
+      final openingTime =
+          _parseTimeLabel(workingHours['openingTime']?.toString()) ??
+          const TimeOfDay(hour: 8, minute: 0);
+      final closingTime =
+          _parseTimeLabel(workingHours['closingTime']?.toString()) ??
+          const TimeOfDay(hour: 23, minute: 0);
+      final durationRaw = workingHours['appointmentDuration'];
+      final duration = durationRaw is num ? durationRaw.toInt() : 30;
+      final breakStart = _parseTimeLabel(
+        workingHours['breakStart']?.toString(),
+      );
+      final breakEnd = _parseTimeLabel(
+        workingHours['breakEnd']?.toString(),
+      );
+
+      setState(() {
+        _barberId = uid;
+        _workingDays = savedDays.isEmpty ? _allDays.toSet() : savedDays;
+        _openingTime = openingTime;
+        _closingTime = closingTime;
+        _appointmentDuration = [15, 30, 45, 60].contains(duration)
+            ? duration
+            : 30;
+        _breakStartTime = breakStart;
+        _breakEndTime = breakEnd;
+      });
+    });
   }
 
   TimeOfDay? _parseTimeLabel(String? value) {
@@ -207,9 +203,19 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
   }
 
   Future<void> _saveWorkingHours() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
     final barberDocRef =
         _barberDocRef ??
-        FirebaseFirestore.instance.collection('barbers').doc(widget.barberName);
+        (uid != null
+            ? FirebaseFirestore.instance.collection('barbers').doc(uid)
+            : null);
+
+    if (barberDocRef == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cannot save: barber not identified.')),
+      );
+      return;
+    }
 
     if (_workingDays.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(

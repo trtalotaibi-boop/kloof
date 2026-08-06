@@ -6,11 +6,13 @@ import 'booking_confirmation_screen.dart';
 import 'login_screen.dart';
 
 class BookingScreen extends StatefulWidget {
+  final String barberId;
   final String barberName;
   final String service;
 
   const BookingScreen({
     super.key,
+    required this.barberId,
     required this.barberName,
     required this.service,
   });
@@ -76,21 +78,7 @@ class _BookingScreenState extends State<BookingScreen> {
       final now = DateTime.now();
       final bookingDate = DateTime(now.year, now.month, now.day);
 
-      final barberSnapshot = await FirebaseFirestore.instance
-          .collection('barbers')
-          .where('name', isEqualTo: widget.barberName)
-          .limit(1)
-          .get();
-
-      if (barberSnapshot.docs.isEmpty) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Barber not found. Please try again.')),
-        );
-        return;
-      }
-
-      final barberId = barberSnapshot.docs.first.id;
+      final barberId = widget.barberId;
 
       final existingSnapshot = await FirebaseFirestore.instance
           .collection('bookings')

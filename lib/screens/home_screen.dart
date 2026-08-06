@@ -346,6 +346,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       final isOnline = barberData['isOnline'] == true;
 
                       return {
+                        'barberId': doc.id,
                         'name': name,
                         'rating': "⭐ $ratingText",
                         'imageUrl': imageUrl,
@@ -369,6 +370,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 return Column(
                   children: barbers.map((barber) {
                     return _barberCard(
+                      barber['barberId'] as String,
                       barber['name'] as String,
                       barber['rating'] as String,
                       imageUrl: barber['imageUrl'] as String,
@@ -389,6 +391,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _barberCard(
+    String barberId,
     String name,
     String rating, {
     String? imageUrl,
@@ -406,6 +409,7 @@ class _HomeScreenState extends State<HomeScreen> {
           context,
           MaterialPageRoute(
             builder: (context) => BarberDetailsScreen(
+              barberId: barberId,
               name: name,
               rating: rating,
               imageUrl: imageUrl ?? '',
