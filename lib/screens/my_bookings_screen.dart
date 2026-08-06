@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../utils/barber_document_utils.dart';
 
 class MyBookingsScreen extends StatelessWidget {
   const MyBookingsScreen({super.key});
@@ -48,8 +49,8 @@ class MyBookingsScreen extends StatelessWidget {
           .doc(barberId)
           .get();
       final data = doc.data();
-      final name = data?['name'] as String?;
-      if (name != null && name.trim().isNotEmpty) {
+      final name = barberDisplayName(data);
+      if (name.trim().isNotEmpty) {
         return name;
       }
     } catch (_) {
