@@ -44,7 +44,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
   bool _isSavingWorkingHours = false;
 
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
-  _barberSubscription;
+      _barberSubscription;
 
   late final BarberStatusCubit _barberStatusCubit;
   bool _isCheckingRole = true;
