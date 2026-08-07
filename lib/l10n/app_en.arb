@@ -22,6 +22,44 @@
   "registerPasswordsDoNotMatch": "Passwords do not match",
   "registerAccountCreated": "Account created successfully!",
   "registerSomethingWentWrong": "Something went wrong",
+  "bookingTitle": "Book Appointment",
+  "bookingSelectService": "Select Service",
+  "bookingNoServicesAvailable": "No services available.",
+  "bookingAvailableTimes": "Available times today",
+  "bookingBarberOffline": "The barber is currently offline and not accepting bookings.",
+  "bookingNoAvailableTimesToday": "No booking times are available today.",
+  "bookingConfirmAction": "Confirm Booking",
+  "bookingSelectServiceError": "Please select one service before confirming.",
+  "bookingSelectTimeError": "Please select a time slot before confirming.",
+  "bookingBarberNotFound": "Barber not found. Please try again.",
+  "bookingSlotAlreadyBooked": "This slot is already booked for today.",
+  "bookingConfirmFailed": "Failed to confirm booking.",
+  "bookingServicePriceLabel": "{service} - {price} SAR",
+  "@bookingServicePriceLabel": {
+    "placeholders": {
+      "service": {},
+      "price": {}
+    }
+  },
+  "bookingConfirmationTitle": "Booking Confirmation",
+  "bookingConfirmationReceivedTitle": "Booking Request Received",
+  "bookingConfirmationReceivedBody": "Your booking request has been received successfully.",
+  "bookingConfirmationLabelBarber": "Barber",
+  "bookingConfirmationLabelService": "Service",
+  "bookingConfirmationLabelPrice": "Price",
+  "bookingConfirmationLabelDate": "Date",
+  "bookingConfirmationLabelTime": "Time",
+  "bookingConfirmationLabelStatus": "Booking Status",
+  "bookingConfirmationStatusPending": "Pending",
+  "bookingConfirmationDone": "Done",
+  "bookingConfirmationPriceValue": "{price} SAR",
+  "@bookingConfirmationPriceValue": {
+    "placeholders": {
+      "price": {}
+    }
+  },
+  "notificationMessageBookingSubmitted": "Your booking request has been submitted.",
+  "notificationMessageNewBookingRequest": "New booking request.",
   "homeSignOutTitle": "Sign out",
   "homeSignOutConfirm": "Are you sure you want to sign out?",
   "commonCancel": "Cancel",
