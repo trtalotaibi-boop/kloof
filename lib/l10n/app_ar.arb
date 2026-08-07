@@ -46,5 +46,12 @@
   "serviceBeard": "حلاقة الدقن",
   "serviceKidsHaircut": "حلاقة أطفال",
   "serviceFullHeadShave": "حلاقة كاملة (زيرو)",
-  "barberProfileServiceHaircutAndBeard": "حلاقة الرأس والدقن"
+  "barberProfileServiceHaircutAndBeard": "حلاقة الرأس والدقن",
+  "barberDetailsServicesAndPrices": "الخدمات والأسعار",
+  "barberDetailsWorkingHours": "ساعات العمل",
+  "barberDetailsMondayFriday": "الاثنين - الجمعة",
+  "barberDetailsSaturday": "السبت",
+  "barberDetailsSunday": "الأحد",
+  "barberDetailsClosed": "مغلق",
+  "barberDetailsBookAppointment": "احجز موعدًا"
 }
