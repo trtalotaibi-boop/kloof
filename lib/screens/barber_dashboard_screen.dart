@@ -189,27 +189,11 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
     return '$hour12:$minuteText ${isPm ? 'PM' : 'AM'}';
   }
 
-  String _formatDisplayTime(BuildContext context, TimeOfDay time) {
-    return MaterialLocalizations.of(context).formatTimeOfDay(time);
-  }
-
   String _formatStoredTimeForDisplay(BuildContext context, String value) {
     final parsed = _parseTimeLabel(value);
-    return parsed == null ? value : _formatDisplayTime(context, parsed);
-  }
-
-  Future<void> _pickTime({
-    required TimeOfDay initialTime,
-    required ValueChanged<TimeOfDay> onPicked,
-  }) async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: initialTime,
-    );
-    if (picked == null || !mounted) return;
-    setState(() {
-      onPicked(picked);
-    });
+    return parsed == null
+        ? value
+        : MaterialLocalizations.of(context).formatTimeOfDay(parsed);
   }
 
   Future<void> _saveWorkingHours() async {
@@ -619,26 +603,6 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                         }).toList(),
                       ),
                       const SizedBox(height: 16),
-                      _TimeSettingRow(
-                        label: l10n.barberDashboardOpening,
-                        value: _formatDisplayTime(context, _openingTime),
-                        actionLabel: l10n.barberDashboardSet,
-                        onPressed: () => _pickTime(
-                          initialTime: _openingTime,
-                          onPicked: (picked) => _openingTime = picked,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      _TimeSettingRow(
-                        label: l10n.barberDashboardClosing,
-                        value: _formatDisplayTime(context, _closingTime),
-                        actionLabel: l10n.barberDashboardSet,
-                        onPressed: () => _pickTime(
-                          initialTime: _closingTime,
-                          onPicked: (picked) => _closingTime = picked,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
                       DropdownButtonFormField<int>(
                         value: _appointmentDuration,
                         items: const [15, 30, 45, 60]
@@ -660,44 +624,6 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                         decoration: InputDecoration(
                           labelText: l10n.barberDashboardAppointmentDuration,
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      _BreakSettingRow(
-                        label: l10n.barberDashboardBreakStart,
-                        value: _breakStartTime == null
-                            ? l10n.barberDashboardNotSet
-                            : _formatDisplayTime(context, _breakStartTime!),
-                        setLabel: l10n.barberDashboardSet,
-                        clearLabel: l10n.barberDashboardClear,
-                        canClear: _breakStartTime != null,
-                        onSet: () => _pickTime(
-                          initialTime: _breakStartTime ?? _openingTime,
-                          onPicked: (picked) => _breakStartTime = picked,
-                        ),
-                        onClear: () {
-                          setState(() {
-                            _breakStartTime = null;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                      _BreakSettingRow(
-                        label: l10n.barberDashboardBreakEnd,
-                        value: _breakEndTime == null
-                            ? l10n.barberDashboardNotSet
-                            : _formatDisplayTime(context, _breakEndTime!),
-                        setLabel: l10n.barberDashboardSet,
-                        clearLabel: l10n.barberDashboardClear,
-                        canClear: _breakEndTime != null,
-                        onSet: () => _pickTime(
-                          initialTime: _breakEndTime ?? _closingTime,
-                          onPicked: (picked) => _breakEndTime = picked,
-                        ),
-                        onClear: () {
-                          setState(() {
-                            _breakEndTime = null;
-                          });
-                        },
                       ),
                       const SizedBox(height: 16),
                       SizedBox(
@@ -891,86 +817,6 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _TimeSettingRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final String actionLabel;
-  final VoidCallback onPressed;
-
-  const _TimeSettingRow({
-    required this.label,
-    required this.value,
-    required this.actionLabel,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 2),
-              Text(value),
-            ],
-          ),
-        ),
-        OutlinedButton(onPressed: onPressed, child: Text(actionLabel)),
-      ],
-    );
-  }
-}
-
-class _BreakSettingRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final String setLabel;
-  final String clearLabel;
-  final bool canClear;
-  final VoidCallback onSet;
-  final VoidCallback onClear;
-
-  const _BreakSettingRow({
-    required this.label,
-    required this.value,
-    required this.setLabel,
-    required this.clearLabel,
-    required this.canClear,
-    required this.onSet,
-    required this.onClear,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-        const SizedBox(height: 2),
-        Text(value),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            OutlinedButton(onPressed: onSet, child: Text(setLabel)),
-            OutlinedButton(
-              onPressed: canClear ? onClear : null,
-              child: Text(clearLabel),
-            ),
-          ],
-        ),
-      ],
     );
   }
 }
