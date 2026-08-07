@@ -44,5 +44,7 @@
   "myBookingsTitle": "حجوزاتي",
   "serviceHaircut": "حلاقة الرأس",
   "serviceBeard": "حلاقة الدقن",
+  "serviceKidsHaircut": "حلاقة أطفال",
+  "serviceFullHeadShave": "حلاقة كاملة (زيرو)",
   "barberProfileServiceHaircutAndBeard": "حلاقة الرأس والدقن"
 }
