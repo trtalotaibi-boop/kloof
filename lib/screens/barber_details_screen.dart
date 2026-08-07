@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kloof/l10n/app_localizations.dart';
 
 import 'booking_screen.dart';
 
@@ -31,6 +32,33 @@ class BarberDetailsScreen extends StatelessWidget {
         .map((item) => item.trim())
         .where((item) => item.isNotEmpty)
         .toList();
+  }
+
+  String _localizedServiceName(String rawName, AppLocalizations l10n) {
+    final normalized = rawName.trim().toLowerCase();
+    switch (normalized) {
+      case 'haircut':
+      case 'حلاقة الرأس':
+        return l10n.serviceHaircut;
+      case 'beard':
+      case 'beard trim':
+      case 'حلاقة الدقن':
+        return l10n.serviceBeard;
+      case 'haircut + beard':
+      case 'حلاقة الرأس والدقن':
+        return l10n.barberProfileServiceHaircutAndBeard;
+      case 'kids':
+      case 'kids haircut':
+      case 'حلاقة أطفال':
+        return l10n.serviceKidsHaircut;
+      case 'full head shave (zero cut)':
+      case 'full head shave':
+      case 'zero cut':
+      case 'حلاقة كاملة (زيرو)':
+        return l10n.serviceFullHeadShave;
+      default:
+        return rawName.trim();
+    }
   }
 
   String _priceForService(String service, int index) {
@@ -112,6 +140,7 @@ class BarberDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final serviceList = _serviceNames().isEmpty
         ? <String>['Haircut', 'Beard Trim']
         : _serviceNames();
@@ -220,12 +249,12 @@ class BarberDetailsScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _sectionTitle('Services & Prices'),
+                          _sectionTitle(l10n.barberDetailsServicesAndPrices),
                           const SizedBox(height: 8),
                           ...List.generate(serviceList.length, (index) {
                             final serviceName = serviceList[index];
                             return _serviceRow(
-                              serviceName,
+                              _localizedServiceName(serviceName, l10n),
                               _priceForService(serviceName, index),
                             );
                           }),
@@ -242,14 +271,20 @@ class BarberDetailsScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _sectionTitle('Working Hours'),
+                          _sectionTitle(l10n.barberDetailsWorkingHours),
                           const SizedBox(height: 8),
                           _workingHourRow(
-                            'Monday - Friday',
+                            l10n.barberDetailsMondayFriday,
                             '09:00 AM - 08:00 PM',
                           ),
-                          _workingHourRow('Saturday', '10:00 AM - 06:00 PM'),
-                          _workingHourRow('Sunday', 'Closed'),
+                          _workingHourRow(
+                            l10n.barberDetailsSaturday,
+                            '10:00 AM - 06:00 PM',
+                          ),
+                          _workingHourRow(
+                            l10n.barberDetailsSunday,
+                            l10n.barberDetailsClosed,
+                          ),
                         ],
                       ),
                     ),
@@ -266,8 +301,11 @@ class BarberDetailsScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) =>
-                            BookingScreen(barberId: barberId, barberName: name, service: services),
+                        builder: (context) => BookingScreen(
+                          barberId: barberId,
+                          barberName: name,
+                          service: services,
+                        ),
                       ),
                     );
                   },
@@ -279,9 +317,12 @@ class BarberDetailsScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: const Text(
-                    'Book Appointment',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  child: Text(
+                    l10n.barberDetailsBookAppointment,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
