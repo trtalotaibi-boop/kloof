@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:kloof/l10n/app_localizations.dart';
 import '../utils/barber_document_utils.dart';
 import 'barber_details_screen.dart';
 import 'barber_dashboard_screen.dart';
@@ -17,6 +18,40 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _isCheckingRole = true;
+
+  String _localizedServiceName(String rawName, AppLocalizations l10n) {
+    final normalized = rawName.trim().toLowerCase();
+    switch (normalized) {
+      case 'haircut':
+      case 'حلاقة الرأس':
+        return l10n.serviceHaircut;
+      case 'beard':
+      case 'beard trim':
+      case 'لحية':
+      case 'حلاقة الدقن':
+        return l10n.serviceBeard;
+      case 'haircut + beard':
+      case 'حلاقة الرأس والدقن':
+        return l10n.serviceHaircutAndBeard;
+      case 'kids':
+      case 'kids haircut':
+      case 'أطفال':
+      case 'حلاقة أطفال':
+        return l10n.serviceKids;
+      default:
+        return rawName.trim();
+    }
+  }
+
+  String _localizedServicesSummary(String rawServices, AppLocalizations l10n) {
+    if (rawServices.trim().isEmpty) return l10n.homeDefaultServices;
+    return rawServices
+        .replaceAll('•', ',')
+        .split(',')
+        .map((service) => _localizedServiceName(service, l10n))
+        .where((service) => service.isNotEmpty)
+        .join(' • ');
+  }
 
   @override
   void initState() {
@@ -67,21 +102,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _logout() async {
+    final l10n = AppLocalizations.of(context);
     final shouldSignOut =
         await showDialog<bool>(
           context: context,
           builder: (context) {
             return AlertDialog(
-              title: const Text('Sign out'),
-              content: const Text('Are you sure you want to sign out?'),
+              title: Text(l10n.homeSignOutTitle),
+              content: Text(l10n.homeSignOutConfirm),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Cancel'),
+                  child: Text(l10n.commonCancel),
                 ),
                 TextButton(
                   onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Sign Out'),
+                  child: Text(l10n.homeSignOutAction),
                 ),
               ],
             );
@@ -102,6 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (_isCheckingRole) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -112,9 +149,9 @@ class _HomeScreenState extends State<HomeScreen> {
         automaticallyImplyLeading: false,
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          "KLOOF",
-          style: TextStyle(
+        title: Text(
+          l10n.appTitle,
+          style: const TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.bold,
             letterSpacing: 2,
@@ -125,7 +162,6 @@ class _HomeScreenState extends State<HomeScreen> {
           Builder(
             builder: (context) {
               final currentUser = FirebaseAuth.instance.currentUser;
-
               if (currentUser == null) {
                 return IconButton(
                   onPressed: () {
@@ -136,13 +172,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     );
                   },
-                  icon: const Icon(
-                    Icons.notifications_none,
-                    color: Colors.black,
-                  ),
+                  icon: const Icon(Icons.notifications_none, color: Colors.black),
                 );
               }
-
               return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                 stream: FirebaseFirestore.instance
                     .collection('notifications')
@@ -151,7 +183,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     .snapshots(),
                 builder: (context, snapshot) {
                   final unreadCount = snapshot.data?.docs.length ?? 0;
-
                   return IconButton(
                     onPressed: () {
                       Navigator.push(
@@ -164,35 +195,22 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        const Icon(
-                          Icons.notifications_none,
-                          color: Colors.black,
-                        ),
+                        const Icon(Icons.notifications_none, color: Colors.black),
                         if (unreadCount > 0)
                           Positioned(
                             right: -6,
                             top: -5,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 5,
-                                vertical: 1,
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                               decoration: BoxDecoration(
                                 color: Colors.red,
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              constraints: const BoxConstraints(
-                                minWidth: 16,
-                                minHeight: 16,
-                              ),
+                              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                               child: Text(
                                 unreadCount > 99 ? '99+' : '$unreadCount',
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                               ),
                             ),
                           ),
@@ -207,23 +225,15 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const MyBookingsScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const MyBookingsScreen()),
               );
             },
-            child: const Text(
-              'My Bookings',
-              style: TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.w600,
-              ),
+            child: Text(
+              l10n.homeMyBookings,
+              style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
             ),
           ),
-          IconButton(
-            onPressed: _logout,
-            icon: const Icon(Icons.logout, color: Colors.black),
-          ),
+          IconButton(onPressed: _logout, icon: const Icon(Icons.logout, color: Colors.black)),
         ],
       ),
       body: Padding(
@@ -233,144 +243,98 @@ class _HomeScreenState extends State<HomeScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  "Current Location",
-                  style: TextStyle(color: Colors.grey),
-                ),
+                Text(l10n.homeCurrentLocation, style: const TextStyle(color: Colors.grey)),
                 Row(
-                  children: const [
-                    Icon(Icons.location_on, color: Colors.red),
-                    SizedBox(width: 5),
-                    Text(
-                      "Makkah",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                  children: [
+                    const Icon(Icons.location_on, color: Colors.red),
+                    const SizedBox(width: 5),
+                    Text(l10n.homeCityMakkah, style: const TextStyle(fontWeight: FontWeight.bold)),
                   ],
                 ),
               ],
             ),
             const SizedBox(height: 25),
-            const Text(
-              "👋 Welcome",
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-            ),
+            Text(l10n.homeWelcome, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
-            const Text(
-              "Categories",
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
+            Text(l10n.homeCategories, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
             const SizedBox(height: 15),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _categoryChip("Haircut"),
+                  _categoryChip(l10n.serviceHaircut),
                   const SizedBox(width: 10),
-                  _categoryChip("Beard"),
+                  _categoryChip(l10n.serviceBeard),
                   const SizedBox(width: 10),
-                  _categoryChip("Kids"),
+                  _categoryChip(l10n.serviceKids),
                   const SizedBox(width: 10),
-                  _categoryChip("VIP"),
+                  _categoryChip(l10n.homeCategoryVip),
                 ],
               ),
             ),
             const SizedBox(height: 30),
-            const Text(
-              "Find your favorite barber",
-              style: TextStyle(color: Colors.grey, fontSize: 16),
-            ),
+            Text(l10n.homeFindFavoriteBarber, style: const TextStyle(color: Colors.grey, fontSize: 16)),
             const SizedBox(height: 25),
             TextField(
               decoration: InputDecoration(
-                hintText: "Search...",
+                hintText: l10n.homeSearchHint,
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide.none,
-                ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
               ),
             ),
             const SizedBox(height: 30),
             const SizedBox(height: 20),
-            const Text(
-              "Top Rated",
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
+            Text(l10n.homeTopRated, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
             const SizedBox(height: 15),
             StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection("barbers")
-                  .snapshots(),
+              stream: FirebaseFirestore.instance.collection('barbers').snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Text("No barbers found");
+                  return Text(l10n.homeNoBarbersFound);
                 }
-
-                final barbers = snapshot.data!.docs
-                    .map((doc) {
-                      final barberData = doc.data() as Map<String, dynamic>;
-                      final name = barberDisplayName(barberData);
-                      final rawRating = barberData['rating'];
-                      final services = barberServicesSummary(
-                        barberData,
-                        fallback: '',
-                      );
-
-                      if (name.trim().isEmpty || services.trim().isEmpty) {
-                        return null;
-                      }
-
-                      final ratingText = rawRating == null
-                          ? "0.0"
-                          : (rawRating is num
-                                ? rawRating.toDouble().toStringAsFixed(1)
-                                : (double.tryParse(
-                                        rawRating.toString(),
-                                      )?.toStringAsFixed(1) ??
-                                      "0.0"));
-                      final imageUrl = barberData['imageUrl']?.toString() ?? '';
-                      final address =
-                          barberData['address']?.toString() ??
-                          'Address not available';
-                      final latitude = barberData['latitude'] is num
-                          ? (barberData['latitude'] as num).toDouble()
-                          : null;
-                      final longitude = barberData['longitude'] is num
-                          ? (barberData['longitude'] as num).toDouble()
-                          : null;
-                      final isOnline = barberIsOnline(barberData);
-
-                      return {
-                        'barberId': doc.id,
-                        'name': name,
-                        'rating': "⭐ $ratingText",
-                        'imageUrl': imageUrl,
-                        'services': services,
-                        'address': address,
-                        'latitude': latitude,
-                        'longitude': longitude,
-                        'isOnline': isOnline,
-                      };
-                    })
-                    .whereType<Map<String, Object?>>()
-                    .toList();
-
+                final barbers = snapshot.data!.docs.map((doc) {
+                  final barberData = doc.data() as Map<String, dynamic>;
+                  final name = barberDisplayName(barberData);
+                  final rawRating = barberData['rating'];
+                  final services = barberServicesSummary(barberData, fallback: '');
+                  if (name.trim().isEmpty || services.trim().isEmpty) return null;
+                  final ratingText = rawRating == null
+                      ? '0.0'
+                      : (rawRating is num
+                          ? rawRating.toDouble().toStringAsFixed(1)
+                          : (double.tryParse(rawRating.toString())?.toStringAsFixed(1) ?? '0.0'));
+                  final imageUrl = barberData['imageUrl']?.toString() ?? '';
+                  final address = barberData['address']?.toString() ?? l10n.homeAddressNotAvailable;
+                  final latitude = barberData['latitude'] is num ? (barberData['latitude'] as num).toDouble() : null;
+                  final longitude = barberData['longitude'] is num ? (barberData['longitude'] as num).toDouble() : null;
+                  final isOnline = barberIsOnline(barberData);
+                  return {
+                    'barberId': doc.id,
+                    'name': name,
+                    'rating': '⭐ $ratingText',
+                    'imageUrl': imageUrl,
+                    'services': services,
+                    'address': address,
+                    'latitude': latitude,
+                    'longitude': longitude,
+                    'isOnline': isOnline,
+                  };
+                }).whereType<Map<String, Object?>>().toList();
                 barbers.sort((a, b) {
                   final aOnline = a['isOnline'] as bool;
                   final bOnline = b['isOnline'] as bool;
                   if (aOnline == bOnline) return 0;
                   return aOnline ? -1 : 1;
                 });
-
                 return Column(
                   children: barbers.map((barber) {
                     return _barberCard(
+                      l10n,
                       barber['barberId'] as String,
                       barber['name'] as String,
                       barber['rating'] as String,
@@ -392,6 +356,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _barberCard(
+    AppLocalizations l10n,
     String barberId,
     String name,
     String rating, {
@@ -403,7 +368,7 @@ class _HomeScreenState extends State<HomeScreen> {
     required bool isOnline,
   }) {
     final isOffline = !isOnline;
-
+    final localizedServices = _localizedServicesSummary(services ?? '', l10n);
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -415,7 +380,7 @@ class _HomeScreenState extends State<HomeScreen> {
               rating: rating,
               imageUrl: imageUrl ?? '',
               services: services ?? 'Haircut • Beard',
-              address: address ?? 'Address not available',
+              address: address ?? l10n.homeAddressNotAvailable,
               latitude: latitude,
               longitude: longitude,
             ),
@@ -427,9 +392,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Card(
           margin: const EdgeInsets.only(bottom: 20),
           elevation: 3,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
           child: Padding(
             padding: const EdgeInsets.all(15),
             child: Row(
@@ -437,16 +400,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 CircleAvatar(
                   radius: 32,
                   backgroundColor: Colors.grey.shade300,
-                  backgroundImage: (imageUrl != null && imageUrl.isNotEmpty)
-                      ? NetworkImage(imageUrl)
-                      : null,
+                  backgroundImage: (imageUrl != null && imageUrl.isNotEmpty) ? NetworkImage(imageUrl) : null,
                   child: (imageUrl != null && imageUrl.isNotEmpty)
                       ? null
-                      : const Icon(
-                          Icons.content_cut,
-                          size: 30,
-                          color: Colors.black,
-                        ),
+                      : const Icon(Icons.content_cut, size: 30, color: Colors.black),
                 ),
                 const SizedBox(width: 15),
                 Expanded(
@@ -455,49 +412,22 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Row(
                         children: [
-                          Expanded(
-                            child: Text(
-                              name,
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
+                          Expanded(child: Text(name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
                           if (isOffline)
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade300,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: const Text(
-                                'Offline',
-                                style: TextStyle(
-                                  color: Colors.black54,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(20)),
+                              child: Text(
+                                l10n.homeOfflineStatus,
+                                style: const TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.bold),
                               ),
                             ),
                         ],
                       ),
                       const SizedBox(height: 5),
-                      Text(
-                        rating,
-                        style: const TextStyle(
-                          color: Colors.orange,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      Text(rating, style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 5),
-                      const Text(
-                        "Haircut • Beard",
-                        style: TextStyle(color: Colors.grey),
-                      ),
+                      Text(localizedServices, style: const TextStyle(color: Colors.grey)),
                     ],
                   ),
                 ),
@@ -512,17 +442,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _categoryChip(String text) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(25),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
+      decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(25)),
+      child: Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
     );
   }
 }
