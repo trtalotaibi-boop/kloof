@@ -2,11 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:kloof/l10n/app_localizations.dart';
+import 'package:kloof/widgets/language_selector.dart';
 import 'home_screen.dart';
 import 'barber_dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final ValueChanged<Locale>? onLocaleChanged;
+
+  const LoginScreen({
+    super.key,
+    this.onLocaleChanged,
+  });
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -23,7 +29,19 @@ class _LoginScreenState extends State<LoginScreen> {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      appBar: AppBar(backgroundColor: Colors.white, elevation: 0),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          if (widget.onLocaleChanged != null)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: 12),
+              child: LanguageSelector(
+                onLocaleChanged: widget.onLocaleChanged!,
+              ),
+            ),
+        ],
+      ),
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
@@ -39,14 +57,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 Text(
                   l10n.loginWelcomeBack,
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
 
                 const SizedBox(height: 8),
 
                 Text(
                   l10n.loginSignInContinue,
-                  style: TextStyle(color: Colors.grey, fontSize: 16),
+                  style: const TextStyle(color: Colors.grey, fontSize: 16),
                 ),
 
                 const SizedBox(height: 45),
