@@ -31,13 +31,20 @@ class _HomeScreenState extends State<HomeScreen> {
       case 'حلاقة الدقن':
         return l10n.serviceBeard;
       case 'haircut + beard':
+      case 'haircut & beard':
       case 'حلاقة الرأس والدقن':
         return l10n.barberProfileServiceHaircutAndBeard;
       case 'kids':
       case 'kids haircut':
       case 'أطفال':
       case 'حلاقة أطفال':
-        return l10n.homeCategoryKids;
+        return l10n.serviceKidsHaircut;
+      case 'full head shave':
+      case 'full head shave (zero cut)':
+      case 'zero cut':
+      case 'حلاقة كاملة':
+      case 'حلاقة كاملة (زيرو)':
+        return l10n.serviceFullHeadShave;
       default:
         return rawName.trim();
     }
@@ -266,7 +273,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(width: 10),
                   _categoryChip(l10n.serviceBeard),
                   const SizedBox(width: 10),
-                  _categoryChip(l10n.homeCategoryKids),
+                  _categoryChip(l10n.serviceKidsHaircut),
                   const SizedBox(width: 10),
                   _categoryChip(l10n.homeCategoryVip),
                 ],
