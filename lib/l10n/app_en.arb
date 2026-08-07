@@ -44,5 +44,7 @@
   "myBookingsTitle": "My Bookings",
   "serviceHaircut": "Haircut",
   "serviceBeard": "Beard",
+  "serviceKidsHaircut": "Kids Haircut",
+  "serviceFullHeadShave": "Full Head Shave (Zero Cut)",
   "barberProfileServiceHaircutAndBeard": "Haircut + Beard"
 }
