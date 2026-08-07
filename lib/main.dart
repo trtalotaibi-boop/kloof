@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -8,17 +10,25 @@ import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'screens/barber_dashboard_screen.dart';
 import 'screens/welcome_screen.dart';
+import 'services/locale_preferences.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  final localeFuture = LocalePreferences.loadLocale();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  final initialLocale = await localeFuture;
 
-  runApp(const KloofApp());
+  runApp(KloofApp(initialLocale: initialLocale));
 }
 
 class KloofApp extends StatefulWidget {
-  const KloofApp({super.key});
+  final Locale? initialLocale;
+
+  const KloofApp({
+    super.key,
+    this.initialLocale,
+  });
 
   @override
   State<KloofApp> createState() => _KloofAppState();
@@ -27,11 +37,20 @@ class KloofApp extends StatefulWidget {
 class _KloofAppState extends State<KloofApp> {
   Locale? _locale;
 
+  @override
+  void initState() {
+    super.initState();
+    _locale = widget.initialLocale;
+  }
+
   void _setLocale(Locale locale) {
     if (_locale == locale) return;
+
     setState(() {
       _locale = locale;
     });
+
+    unawaited(LocalePreferences.saveLocale(locale));
   }
 
   @override
