@@ -448,7 +448,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _categoryChip(String text) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(25)),
       child: Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
     );
