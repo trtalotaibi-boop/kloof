@@ -33,15 +33,6 @@ class WelcomeScreen extends StatelessWidget {
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () => Navigator.pop(context),
               ),
-              actions: [
-                if (onLocaleChanged != null)
-                  Padding(
-                    padding: const EdgeInsetsDirectional.only(end: 12),
-                    child: LanguageSelector(
-                      onLocaleChanged: onLocaleChanged!,
-                    ),
-                  ),
-              ],
             )
           : null,
       body: SafeArea(
@@ -49,89 +40,86 @@ class WelcomeScreen extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 30),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Align(
-                  alignment: AlignmentDirectional.centerEnd,
-                  child: onLocaleChanged == null
-                      ? const SizedBox(height: 40)
-                      : LanguageSelector(
-                          onLocaleChanged: onLocaleChanged!,
-                        ),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: onLocaleChanged == null
+                        ? const SizedBox.shrink()
+                        : LanguageSelector(
+                            onLocaleChanged: onLocaleChanged!,
+                          ),
+                  ),
                 ),
-                const SizedBox.shrink(),
-                Column(
-                  children: [
-                    const Icon(
-                      Icons.content_cut,
-                      size: 100,
-                      color: Colors.black,
-                    ),
-
-                    const SizedBox(height: 30),
-
-                    const Text(
-                      'KLOOF',
-                      style: TextStyle(
-                        fontSize: 42,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 3,
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.content_cut,
+                        size: 100,
+                        color: Colors.black,
                       ),
-                    ),
-
-                    const SizedBox(height: 15),
-
-                    Text(
-                      l10n.welcomeTagline,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 18, color: Colors.grey),
-                    ),
-
-                    const SizedBox(height: 50),
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 55,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => LoginScreen(
-                                onLocaleChanged: onLocaleChanged,
+                      const SizedBox(height: 30),
+                      const Text(
+                        'KLOOF',
+                        style: TextStyle(
+                          fontSize: 42,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 3,
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+                      Text(
+                        l10n.welcomeTagline,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 18, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 50),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 55,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => LoginScreen(
+                                  onLocaleChanged: onLocaleChanged,
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                        child: Text(
-                          l10n.welcomeLogin,
-                          style: const TextStyle(fontSize: 18),
+                            );
+                          },
+                          child: Text(
+                            l10n.welcomeLogin,
+                            style: const TextStyle(fontSize: 18),
+                          ),
                         ),
                       ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 55,
-                      child: OutlinedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  RegisterScreen(selectedRole: selectedRole),
-                            ),
-                          );
-                        },
-                        child: Text(
-                          l10n.welcomeCreateAccount,
-                          style: const TextStyle(fontSize: 18),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 55,
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    RegisterScreen(selectedRole: selectedRole),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            l10n.welcomeCreateAccount,
+                            style: const TextStyle(fontSize: 18),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 if (showBarberPortal)
                   Padding(
