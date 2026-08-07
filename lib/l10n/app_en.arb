@@ -35,12 +35,7 @@
   "bookingSlotAlreadyBooked": "This slot is already booked for today.",
   "bookingConfirmFailed": "Failed to confirm booking.",
   "bookingServicePriceLabel": "{service} - {price} SAR",
-  "@bookingServicePriceLabel": {
-    "placeholders": {
-      "service": {},
-      "price": {}
-    }
-  },
+  "@bookingServicePriceLabel": {"placeholders":{"service":{},"price":{}}},
   "bookingConfirmationTitle": "Booking Confirmation",
   "bookingConfirmationReceivedTitle": "Booking Request Received",
   "bookingConfirmationReceivedBody": "Your booking request has been received successfully.",
@@ -53,11 +48,7 @@
   "bookingConfirmationStatusPending": "Pending",
   "bookingConfirmationDone": "Done",
   "bookingConfirmationPriceValue": "{price} SAR",
-  "@bookingConfirmationPriceValue": {
-    "placeholders": {
-      "price": {}
-    }
-  },
+  "@bookingConfirmationPriceValue": {"placeholders":{"price":{}}},
   "notificationMessageBookingSubmitted": "Your booking request has been submitted.",
   "notificationMessageNewBookingRequest": "New booking request.",
   "notificationMessageBookingAccepted": "Your booking has been accepted.",
@@ -127,11 +118,7 @@
   "barberDashboardSet": "Set",
   "barberDashboardAppointmentDuration": "Appointment Duration",
   "barberDashboardMinutes": "{minutes} minutes",
-  "@barberDashboardMinutes": {
-    "placeholders": {
-      "minutes": {}
-    }
-  },
+  "@barberDashboardMinutes": {"placeholders":{"minutes":{}}},
   "barberDashboardBreakStart": "Break Start",
   "barberDashboardBreakEnd": "Break End",
   "barberDashboardNotSet": "Not set",
@@ -140,5 +127,35 @@
   "barberDashboardBookings": "Bookings",
   "barberDashboardNoBookings": "No bookings yet",
   "barberDashboardComplete": "Complete",
-  "barberDashboardOnline": "Online"
+  "barberDashboardOnline": "Online",
+  "editBarberTitle": "Edit Barber Profile",
+  "editBarberSelectProfileImage": "Select Profile Image",
+  "editBarberBarberName": "Barber Name",
+  "editBarberShopName": "Shop Name",
+  "editBarberPhone": "Phone",
+  "editBarberCity": "City",
+  "editBarberAddress": "Address",
+  "editBarberBio": "Bio",
+  "editBarberServices": "Services",
+  "editBarberDefaultService": "Default Service",
+  "editBarberService": "Service",
+  "editBarberServiceName": "Service Name",
+  "editBarberPriceSar": "Price (SAR)",
+  "editBarberDurationMinutes": "Duration (minutes)",
+  "editBarberAddNewService": "Add New Service",
+  "editBarberSaveProfile": "Save Profile",
+  "editBarberRemoveService": "Remove service",
+  "editBarberCityMakkah": "Makkah",
+  "editBarberCityJeddah": "Jeddah",
+  "editBarberCityMadinah": "Madinah",
+  "editBarberCityRiyadh": "Riyadh",
+  "editBarberCityDammam": "Dammam",
+  "editBarberLoadFailed": "Failed to load barber profile.",
+  "editBarberSaveFailed": "Failed to save barber profile.",
+  "editBarberSignedOutError": "Barber is not signed in.",
+  "editBarberCustomServiceNameRequired": "Custom service name is required.",
+  "editBarberDefaultPriceRequired": "Price is required for default services.",
+  "editBarberInvalidPrice": "Please enter a valid numeric price.",
+  "editBarberDefaultPricePositive": "Default service price must be greater than zero.",
+  "editBarberInvalidDuration": "Duration must be a valid positive number."
 }
