@@ -32,12 +32,12 @@ class _HomeScreenState extends State<HomeScreen> {
         return l10n.serviceBeard;
       case 'haircut + beard':
       case 'حلاقة الرأس والدقن':
-        return l10n.serviceHaircutAndBeard;
+        return l10n.barberProfileServiceHaircutAndBeard;
       case 'kids':
       case 'kids haircut':
       case 'أطفال':
       case 'حلاقة أطفال':
-        return l10n.serviceKids;
+        return l10n.homeCategoryKids;
       default:
         return rawName.trim();
     }
@@ -229,7 +229,7 @@ class _HomeScreenState extends State<HomeScreen> {
               );
             },
             child: Text(
-              l10n.homeMyBookings,
+              l10n.myBookingsTitle,
               style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
             ),
           ),
@@ -266,7 +266,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(width: 10),
                   _categoryChip(l10n.serviceBeard),
                   const SizedBox(width: 10),
-                  _categoryChip(l10n.serviceKids),
+                  _categoryChip(l10n.homeCategoryKids),
                   const SizedBox(width: 10),
                   _categoryChip(l10n.homeCategoryVip),
                 ],
