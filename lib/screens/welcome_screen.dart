@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kloof/l10n/app_localizations.dart';
+import 'package:kloof/widgets/language_selector.dart';
 import 'login_screen.dart';
 import 'package:kloof/screens/register_screen.dart';
 
@@ -7,12 +8,14 @@ class WelcomeScreen extends StatelessWidget {
   final String selectedRole;
   final bool showBarberPortal;
   final bool showBackButton;
+  final ValueChanged<Locale>? onLocaleChanged;
 
   const WelcomeScreen({
     super.key,
     this.selectedRole = 'customer',
     this.showBarberPortal = true,
     this.showBackButton = false,
+    this.onLocaleChanged,
   });
 
   @override
@@ -30,6 +33,15 @@ class WelcomeScreen extends StatelessWidget {
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () => Navigator.pop(context),
               ),
+              actions: [
+                if (onLocaleChanged != null)
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(end: 12),
+                    child: LanguageSelector(
+                      onLocaleChanged: onLocaleChanged!,
+                    ),
+                  ),
+              ],
             )
           : null,
       body: SafeArea(
@@ -39,7 +51,14 @@ class WelcomeScreen extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const SizedBox(height: 12),
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: onLocaleChanged == null
+                      ? const SizedBox(height: 40)
+                      : LanguageSelector(
+                          onLocaleChanged: onLocaleChanged!,
+                        ),
+                ),
                 const SizedBox.shrink(),
                 Column(
                   children: [
@@ -65,7 +84,7 @@ class WelcomeScreen extends StatelessWidget {
                     Text(
                       l10n.welcomeTagline,
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 18, color: Colors.grey),
+                      style: const TextStyle(fontSize: 18, color: Colors.grey),
                     ),
 
                     const SizedBox(height: 50),
@@ -78,7 +97,9 @@ class WelcomeScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const LoginScreen(),
+                              builder: (context) => LoginScreen(
+                                onLocaleChanged: onLocaleChanged,
+                              ),
                             ),
                           );
                         },
@@ -120,10 +141,11 @@ class WelcomeScreen extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const WelcomeScreen(
+                            builder: (context) => WelcomeScreen(
                               selectedRole: 'barber',
                               showBarberPortal: false,
                               showBackButton: true,
+                              onLocaleChanged: onLocaleChanged,
                             ),
                           ),
                         );
