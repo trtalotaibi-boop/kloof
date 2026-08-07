@@ -35,12 +35,7 @@
   "bookingSlotAlreadyBooked": "هذا الموعد محجوز بالفعل اليوم.",
   "bookingConfirmFailed": "فشل تأكيد الحجز.",
   "bookingServicePriceLabel": "{service} - {price} ر.س",
-  "@bookingServicePriceLabel": {
-    "placeholders": {
-      "service": {},
-      "price": {}
-    }
-  },
+  "@bookingServicePriceLabel": {"placeholders":{"service":{},"price":{}}},
   "bookingConfirmationTitle": "تأكيد الحجز",
   "bookingConfirmationReceivedTitle": "تم استلام طلب الحجز",
   "bookingConfirmationReceivedBody": "تم استلام طلب الحجز بنجاح.",
@@ -53,11 +48,7 @@
   "bookingConfirmationStatusPending": "قيد الانتظار",
   "bookingConfirmationDone": "تم",
   "bookingConfirmationPriceValue": "{price} ر.س",
-  "@bookingConfirmationPriceValue": {
-    "placeholders": {
-      "price": {}
-    }
-  },
+  "@bookingConfirmationPriceValue": {"placeholders":{"price":{}}},
   "notificationMessageBookingSubmitted": "تم إرسال طلب حجزك.",
   "notificationMessageNewBookingRequest": "طلب حجز جديد.",
   "notificationMessageBookingAccepted": "تم قبول حجزك.",
@@ -127,11 +118,7 @@
   "barberDashboardSet": "تعيين",
   "barberDashboardAppointmentDuration": "مدة الموعد",
   "barberDashboardMinutes": "{minutes} دقيقة",
-  "@barberDashboardMinutes": {
-    "placeholders": {
-      "minutes": {}
-    }
-  },
+  "@barberDashboardMinutes": {"placeholders":{"minutes":{}}},
   "barberDashboardBreakStart": "بداية الاستراحة",
   "barberDashboardBreakEnd": "نهاية الاستراحة",
   "barberDashboardNotSet": "غير محدد",
@@ -140,5 +127,35 @@
   "barberDashboardBookings": "الحجوزات",
   "barberDashboardNoBookings": "لا توجد حجوزات حتى الآن",
   "barberDashboardComplete": "إكمال",
-  "barberDashboardOnline": "متصل"
+  "barberDashboardOnline": "متصل",
+  "editBarberTitle": "تعديل ملف الحلاق",
+  "editBarberSelectProfileImage": "اختيار صورة الملف الشخصي",
+  "editBarberBarberName": "اسم الحلاق",
+  "editBarberShopName": "اسم المحل",
+  "editBarberPhone": "رقم الجوال",
+  "editBarberCity": "المدينة",
+  "editBarberAddress": "العنوان",
+  "editBarberBio": "نبذة",
+  "editBarberServices": "الخدمات",
+  "editBarberDefaultService": "خدمة أساسية",
+  "editBarberService": "خدمة",
+  "editBarberServiceName": "اسم الخدمة",
+  "editBarberPriceSar": "السعر (ر.س)",
+  "editBarberDurationMinutes": "المدة (بالدقائق)",
+  "editBarberAddNewService": "إضافة خدمة جديدة",
+  "editBarberSaveProfile": "حفظ الملف",
+  "editBarberRemoveService": "حذف الخدمة",
+  "editBarberCityMakkah": "مكة",
+  "editBarberCityJeddah": "جدة",
+  "editBarberCityMadinah": "المدينة المنورة",
+  "editBarberCityRiyadh": "الرياض",
+  "editBarberCityDammam": "الدمام",
+  "editBarberLoadFailed": "فشل تحميل ملف الحلاق.",
+  "editBarberSaveFailed": "فشل حفظ ملف الحلاق.",
+  "editBarberSignedOutError": "الحلاق غير مسجل الدخول.",
+  "editBarberCustomServiceNameRequired": "اسم الخدمة المخصصة مطلوب.",
+  "editBarberDefaultPriceRequired": "السعر مطلوب للخدمات الأساسية.",
+  "editBarberInvalidPrice": "يرجى إدخال سعر رقمي صحيح.",
+  "editBarberDefaultPricePositive": "يجب أن يكون سعر الخدمة الأساسية أكبر من صفر.",
+  "editBarberInvalidDuration": "يجب أن تكون المدة رقمًا موجبًا صحيحًا."
 }
