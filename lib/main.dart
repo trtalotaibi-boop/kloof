@@ -17,16 +17,40 @@ Future<void> main() async {
   runApp(const KloofApp());
 }
 
-class KloofApp extends StatelessWidget {
+class KloofApp extends StatefulWidget {
   const KloofApp({super.key});
+
+  @override
+  State<KloofApp> createState() => _KloofAppState();
+}
+
+class _KloofAppState extends State<KloofApp> {
+  Locale? _locale;
+
+  void _setLocale(Locale locale) {
+    if (_locale == locale) return;
+    setState(() {
+      _locale = locale;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
-      locale: const Locale('ar'),
+      locale: _locale,
       supportedLocales: const [Locale('ar'), Locale('en')],
+      localeResolutionCallback: (deviceLocale, supportedLocales) {
+        if (deviceLocale != null) {
+          for (final supportedLocale in supportedLocales) {
+            if (supportedLocale.languageCode == deviceLocale.languageCode) {
+              return supportedLocale;
+            }
+          }
+        }
+        return const Locale('en');
+      },
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -37,13 +61,18 @@ class KloofApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.black),
         useMaterial3: true,
       ),
-      home: const AuthenticationWrapper(),
+      home: AuthenticationWrapper(onLocaleChanged: _setLocale),
     );
   }
 }
 
 class AuthenticationWrapper extends StatelessWidget {
-  const AuthenticationWrapper({super.key});
+  final ValueChanged<Locale> onLocaleChanged;
+
+  const AuthenticationWrapper({
+    super.key,
+    required this.onLocaleChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -85,9 +114,9 @@ class AuthenticationWrapper extends StatelessWidget {
               return const HomeScreen();
             },
           );
-        } else {
-          return const WelcomeScreen();
         }
+
+        return WelcomeScreen(onLocaleChanged: onLocaleChanged);
       },
     );
   }
