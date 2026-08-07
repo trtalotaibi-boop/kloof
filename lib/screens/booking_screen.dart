@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:kloof/l10n/app_localizations.dart';
 
 import 'booking_confirmation_screen.dart';
 import 'login_screen.dart';
@@ -22,7 +23,46 @@ class BookingScreen extends StatefulWidget {
 }
 
 class _BookingScreenState extends State<BookingScreen> {
+  String? _selectedService;
   String? _selectedTime;
+
+  List<String> _serviceNames() {
+    return widget.service
+        .replaceAll('•', ',')
+        .split(',')
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toSet()
+        .toList();
+  }
+
+  String _localizedServiceName(String rawName, AppLocalizations l10n) {
+    final normalized = rawName.trim().toLowerCase();
+    switch (normalized) {
+      case 'haircut':
+      case 'حلاقة الرأس':
+        return l10n.serviceHaircut;
+      case 'beard':
+      case 'beard trim':
+      case 'حلاقة الدقن':
+        return l10n.serviceBeard;
+      case 'haircut + beard':
+      case 'حلاقة الرأس والدقن':
+        return l10n.barberProfileServiceHaircutAndBeard;
+      case 'kids':
+      case 'kids haircut':
+      case 'حلاقة أطفال':
+        return l10n.serviceKidsHaircut;
+      case 'full head shave (zero cut)':
+      case 'full head shave':
+      case 'zero cut':
+      case 'حلاقة كاملة (زيرو)':
+      case 'حلاقة الرأس بالمكينة':
+        return l10n.serviceFullHeadShave;
+      default:
+        return rawName.trim();
+    }
+  }
 
   Future<void> _createNotification({
     required String recipientId,
@@ -53,6 +93,15 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Future<void> _onConfirmBooking() async {
+    if (_selectedService == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a service before confirming.'),
+        ),
+      );
+      return;
+    }
+
     if (_selectedTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -62,6 +111,7 @@ class _BookingScreenState extends State<BookingScreen> {
       return;
     }
 
+    final service = _selectedService!;
     final time = _selectedTime!;
 
     final currentUser = FirebaseAuth.instance.currentUser;
@@ -114,7 +164,7 @@ class _BookingScreenState extends State<BookingScreen> {
             'barberId': barberId,
             'barberName': widget.barberName,
             'customerId': customerId,
-            'service': widget.service,
+            'service': service,
             'selectedTime': time,
             'bookingDate': Timestamp.fromDate(bookingDate),
             'status': 'pending',
@@ -147,7 +197,7 @@ class _BookingScreenState extends State<BookingScreen> {
       MaterialPageRoute(
         builder: (context) => BookingConfirmationScreen(
           barberName: widget.barberName,
-          service: widget.service,
+          service: service,
           selectedDate: DateTime.now(),
           selectedTime: time,
         ),
@@ -157,6 +207,9 @@ class _BookingScreenState extends State<BookingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final services = _serviceNames();
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F8F8),
       appBar: AppBar(
@@ -183,12 +236,48 @@ class _BookingScreenState extends State<BookingScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Service: ${widget.service}',
-                      style: const TextStyle(color: Colors.grey, fontSize: 15),
-                    ),
                     const SizedBox(height: 24),
+                    const Text(
+                      'Select Service',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (services.isEmpty)
+                      const Text(
+                        'No services available.',
+                        style: TextStyle(color: Colors.grey),
+                      )
+                    else
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: services.map((service) {
+                          final selected = _selectedService == service;
+                          return ChoiceChip(
+                            label: Text(_localizedServiceName(service, l10n)),
+                            selected: selected,
+                            onSelected: (_) {
+                              setState(() {
+                                _selectedService = service;
+                              });
+                            },
+                            selectedColor: Colors.black,
+                            backgroundColor: Colors.white,
+                            labelStyle: TextStyle(
+                              color: selected ? Colors.white : Colors.black,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            side: const BorderSide(color: Colors.black26),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    const SizedBox(height: 28),
                     const Text(
                       'Select Time',
                       style: TextStyle(
