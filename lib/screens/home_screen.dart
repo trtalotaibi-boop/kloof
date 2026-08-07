@@ -265,19 +265,16 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 10),
             Text(l10n.homeCategories, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
             const SizedBox(height: 15),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _categoryChip(l10n.serviceHaircut),
-                  const SizedBox(width: 10),
-                  _categoryChip(l10n.serviceBeard),
-                  const SizedBox(width: 10),
-                  _categoryChip(l10n.serviceKidsHaircut),
-                  const SizedBox(width: 10),
-                  _categoryChip(l10n.homeCategoryVip),
-                ],
-              ),
+            Row(
+              children: [
+                Expanded(child: _categoryChip(l10n.serviceHaircut)),
+                const SizedBox(width: 8),
+                Expanded(child: _categoryChip(l10n.serviceBeard)),
+                const SizedBox(width: 8),
+                Expanded(child: _categoryChip(l10n.serviceKidsHaircut)),
+                const SizedBox(width: 8),
+                Expanded(child: _categoryChip(l10n.homeCategoryVip)),
+              ],
             ),
             const SizedBox(height: 30),
             Text(l10n.homeFindFavoriteBarber, style: const TextStyle(color: Colors.grey, fontSize: 16)),
@@ -448,9 +445,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _categoryChip(String text) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      height: 48,
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
       decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(25)),
-      child: Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          text,
+          maxLines: 1,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      ),
     );
   }
 }
