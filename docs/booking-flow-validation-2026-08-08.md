@@ -8,7 +8,7 @@ This is a validation record, not a production-readiness declaration.
 
 ## Verified end-to-end flow
 
-The following transitions were manually verified from the customer and barber interfaces:
+The following transitions were manually verified from the customer and barber interfaces before the later hardening commits on this branch:
 
 - Booking creation writes a `bookings` document with `status: pending`.
 - Pending bookings appear in the customer's **My Bookings** screen.
@@ -18,8 +18,7 @@ The following transitions were manually verified from the customer and barber in
 - Barber acceptance changes the booking to `accepted` and the customer sees the accepted state.
 - An accepted booking keeps its time slot unavailable to prevent a second booking through the current UI flow.
 - Barber completion changes the booking to `completed` and the customer sees the completed state.
-
-The normal UI flow above was verified end-to-end. This does **not** prove atomic protection against two concurrent clients attempting to reserve the same slot.
+- An afternoon booking at `5:00 PM` was manually checked end-to-end before the hardening commits: selection, confirmation, and My Bookings showed the same afternoon time, and the slot disappeared after booking.
 
 ## Firestore composite indexes required by the verified queries
 
@@ -39,41 +38,50 @@ Barber booking list query:
 
 These indexes were enabled manually in the Firebase console during validation. The repository-level definition is stored in `firestore.indexes.json` so the required indexes are documented and can later be managed through Firebase CLI deployment.
 
-## Booking hardening implemented on the safety branch
+## Hardening implemented on the isolated branch
 
-### 1. Time display consistency
+The branch `chore/booking-safety-docs-2026-08-08` now contains narrow follow-up changes that have **not** been merged into the protected base branch:
 
-`bookings` stores both `selectedTime` and `selectedTimeMinutes`. The numeric field is now treated as the preferred canonical display source in both customer **My Bookings** and the barber dashboard.
+### 1. Canonical booking-time display
 
-Current implementation:
+Both customer **My Bookings** and **Barber Dashboard** now prefer numeric `selectedTimeMinutes` when rendering booking time and use the active Material locale for display.
 
-- Prefer `selectedTimeMinutes` when it is present and valid.
-- Format the numeric value with `MaterialLocalizations.formatTimeOfDay` for the active locale.
-- Fall back to the stored `selectedTime` value for older documents.
-- No booking data migration was performed.
-- No booking-write or availability logic was changed.
+Backward compatibility is preserved: older documents without a valid `selectedTimeMinutes` value fall back to their stored `selectedTime` string.
 
-Validation evidence so far:
-
-- A new afternoon booking at `5:00 PM` was manually verified on the customer side: slot selection, confirmation, and My Bookings all showed the same afternoon time.
-- Barber-side canonical-minutes rendering was implemented in commit `f785f23` but still needs a physical-device check.
-- A morning booking still needs an explicit post-change display check.
-- A legacy booking without `selectedTimeMinutes` still needs an explicit fallback check.
+No booking write semantics or existing Firestore documents were migrated.
 
 ### 2. Booking action visibility
 
-The barber dashboard now exposes only the state-change actions valid for the current booking state:
+The barber dashboard now exposes only state-appropriate UI actions:
 
 - `pending`: Accept, Reject
 - `accepted`: Complete
 - `rejected`: no state-change actions
 - `completed`: no state-change actions
 
-This UI-only safety change was implemented in commit `b85acff`. It does not modify `_updateBookingStatus`, Firestore write behavior, booking creation, or slot availability logic.
+This is a UI safety improvement only. It is not server-side transition enforcement.
 
-A physical-device regression check of all four states is still required before this item is considered fully validated.
+### 3. Repository index definition
 
-## Remaining production-readiness items
+`firestore.indexes.json` records the two composite indexes used by the verified customer and barber booking queries.
+
+## Required checks still pending before merge
+
+The following items are intentionally **not** marked complete and are a merge gate:
+
+1. Device regression check of barber action visibility:
+   - pending -> Accept + Reject only
+   - accepted -> Complete only
+   - rejected -> no actions
+   - completed -> no actions
+2. Device check of Barber Dashboard time rendering from `selectedTimeMinutes`.
+3. Morning-time display check after the canonical-minutes changes.
+4. Legacy booking display check using a booking document without `selectedTimeMinutes`.
+5. Fresh Flutter static analysis/tests for the latest branch head. No GitHub CI/status evidence was available at the time this record was updated.
+
+Until these checks are evidenced, the PR must remain **Draft** and must not be merged.
+
+## Known follow-up items outside this branch
 
 ### 1. Concurrency / true double-booking protection
 
@@ -81,19 +89,13 @@ The current booking creation path checks existing bookings before adding the new
 
 Do not treat this as solved by the manual test. A transaction, deterministic slot document, or server-side reservation mechanism should be designed before production launch.
 
-### 2. Firestore security rules and server-side state transitions
+### 2. Firestore security rules
 
-The booking flow was functionally validated, but this validation does not prove that Firestore Security Rules prevent unauthorized status changes or cross-user reads/writes.
-
-The current barber action restrictions are UI-only. Rules and/or trusted server-side logic should separately enforce who may update a booking and which status transitions are legal.
-
-### 3. Fresh automated validation
-
-There is currently no CI status or pull-request workflow run proving fresh `flutter analyze` / Flutter tests for the latest branch head. Those checks must be run before the draft PR is approved or merged.
+The booking flow was functionally validated, but this validation does not prove that Firestore Security Rules prevent unauthorized status changes or cross-user reads/writes. Rules require a separate review and emulator/security test pass.
 
 ## Git checkpoint and rollback
 
-The original manually validated code checkpoint is tagged:
+The known-good manually verified checkpoint is tagged:
 
 `kloof-booking-flow-tested-2026-08-08`
 
@@ -101,16 +103,21 @@ The tag points to commit:
 
 `48560ac`
 
-Use the tag as the known-good Git reference for the manually verified booking flow. Note that Git tags do not capture Firebase Console state; Firestore indexes must also be managed from repository configuration for reproducible environments.
+Use that tag as the rollback reference if the isolated hardening branch must be abandoned. The current hardening work is six commits ahead of that checkpoint and remains isolated from the base branch.
 
-The booking hardening work remains isolated on branch:
+Git tags do not capture Firebase Console state; Firestore indexes must also be managed from repository configuration for reproducible environments.
 
-`chore/booking-safety-docs-2026-08-08`
+## Files affected by the isolated hardening branch
 
-Because the hardening commits are separate, an individual change can be reverted without discarding the original known-good checkpoint.
+Compared with the known-good checkpoint, the branch changes only:
+
+- `docs/booking-flow-validation-2026-08-08.md`
+- `firestore.indexes.json`
+- `lib/screens/barber_dashboard_screen.dart`
+- `lib/screens/my_bookings_screen.dart`
 
 ## Local generated platform changes
 
-During iOS execution, Flutter/Xcode regenerated platform/dependency files such as `ios/Podfile.lock`, Xcode project metadata, SwiftPM `Package.resolved`, and macOS generated/plugin files. Those changes were intentionally excluded from the validated booking commits because they were unrelated to the booking business logic.
+During iOS execution, Flutter/Xcode regenerated platform/dependency files such as `ios/Podfile.lock`, Xcode project metadata, SwiftPM `Package.resolved`, and macOS generated/plugin files. Those changes were intentionally excluded from the validated code checkpoint because they were unrelated to the booking business logic.
 
-Three local Git stashes were created during the session as recovery points for generated platform changes. They are local developer artifacts and are not part of this repository or release state.
+Two local Git stashes were created during the manual session as recovery points. They are local developer artifacts and are not part of this repository documentation or release state.
