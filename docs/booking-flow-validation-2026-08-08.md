@@ -103,7 +103,7 @@ The tag points to commit:
 
 `48560ac`
 
-Use that tag as the rollback reference if the isolated hardening branch must be abandoned. The current hardening work is six commits ahead of that checkpoint and remains isolated from the base branch.
+Use that tag as the rollback reference if the isolated hardening branch must be abandoned. The hardening branch remains isolated from the base branch; its exact ahead/behind count can change as documentation-only safety records are updated.
 
 Git tags do not capture Firebase Console state; Firestore indexes must also be managed from repository configuration for reproducible environments.
 
