@@ -704,6 +704,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                           context,
                           rawTime,
                         );
+                        final normalizedStatus = status.toLowerCase();
 
                         return Card(
                           margin: const EdgeInsetsDirectional.only(bottom: 12),
@@ -768,42 +769,52 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                                 Text('${l10n.myBookingsServiceLabel}: $service'),
                                 Text('${l10n.myBookingsDateLabel}: $date'),
                                 Text('${l10n.myBookingsTimeLabel}: $time'),
-                                const SizedBox(height: 10),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: OutlinedButton(
-                                        onPressed: () => _updateBookingStatus(
-                                          doc.id,
-                                          'accepted',
-                                        ),
-                                        child: Text(l10n.barberBookingsAccept),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: OutlinedButton(
-                                        onPressed: () => _updateBookingStatus(
-                                          doc.id,
-                                          'rejected',
-                                        ),
-                                        child: Text(l10n.barberBookingsReject),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: OutlinedButton(
-                                        onPressed: () => _updateBookingStatus(
-                                          doc.id,
-                                          'completed',
-                                        ),
-                                        child: Text(
-                                          l10n.barberDashboardComplete,
+                                if (normalizedStatus == 'pending') ...[
+                                  const SizedBox(height: 10),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: OutlinedButton(
+                                          onPressed: () =>
+                                              _updateBookingStatus(
+                                            doc.id,
+                                            'accepted',
+                                          ),
+                                          child: Text(
+                                            l10n.barberBookingsAccept,
+                                          ),
                                         ),
                                       ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: OutlinedButton(
+                                          onPressed: () =>
+                                              _updateBookingStatus(
+                                            doc.id,
+                                            'rejected',
+                                          ),
+                                          child: Text(
+                                            l10n.barberBookingsReject,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ] else if (normalizedStatus == 'accepted') ...[
+                                  const SizedBox(height: 10),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: OutlinedButton(
+                                      onPressed: () => _updateBookingStatus(
+                                        doc.id,
+                                        'completed',
+                                      ),
+                                      child: Text(
+                                        l10n.barberDashboardComplete,
+                                      ),
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
