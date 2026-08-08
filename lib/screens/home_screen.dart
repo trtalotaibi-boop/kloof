@@ -18,6 +18,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _isCheckingRole = true;
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  String _searchQuery = '';
 
   String _localizedServiceName(String rawName, AppLocalizations l10n) {
     final normalized = rawName.trim().toLowerCase();
@@ -60,10 +63,39 @@ class _HomeScreenState extends State<HomeScreen> {
         .join(' • ');
   }
 
+  void _clearSearch() {
+    _searchController.clear();
+    _searchFocusNode.unfocus();
+    if (_searchQuery.isEmpty) return;
+    setState(() {
+      _searchQuery = '';
+    });
+  }
+
+  bool _matchesSearch(Map<String, Object?> barber) {
+    final query = _searchQuery.trim().toLowerCase();
+    if (query.isEmpty) return true;
+
+    final searchableText = [
+      barber['name'],
+      barber['services'],
+      barber['address'],
+    ].whereType<Object>().map((value) => value.toString().toLowerCase()).join(' ');
+
+    return searchableText.contains(query);
+  }
+
   @override
   void initState() {
     super.initState();
     _enforceCustomerAccess();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
   }
 
   Future<void> _enforceCustomerAccess() async {
@@ -246,6 +278,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: ListView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -280,9 +313,32 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(l10n.homeFindFavoriteBarber, style: const TextStyle(color: Colors.grey, fontSize: 16)),
             const SizedBox(height: 25),
             TextField(
+              controller: _searchController,
+              focusNode: _searchFocusNode,
+              textInputAction: TextInputAction.search,
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+              onSubmitted: (_) => _searchFocusNode.unfocus(),
+              onTapOutside: (_) => _searchFocusNode.unfocus(),
               decoration: InputDecoration(
                 hintText: l10n.homeSearchHint,
                 prefixIcon: const Icon(Icons.search),
+                suffixIcon: ListenableBuilder(
+                  listenable: Listenable.merge([_searchController, _searchFocusNode]),
+                  builder: (context, _) {
+                    if (_searchController.text.isEmpty && !_searchFocusNode.hasFocus) {
+                      return const SizedBox.shrink();
+                    }
+                    return IconButton(
+                      tooltip: l10n.commonCancel,
+                      onPressed: _clearSearch,
+                      icon: const Icon(Icons.close),
+                    );
+                  },
+                ),
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
@@ -328,13 +384,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     'longitude': longitude,
                     'isOnline': isOnline,
                   };
-                }).whereType<Map<String, Object?>>().toList();
+                }).whereType<Map<String, Object?>>().where(_matchesSearch).toList();
                 barbers.sort((a, b) {
                   final aOnline = a['isOnline'] as bool;
                   final bOnline = b['isOnline'] as bool;
                   if (aOnline == bOnline) return 0;
                   return aOnline ? -1 : 1;
                 });
+                if (barbers.isEmpty) {
+                  return Text(l10n.homeNoBarbersFound);
+                }
                 return Column(
                   children: barbers.map((barber) {
                     return _barberCard(
