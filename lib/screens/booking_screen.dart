@@ -112,7 +112,9 @@ class _BookingScreenState extends State<BookingScreen> {
         _isLoadingServices = false;
         _isLoadingAvailability = false;
       });
-    } catch (_) {
+    } catch (error, stackTrace) {
+      debugPrint('BOOKING_OPTIONS_LOAD_ERROR: $error');
+      debugPrintStack(stackTrace: stackTrace);
       if (!mounted) return;
       setState(() {
         _isLoadingServices = false;
@@ -142,6 +144,13 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   int _minutesOfDay(TimeOfDay time) => (time.hour * 60) + time.minute;
+
+  String _slotLockId(String barberId, DateTime bookingDate, int minutes) {
+    final year = bookingDate.year.toString().padLeft(4, '0');
+    final month = bookingDate.month.toString().padLeft(2, '0');
+    final day = bookingDate.day.toString().padLeft(2, '0');
+    return '${barberId}_${year}${month}${day}_$minutes';
+  }
 
   Future<List<_TimeSlot>> _loadAvailableTimes(
     String barberId,
@@ -272,6 +281,70 @@ class _BookingScreenState extends State<BookingScreen> {
     });
   }
 
+  Future<DocumentReference<Map<String, dynamic>>> _createBookingAtomically({
+    required String barberId,
+    required String customerId,
+    required DateTime bookingDate,
+    required _ServiceOption service,
+    required _TimeSlot time,
+  }) async {
+    final firestore = FirebaseFirestore.instance;
+    final bookingRef = firestore.collection('bookings').doc();
+    final slotLockId = _slotLockId(barberId, bookingDate, time.minutes);
+    final slotLockRef = firestore.collection('bookingSlots').doc(slotLockId);
+
+    await firestore.runTransaction((transaction) async {
+      final lockSnapshot = await transaction.get(slotLockRef);
+
+      if (lockSnapshot.exists) {
+        final lockData = lockSnapshot.data() ?? <String, dynamic>{};
+        final existingBookingId = lockData['bookingId']?.toString();
+
+        if (existingBookingId != null && existingBookingId.isNotEmpty) {
+          final existingBookingRef = firestore
+              .collection('bookings')
+              .doc(existingBookingId);
+          final existingBookingSnapshot = await transaction.get(
+            existingBookingRef,
+          );
+          final existingStatus = existingBookingSnapshot.data()?['status']
+              ?.toString()
+              .toLowerCase();
+
+          if (existingBookingSnapshot.exists && existingStatus != 'rejected') {
+            throw const _SlotAlreadyBookedException();
+          }
+        } else {
+          throw const _SlotAlreadyBookedException();
+        }
+      }
+
+      transaction.set(bookingRef, {
+        'barberId': barberId,
+        'barberName': widget.barberName,
+        'customerId': customerId,
+        'service': service.name,
+        'servicePrice': service.price,
+        'selectedTime': time.label,
+        'selectedTimeMinutes': time.minutes,
+        'bookingDate': Timestamp.fromDate(bookingDate),
+        'status': 'pending',
+        'slotLockId': slotLockId,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      transaction.set(slotLockRef, {
+        'bookingId': bookingRef.id,
+        'barberId': barberId,
+        'bookingDate': Timestamp.fromDate(bookingDate),
+        'selectedTimeMinutes': time.minutes,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+
+    return bookingRef;
+  }
+
   Future<void> _onConfirmBooking() async {
     final l10n = AppLocalizations.of(context);
     if (_isSubmitting) return;
@@ -333,6 +406,9 @@ class _BookingScreenState extends State<BookingScreen> {
       final bookingDate = DateTime(now.year, now.month, now.day);
       final barberId = widget.barberId;
 
+      // Legacy compatibility check: older bookings created before slot locks
+      // still block the same time. The transaction below protects all new
+      // bookings from concurrent double-booking.
       final existingSnapshot = await FirebaseFirestore.instance
           .collection('bookings')
           .where('barberId', isEqualTo: barberId)
@@ -361,32 +437,40 @@ class _BookingScreenState extends State<BookingScreen> {
       }
 
       final customerId = currentUser.uid;
-      final bookingRef = await FirebaseFirestore.instance
-          .collection('bookings')
-          .add({
-            'barberId': barberId,
-            'barberName': widget.barberName,
-            'customerId': customerId,
-            'service': selectedService.name,
-            'servicePrice': selectedService.price,
-            'selectedTime': selectedTime.label,
-            'selectedTimeMinutes': selectedTime.minutes,
-            'bookingDate': Timestamp.fromDate(bookingDate),
-            'status': 'pending',
-            'createdAt': FieldValue.serverTimestamp(),
-          });
+      final bookingRef = await _createBookingAtomically(
+        barberId: barberId,
+        customerId: customerId,
+        bookingDate: bookingDate,
+        service: selectedService,
+        time: selectedTime,
+      );
 
-      await _createNotification(
-        recipientId: customerId,
-        message: l10n.notificationMessageBookingSubmitted,
-        bookingId: bookingRef.id,
+      // Notifications are intentionally best-effort. A notification failure
+      // must not turn a successfully committed booking into a false failure.
+      try {
+        await _createNotification(
+          recipientId: customerId,
+          message: l10n.notificationMessageBookingSubmitted,
+          bookingId: bookingRef.id,
+        );
+        await _createNotification(
+          recipientId: barberId,
+          message: l10n.notificationMessageNewBookingRequest,
+          bookingId: bookingRef.id,
+        );
+      } catch (error, stackTrace) {
+        debugPrint('BOOKING_NOTIFICATION_ERROR: $error');
+        debugPrintStack(stackTrace: stackTrace);
+      }
+    } on _SlotAlreadyBookedException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.bookingSlotAlreadyBooked)),
       );
-      await _createNotification(
-        recipientId: barberId,
-        message: l10n.notificationMessageNewBookingRequest,
-        bookingId: bookingRef.id,
-      );
-    } catch (_) {
+      return;
+    } catch (error, stackTrace) {
+      debugPrint('BOOKING_CONFIRM_ERROR: $error');
+      debugPrintStack(stackTrace: stackTrace);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.bookingConfirmFailed)),
@@ -589,4 +673,8 @@ class _TimeSlot {
   final int minutes;
 
   const _TimeSlot({required this.label, required this.minutes});
+}
+
+class _SlotAlreadyBookedException implements Exception {
+  const _SlotAlreadyBookedException();
 }
