@@ -181,6 +181,7 @@ class MyBookingsScreen extends StatelessWidget {
                 }
 
                 if (snapshot.hasError) {
+                  debugPrint('MY_BOOKINGS_STREAM_ERROR: ${snapshot.error}');
                   return const Center(
                     child: Text(
                       'Failed to load bookings.',
