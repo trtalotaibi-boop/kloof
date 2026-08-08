@@ -62,8 +62,8 @@ class MyBookingsScreen extends StatelessWidget {
       if (name.trim().isNotEmpty) {
         return name;
       }
-    } catch (_) {
-      // Fall through to neutral fallback.
+    } catch (error) {
+      debugPrint('MY_BOOKINGS_BARBER_NAME_ERROR: $error');
     }
 
     return '-';
@@ -182,10 +182,10 @@ class MyBookingsScreen extends StatelessWidget {
 
                 if (snapshot.hasError) {
                   debugPrint('MY_BOOKINGS_STREAM_ERROR: ${snapshot.error}');
-                  return const Center(
+                  return Center(
                     child: Text(
-                      'Failed to load bookings.',
-                      style: TextStyle(color: Colors.black54),
+                      l10n.registerSomethingWentWrong,
+                      style: const TextStyle(color: Colors.black54),
                     ),
                   );
                 }
