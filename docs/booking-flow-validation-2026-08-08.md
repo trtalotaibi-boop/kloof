@@ -120,4 +120,4 @@ Compared with the known-good checkpoint, the branch changes only:
 
 During iOS execution, Flutter/Xcode regenerated platform/dependency files such as `ios/Podfile.lock`, Xcode project metadata, SwiftPM `Package.resolved`, and macOS generated/plugin files. Those changes were intentionally excluded from the validated code checkpoint because they were unrelated to the booking business logic.
 
-Two local Git stashes were created during the manual session as recovery points. They are local developer artifacts and are not part of this repository documentation or release state.
+Local recovery artifacts, if any, are intentionally not represented as repository state.
