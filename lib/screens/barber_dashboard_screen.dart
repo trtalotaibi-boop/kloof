@@ -189,7 +189,21 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
     return '$hour12:$minuteText ${isPm ? 'PM' : 'AM'}';
   }
 
-  String _formatStoredTimeForDisplay(BuildContext context, String value) {
+  String _formatBookingTimeForDisplay(
+    BuildContext context,
+    Map<String, dynamic> booking,
+  ) {
+    final rawMinutes = booking['selectedTimeMinutes'];
+    if (rawMinutes is num) {
+      final minutes = rawMinutes.toInt();
+      if (minutes >= 0 && minutes < 24 * 60) {
+        final time = TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60);
+        return MaterialLocalizations.of(context).formatTimeOfDay(time);
+      }
+    }
+
+    final value = booking['selectedTime']?.toString().trim() ?? '';
+    if (value.isEmpty) return '-';
     final parsed = _parseTimeLabel(value);
     return parsed == null
         ? value
@@ -699,10 +713,9 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                           context,
                           data['bookingDate'] as Timestamp?,
                         );
-                        final rawTime = data['selectedTime']?.toString() ?? '-';
-                        final time = _formatStoredTimeForDisplay(
+                        final time = _formatBookingTimeForDisplay(
                           context,
-                          rawTime,
+                          data,
                         );
                         final normalizedStatus = status.toLowerCase();
 
