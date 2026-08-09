@@ -41,6 +41,23 @@ class MyBookingsScreen extends StatelessWidget {
     return '${date.day}/${date.month}/${date.year}';
   }
 
+  String _formatBookingTime(
+    BuildContext context,
+    Map<String, dynamic> booking,
+  ) {
+    final rawMinutes = booking['selectedTimeMinutes'];
+    if (rawMinutes is num) {
+      final minutes = rawMinutes.toInt();
+      if (minutes >= 0 && minutes < 24 * 60) {
+        final time = TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60);
+        return MaterialLocalizations.of(context).formatTimeOfDay(time);
+      }
+    }
+
+    final fallback = booking['selectedTime']?.toString().trim();
+    return fallback == null || fallback.isEmpty ? 'N/A' : fallback;
+  }
+
   Future<String> _resolveBarberName(
     String barberId,
     String? fallbackName,
@@ -74,7 +91,7 @@ class MyBookingsScreen extends StatelessWidget {
     final barberId = (booking['barberId'] as String?) ?? '';
     final fallbackBarberName = booking['barberName'] as String?;
     final service = (booking['service'] as String?) ?? 'N/A';
-    final selectedTime = (booking['selectedTime'] as String?) ?? 'N/A';
+    final selectedTime = _formatBookingTime(context, booking);
     final bookingDate = booking['bookingDate'] as Timestamp?;
     final status = (booking['status'] as String?) ?? 'pending';
 
@@ -160,7 +177,10 @@ class MyBookingsScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
-        title: Text(l10n.myBookingsTitle, style: const TextStyle(color: Colors.black)),
+        title: Text(
+          l10n.myBookingsTitle,
+          style: const TextStyle(color: Colors.black),
+        ),
       ),
       body: user == null
           ? Center(
