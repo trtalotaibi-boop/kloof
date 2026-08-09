@@ -45,7 +45,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
   bool _isSavingWorkingHours = false;
 
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
-      _barberSubscription;
+  _barberSubscription;
 
   late final BarberStatusCubit _barberStatusCubit;
   bool _isCheckingRole = true;
@@ -141,9 +141,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
       final breakStart = _parseTimeLabel(
         workingHours['breakStart']?.toString(),
       );
-      final breakEnd = _parseTimeLabel(
-        workingHours['breakEnd']?.toString(),
-      );
+      final breakEnd = _parseTimeLabel(workingHours['breakEnd']?.toString());
 
       setState(() {
         _barberId = uid;
@@ -283,14 +281,14 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
       }, SetOptions(merge: true));
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.barberDashboardSaved)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.barberDashboardSaved)));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.barberDashboardSaveFailed)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.barberDashboardSaveFailed)));
     } finally {
       if (mounted) {
         setState(() {
@@ -315,25 +313,52 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
   }
 
   Future<void> _updateBookingStatus(String bookingId, String status) async {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final bookingRef = FirebaseFirestore.instance
         .collection('bookings')
         .doc(bookingId);
 
-    final bookingSnapshot = await bookingRef.get();
-    final bookingData = bookingSnapshot.data();
-    final customerId = bookingData?['customerId']?.toString();
+    final requestedStatus = status.toLowerCase();
 
-    await bookingRef.update({'status': status});
+    final result = await FirebaseFirestore.instance
+        .runTransaction<Map<String, dynamic>?>((transaction) async {
+          final bookingSnapshot = await transaction.get(bookingRef);
+          final bookingData = bookingSnapshot.data();
+
+          if (bookingData == null) return null;
+
+          final currentStatus = (bookingData['status']?.toString() ?? 'pending')
+              .toLowerCase();
+
+          final isAllowed =
+              (currentStatus == 'pending' &&
+                  (requestedStatus == 'accepted' ||
+                      requestedStatus == 'rejected')) ||
+              (currentStatus == 'accepted' && requestedStatus == 'completed');
+
+          if (!isAllowed) return null;
+
+          transaction.update(bookingRef, {'status': requestedStatus});
+
+          return {
+            'customerId': bookingData['customerId']?.toString(),
+            'status': requestedStatus,
+          };
+        });
+
+    if (result == null) return;
+
+    final customerId = result['customerId']?.toString();
+    final appliedStatus = result['status']?.toString();
 
     if (customerId == null || customerId.trim().isEmpty) return;
 
     String? message;
-    if (status == 'accepted') {
+    if (appliedStatus == 'accepted') {
       message = l10n.notificationMessageBookingAccepted;
-    } else if (status == 'rejected') {
+    } else if (appliedStatus == 'rejected') {
       message = l10n.notificationMessageBookingRejected;
-    } else if (status == 'completed') {
+    } else if (appliedStatus == 'completed') {
       message = l10n.notificationMessageAppointmentCompleted;
     }
 
@@ -779,7 +804,9 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                                   ],
                                 ),
                                 const SizedBox(height: 8),
-                                Text('${l10n.myBookingsServiceLabel}: $service'),
+                                Text(
+                                  '${l10n.myBookingsServiceLabel}: $service',
+                                ),
                                 Text('${l10n.myBookingsDateLabel}: $date'),
                                 Text('${l10n.myBookingsTimeLabel}: $time'),
                                 if (normalizedStatus == 'pending') ...[
@@ -788,8 +815,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                                     children: [
                                       Expanded(
                                         child: OutlinedButton(
-                                          onPressed: () =>
-                                              _updateBookingStatus(
+                                          onPressed: () => _updateBookingStatus(
                                             doc.id,
                                             'accepted',
                                           ),
@@ -801,8 +827,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: OutlinedButton(
-                                          onPressed: () =>
-                                              _updateBookingStatus(
+                                          onPressed: () => _updateBookingStatus(
                                             doc.id,
                                             'rejected',
                                           ),
@@ -822,9 +847,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                                         doc.id,
                                         'completed',
                                       ),
-                                      child: Text(
-                                        l10n.barberDashboardComplete,
-                                      ),
+                                      child: Text(l10n.barberDashboardComplete),
                                     ),
                                   ),
                                 ],
