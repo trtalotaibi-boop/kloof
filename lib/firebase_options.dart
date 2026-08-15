@@ -53,11 +53,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyBPCQ6BNaizmGrAx2JChe0Xz7WKdSBrVgM',
-    appId: '1:818967567121:ios:269a032aed817e1e780ab0',
+    appId: '1:818967567121:ios:61b65080c452e6ec780ab0',
     messagingSenderId: '818967567121',
     projectId: 'kloof-1cfcd',
     storageBucket: 'kloof-1cfcd.firebasestorage.app',
-    iosBundleId: 'com.example.kloof',
+    iosBundleId: 'com.kloof.booking',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
