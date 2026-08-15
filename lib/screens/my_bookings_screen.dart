@@ -173,6 +173,29 @@ class MyBookingsScreen extends StatelessWidget {
     return rawTime;
   }
 
+  String _bookingTime(
+    Map<String, dynamic> booking,
+    AppLocalizations l10n,
+  ) {
+    final slotStart = booking['slotStart'];
+    if (slotStart is Timestamp) {
+      return DateFormat.jm(l10n.localeName).format(slotStart.toDate());
+    }
+
+    final rawMinutes = booking['selectedTimeMinutes'];
+    if (rawMinutes is num) {
+      final minutes = rawMinutes.toInt();
+      if (minutes >= 0 && minutes < 24 * 60) {
+        final value = DateTime(2000, 1, 1, minutes ~/ 60, minutes % 60);
+        return DateFormat.jm(l10n.localeName).format(value);
+      }
+    }
+
+    final fallback =
+        booking['selectedTime']?.toString() ?? l10n.myBookingsNotAvailable;
+    return _localizedBookingTime(fallback, l10n);
+  }
+
   void _goToHome(BuildContext context) {
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
@@ -186,9 +209,7 @@ class MyBookingsScreen extends StatelessWidget {
     final fallbackBarberName = booking['barberName'] as String?;
     final service =
         (booking['service'] as String?) ?? l10n.myBookingsNotAvailable;
-    final selectedTime =
-        (booking['selectedTime'] as String?) ?? l10n.myBookingsNotAvailable;
-    final localizedTime = _localizedBookingTime(selectedTime, l10n);
+    final localizedTime = _bookingTime(booking, l10n);
     final bookingDate = booking['bookingDate'] as Timestamp?;
     final status = (booking['status'] as String?) ?? 'pending';
     final localizedService = _localizedServiceName(service, l10n);

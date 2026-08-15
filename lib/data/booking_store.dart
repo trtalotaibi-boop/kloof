@@ -49,23 +49,38 @@ class BookingStore {
     return bookingRef;
   }
 
-  Future<void> updateBookingStatus(String bookingId, String status) async {
+  Future<bool> updateBookingStatus(String bookingId, String status) async {
     final bookingRef = firestore.collection('bookings').doc(bookingId);
-    await firestore.runTransaction((transaction) async {
+    final requestedStatus = status.toLowerCase();
+
+    return firestore.runTransaction<bool>((transaction) async {
       final booking = await transaction.get(bookingRef);
-      if (!booking.exists) return;
+      if (!booking.exists) return false;
+
+      final currentStatus =
+          (booking.data()?['status']?.toString() ?? 'pending').toLowerCase();
+      final isAllowed =
+          (currentStatus == 'pending' &&
+              (requestedStatus == 'accepted' ||
+                  requestedStatus == 'rejected')) ||
+          (currentStatus == 'accepted' && requestedStatus == 'completed');
+      if (!isAllowed) return false;
+
       final slotId = booking.data()?['slotId']?.toString();
       DocumentReference<Map<String, dynamic>>? lockRef;
       DocumentSnapshot<Map<String, dynamic>>? lock;
-      if (status == 'rejected' && slotId != null && slotId.isNotEmpty) {
+      if (requestedStatus == 'rejected' &&
+          slotId != null &&
+          slotId.isNotEmpty) {
         lockRef = firestore.collection('bookingSlots').doc(slotId);
         lock = await transaction.get(lockRef);
       }
 
-      transaction.update(bookingRef, {'status': status});
+      transaction.update(bookingRef, {'status': requestedStatus});
       if (lockRef != null && lock?.data()?['bookingId'] == bookingId) {
         transaction.delete(lockRef);
       }
+      return true;
     });
   }
 }

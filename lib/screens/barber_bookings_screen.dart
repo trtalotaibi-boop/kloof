@@ -45,6 +45,29 @@ class BarberBookingsScreen extends StatelessWidget {
     return DateFormat.yMd(l10n.localeName).format(date);
   }
 
+  String _formatBookingTime(
+    BuildContext context,
+    Map<String, dynamic> booking,
+    AppLocalizations l10n,
+  ) {
+    final slotStart = booking['slotStart'];
+    if (slotStart is Timestamp) {
+      return DateFormat.jm(l10n.localeName).format(slotStart.toDate());
+    }
+
+    final rawMinutes = booking['selectedTimeMinutes'];
+    if (rawMinutes is num) {
+      final minutes = rawMinutes.toInt();
+      if (minutes >= 0 && minutes < 24 * 60) {
+        final time = TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60);
+        return MaterialLocalizations.of(context).formatTimeOfDay(time);
+      }
+    }
+
+    final fallback = booking['selectedTime']?.toString().trim();
+    return fallback == null || fallback.isEmpty ? '-' : fallback;
+  }
+
   String _formatPrice(dynamic rawPrice) {
     if (rawPrice == null) return '-';
 
@@ -127,9 +150,10 @@ class BarberBookingsScreen extends StatelessWidget {
     final booking = await bookingReference.get();
     final customerId = booking.data()?['customerId']?.toString();
 
-    await BookingStore(
+    final wasUpdated = await BookingStore(
       FirebaseFirestore.instance,
     ).updateBookingStatus(bookingId, status);
+    if (!wasUpdated) return;
 
     final message = switch (status) {
       'accepted' => 'Your booking has been accepted.',
@@ -252,7 +276,7 @@ class BarberBookingsScreen extends StatelessWidget {
                       booking['bookingDate'] as Timestamp?,
                       l10n,
                     );
-                    final time = booking['selectedTime']?.toString() ?? '-';
+                    final time = _formatBookingTime(context, booking, l10n);
                     final isPending = status.toLowerCase() == 'pending';
 
                     return Card(

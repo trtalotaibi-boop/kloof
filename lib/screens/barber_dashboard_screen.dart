@@ -298,9 +298,10 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
     final bookingData = bookingSnapshot.data();
     final customerId = bookingData?['customerId']?.toString();
 
-    await BookingStore(
+    final wasUpdated = await BookingStore(
       FirebaseFirestore.instance,
     ).updateBookingStatus(bookingId, status);
+    if (!wasUpdated) return;
 
     if (customerId == null || customerId.trim().isEmpty) {
       return;
@@ -416,6 +417,33 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
     if (timestamp == null) return '-';
     final date = timestamp.toDate();
     return DateFormat.yMd(l10n.localeName).format(date);
+  }
+
+  String _formatBookingTime(
+    BuildContext context,
+    Map<String, dynamic> booking,
+    AppLocalizations l10n,
+  ) {
+    final slotStart = booking['slotStart'];
+    if (slotStart is Timestamp) {
+      return DateFormat.jm(l10n.localeName).format(slotStart.toDate());
+    }
+
+    final rawMinutes = booking['selectedTimeMinutes'];
+    if (rawMinutes is num) {
+      final minutes = rawMinutes.toInt();
+      if (minutes >= 0 && minutes < 24 * 60) {
+        final time = TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60);
+        return MaterialLocalizations.of(context).formatTimeOfDay(time);
+      }
+    }
+
+    final fallback = booking['selectedTime']?.toString().trim() ?? '';
+    if (fallback.isEmpty) return '-';
+    final parsed = _parseTimeLabel(fallback);
+    return parsed == null
+        ? fallback
+        : MaterialLocalizations.of(context).formatTimeOfDay(parsed);
   }
 
   String _formatDisplayTime(BuildContext context, TimeOfDay time) {
@@ -857,7 +885,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                           data['bookingDate'] as Timestamp?,
                           l10n,
                         );
-                        final time = data['selectedTime']?.toString() ?? '-';
+                        final time = _formatBookingTime(context, data, l10n);
 
                         return Card(
                           margin: const EdgeInsetsDirectional.only(bottom: 12),
