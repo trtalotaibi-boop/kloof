@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kloof/l10n/app_localizations.dart';
 
 import '../data/repositories/barber_repository_impl.dart';
 import '../domain/usecases/toggle_online_status_usecase.dart';
@@ -44,7 +45,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
   bool _isSavingWorkingHours = false;
 
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
-      _barberSubscription;
+  _barberSubscription;
 
   late final BarberStatusCubit _barberStatusCubit;
   bool _isCheckingRole = true;
@@ -110,7 +111,6 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
       if (!mounted) return;
 
       if (!snapshot.exists) {
-        // Document doesn't exist yet; use the UID-based ref and defaults.
         setState(() {
           _barberId = uid;
           _workingDays = _allDays.toSet();
@@ -141,9 +141,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
       final breakStart = _parseTimeLabel(
         workingHours['breakStart']?.toString(),
       );
-      final breakEnd = _parseTimeLabel(
-        workingHours['breakEnd']?.toString(),
-      );
+      final breakEnd = _parseTimeLabel(workingHours['breakEnd']?.toString());
 
       setState(() {
         _barberId = uid;
@@ -189,22 +187,29 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
     return '$hour12:$minuteText ${isPm ? 'PM' : 'AM'}';
   }
 
-  Future<void> _pickTime({
-    required TimeOfDay initialTime,
-    required ValueChanged<TimeOfDay> onPicked,
-  }) async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: initialTime,
-    );
-    if (picked == null) return;
-    if (!mounted) return;
-    setState(() {
-      onPicked(picked);
-    });
+  String _formatBookingTimeForDisplay(
+    BuildContext context,
+    Map<String, dynamic> booking,
+  ) {
+    final rawMinutes = booking['selectedTimeMinutes'];
+    if (rawMinutes is num) {
+      final minutes = rawMinutes.toInt();
+      if (minutes >= 0 && minutes < 24 * 60) {
+        final time = TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60);
+        return MaterialLocalizations.of(context).formatTimeOfDay(time);
+      }
+    }
+
+    final value = booking['selectedTime']?.toString().trim() ?? '';
+    if (value.isEmpty) return '-';
+    final parsed = _parseTimeLabel(value);
+    return parsed == null
+        ? value
+        : MaterialLocalizations.of(context).formatTimeOfDay(parsed);
   }
 
   Future<void> _saveWorkingHours() async {
+    final l10n = AppLocalizations.of(context);
     final uid = FirebaseAuth.instance.currentUser?.uid;
     final barberDocRef =
         _barberDocRef ??
@@ -214,16 +219,14 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
 
     if (barberDocRef == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cannot save: barber not identified.')),
+        SnackBar(content: Text(l10n.barberDashboardCannotSaveUnidentified)),
       );
       return;
     }
 
     if (_workingDays.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select at least one working day.'),
-        ),
+        SnackBar(content: Text(l10n.barberDashboardSelectWorkingDayError)),
       );
       return;
     }
@@ -232,9 +235,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
     final closingMinutes = (_closingTime.hour * 60) + _closingTime.minute;
     if (closingMinutes <= openingMinutes) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Closing time must be after opening time.'),
-        ),
+        SnackBar(content: Text(l10n.barberDashboardClosingAfterOpeningError)),
       );
       return;
     }
@@ -246,18 +247,14 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
           (_breakEndTime!.hour * 60) + _breakEndTime!.minute;
       if (breakEndMinutes <= breakStartMinutes) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Break end must be after break start.')),
+          SnackBar(content: Text(l10n.barberDashboardBreakEndAfterStartError)),
         );
         return;
       }
       if (breakStartMinutes < openingMinutes ||
           breakEndMinutes > closingMinutes) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Break time must be within opening and closing hours.',
-            ),
-          ),
+          SnackBar(content: Text(l10n.barberDashboardBreakWithinHoursError)),
         );
         return;
       }
@@ -286,12 +283,12 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Working hours saved.')));
+      ).showSnackBar(SnackBar(content: Text(l10n.barberDashboardSaved)));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to save working hours.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.barberDashboardSaveFailed)));
     } finally {
       if (mounted) {
         setState(() {
@@ -316,27 +313,53 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
   }
 
   Future<void> _updateBookingStatus(String bookingId, String status) async {
+    final l10n = AppLocalizations.of(context)!;
     final bookingRef = FirebaseFirestore.instance
         .collection('bookings')
         .doc(bookingId);
 
-    final bookingSnapshot = await bookingRef.get();
-    final bookingData = bookingSnapshot.data();
-    final customerId = bookingData?['customerId']?.toString();
+    final requestedStatus = status.toLowerCase();
 
-    await bookingRef.update({'status': status});
+    final result = await FirebaseFirestore.instance
+        .runTransaction<Map<String, dynamic>?>((transaction) async {
+          final bookingSnapshot = await transaction.get(bookingRef);
+          final bookingData = bookingSnapshot.data();
 
-    if (customerId == null || customerId.trim().isEmpty) {
-      return;
-    }
+          if (bookingData == null) return null;
+
+          final currentStatus = (bookingData['status']?.toString() ?? 'pending')
+              .toLowerCase();
+
+          final isAllowed =
+              (currentStatus == 'pending' &&
+                  (requestedStatus == 'accepted' ||
+                      requestedStatus == 'rejected')) ||
+              (currentStatus == 'accepted' && requestedStatus == 'completed');
+
+          if (!isAllowed) return null;
+
+          transaction.update(bookingRef, {'status': requestedStatus});
+
+          return {
+            'customerId': bookingData['customerId']?.toString(),
+            'status': requestedStatus,
+          };
+        });
+
+    if (result == null) return;
+
+    final customerId = result['customerId']?.toString();
+    final appliedStatus = result['status']?.toString();
+
+    if (customerId == null || customerId.trim().isEmpty) return;
 
     String? message;
-    if (status == 'accepted') {
-      message = 'Your booking has been accepted.';
-    } else if (status == 'rejected') {
-      message = 'Your booking has been rejected.';
-    } else if (status == 'completed') {
-      message = 'Your appointment has been completed.';
+    if (appliedStatus == 'accepted') {
+      message = l10n.notificationMessageBookingAccepted;
+    } else if (appliedStatus == 'rejected') {
+      message = l10n.notificationMessageBookingRejected;
+    } else if (appliedStatus == 'completed') {
+      message = l10n.notificationMessageAppointmentCompleted;
     }
 
     if (message != null) {
@@ -349,21 +372,22 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
   }
 
   Future<void> _logout() async {
+    final l10n = AppLocalizations.of(context);
     final shouldSignOut =
         await showDialog<bool>(
           context: context,
           builder: (context) {
             return AlertDialog(
-              title: const Text('Sign out'),
-              content: const Text('Are you sure you want to sign out?'),
+              title: Text(l10n.homeSignOutTitle),
+              content: Text(l10n.homeSignOutConfirm),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Cancel'),
+                  child: Text(l10n.commonCancel),
                 ),
                 TextButton(
                   onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Sign Out'),
+                  child: Text(l10n.homeSignOutAction),
                 ),
               ],
             );
@@ -396,27 +420,79 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
     }
   }
 
-  String _statusLabel(String status) {
-    final lower = status.toLowerCase();
-    if (lower.isEmpty) return 'Pending';
-    return '${lower[0].toUpperCase()}${lower.substring(1)}';
+  String _statusLabel(String status, AppLocalizations l10n) {
+    switch (status.toLowerCase()) {
+      case 'accepted':
+        return l10n.myBookingsStatusAccepted;
+      case 'rejected':
+        return l10n.myBookingsStatusRejected;
+      case 'completed':
+        return l10n.myBookingsStatusCompleted;
+      case 'pending':
+      default:
+        return l10n.myBookingsStatusPending;
+    }
   }
 
-  String _formatDate(Timestamp? timestamp) {
+  String _formatDate(BuildContext context, Timestamp? timestamp) {
     if (timestamp == null) return '-';
-    final date = timestamp.toDate();
-    return '${date.day}/${date.month}/${date.year}';
+    return MaterialLocalizations.of(
+      context,
+    ).formatCompactDate(timestamp.toDate());
+  }
+
+  String _localizedDayLabel(String day, AppLocalizations l10n) {
+    switch (day) {
+      case 'Mon':
+        return l10n.barberDashboardDayMon;
+      case 'Tue':
+        return l10n.barberDashboardDayTue;
+      case 'Wed':
+        return l10n.barberDashboardDayWed;
+      case 'Thu':
+        return l10n.barberDashboardDayThu;
+      case 'Fri':
+        return l10n.barberDashboardDayFri;
+      case 'Sat':
+        return l10n.barberDashboardDaySat;
+      case 'Sun':
+        return l10n.barberDashboardDaySun;
+      default:
+        return day;
+    }
+  }
+
+  String _localizedServiceName(String rawName, AppLocalizations l10n) {
+    switch (rawName.trim().toLowerCase()) {
+      case 'haircut':
+        return l10n.serviceHaircut;
+      case 'beard':
+      case 'beard trim':
+        return l10n.serviceBeard;
+      case 'haircut + beard':
+      case 'haircut and beard':
+        return l10n.barberProfileServiceHaircutAndBeard;
+      case 'kids haircut':
+      case 'kids':
+        return l10n.serviceKidsHaircut;
+      case 'full head shave':
+      case 'full head shave (zero cut)':
+        return l10n.serviceFullHeadShave;
+      default:
+        return rawName;
+    }
   }
 
   Future<String> _resolveCustomerName(
     String customerId,
     String? fallbackName,
+    AppLocalizations l10n,
   ) async {
     if (fallbackName != null && fallbackName.trim().isNotEmpty) {
       return fallbackName;
     }
     if (customerId.trim().isEmpty) {
-      return 'Customer';
+      return l10n.barberBookingsCustomerFallback;
     }
 
     try {
@@ -427,14 +503,12 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
       final data = userDoc.data();
       final name = (data?['name'] ?? data?['fullName'] ?? data?['displayName'])
           ?.toString();
-      if (name != null && name.trim().isNotEmpty) {
-        return name;
-      }
+      if (name != null && name.trim().isNotEmpty) return name;
     } catch (_) {
-      // Fall through to fallback.
+      // Fall through to the localized fallback.
     }
 
-    return 'Customer';
+    return l10n.barberBookingsCustomerFallback;
   }
 
   @override
@@ -446,6 +520,8 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     if (_isCheckingRole) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -459,7 +535,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
     if (currentBarberId == null) {
       return Scaffold(
         appBar: AppBar(title: Text(widget.barberName)),
-        body: const Center(child: Text('Barber is not signed in.')),
+        body: Center(child: Text(l10n.barberBookingsSignedOut)),
       );
     }
 
@@ -502,7 +578,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
           ],
         ),
         body: SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -510,9 +586,9 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Availability',
-                      style: TextStyle(
+                    Text(
+                      l10n.barberDashboardAvailability,
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -521,12 +597,16 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                   ],
                 ),
                 const SizedBox(height: 20),
-                const Text(
-                  'Working Hours',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Text(
+                  l10n.barberDashboardWorkingHours,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Container(
+                  width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -541,7 +621,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                         children: _allDays.map((day) {
                           final isSelected = _workingDays.contains(day);
                           return FilterChip(
-                            label: Text(day),
+                            label: Text(_localizedDayLabel(day, l10n)),
                             selected: isSelected,
                             onSelected: (value) {
                               setState(() {
@@ -561,41 +641,16 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                           );
                         }).toList(),
                       ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('Opening: ${_formatTimeLabel(_openingTime)}'),
-                          OutlinedButton(
-                            onPressed: () => _pickTime(
-                              initialTime: _openingTime,
-                              onPicked: (picked) => _openingTime = picked,
-                            ),
-                            child: const Text('Set'),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('Closing: ${_formatTimeLabel(_closingTime)}'),
-                          OutlinedButton(
-                            onPressed: () => _pickTime(
-                              initialTime: _closingTime,
-                              onPicked: (picked) => _closingTime = picked,
-                            ),
-                            child: const Text('Set'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 16),
                       DropdownButtonFormField<int>(
                         value: _appointmentDuration,
                         items: const [15, 30, 45, 60]
                             .map(
                               (value) => DropdownMenuItem<int>(
                                 value: value,
-                                child: Text('$value minutes'),
+                                child: Text(
+                                  l10n.barberDashboardMinutes(value.toString()),
+                                ),
                               ),
                             )
                             .toList(),
@@ -605,77 +660,11 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                             _appointmentDuration = value;
                           });
                         },
-                        decoration: const InputDecoration(
-                          labelText: 'Appointment Duration',
+                        decoration: InputDecoration(
+                          labelText: l10n.barberDashboardAppointmentDuration,
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            _breakStartTime == null
-                                ? 'Break Start: Not set'
-                                : 'Break Start: ${_formatTimeLabel(_breakStartTime!)}',
-                          ),
-                          Row(
-                            children: [
-                              OutlinedButton(
-                                onPressed: () => _pickTime(
-                                  initialTime: _breakStartTime ?? _openingTime,
-                                  onPicked: (picked) =>
-                                      _breakStartTime = picked,
-                                ),
-                                child: const Text('Set'),
-                              ),
-                              const SizedBox(width: 6),
-                              OutlinedButton(
-                                onPressed: _breakStartTime == null
-                                    ? null
-                                    : () {
-                                        setState(() {
-                                          _breakStartTime = null;
-                                        });
-                                      },
-                                child: const Text('Clear'),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            _breakEndTime == null
-                                ? 'Break End: Not set'
-                                : 'Break End: ${_formatTimeLabel(_breakEndTime!)}',
-                          ),
-                          Row(
-                            children: [
-                              OutlinedButton(
-                                onPressed: () => _pickTime(
-                                  initialTime: _breakEndTime ?? _closingTime,
-                                  onPicked: (picked) => _breakEndTime = picked,
-                                ),
-                                child: const Text('Set'),
-                              ),
-                              const SizedBox(width: 6),
-                              OutlinedButton(
-                                onPressed: _breakEndTime == null
-                                    ? null
-                                    : () {
-                                        setState(() {
-                                          _breakEndTime = null;
-                                        });
-                                      },
-                                child: const Text('Clear'),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
@@ -685,6 +674,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.black,
                             foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                           child: _isSavingWorkingHours
                               ? const SizedBox(
@@ -695,109 +685,131 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Text('Save Working Hours'),
+                              : Text(l10n.barberDashboardSaveWorkingHours),
                         ),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Text(
-                  'Bookings',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Text(
+                  l10n.barberDashboardBookings,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 10),
-                Expanded(
-                  child: StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('bookings')
-                        .where('barberId', isEqualTo: currentBarberId)
-                        .orderBy('createdAt', descending: true)
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                        return const Center(child: Text('No bookings yet'));
-                      }
-                      return ListView(
-                        children: snapshot.data!.docs.map((doc) {
-                          final data = doc.data() as Map<String, dynamic>;
-                          final status =
-                              data['status']?.toString() ?? 'pending';
-                          final customerId =
-                              data['customerId']?.toString() ?? '';
-                          final customerName = data['customerName']?.toString();
-                          final service = data['service']?.toString() ?? '-';
-                          final date = _formatDate(
-                            data['bookingDate'] as Timestamp?,
-                          );
-                          final time = data['selectedTime']?.toString() ?? '-';
+                StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('bookings')
+                      .where('barberId', isEqualTo: currentBarberId)
+                      .orderBy('createdAt', descending: true)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 36),
+                        child: Center(
+                          child: Text(l10n.barberDashboardNoBookings),
+                        ),
+                      );
+                    }
 
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(14),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: FutureBuilder<String>(
-                                          future: _resolveCustomerName(
-                                            customerId,
-                                            customerName,
-                                          ),
-                                          builder: (context, nameSnapshot) {
-                                            final displayName =
-                                                nameSnapshot.data ?? 'Customer';
-                                            return Text(
-                                              displayName,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            );
-                                          },
+                    return ListView(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: snapshot.data!.docs.map((doc) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        final status = data['status']?.toString() ?? 'pending';
+                        final customerId = data['customerId']?.toString() ?? '';
+                        final customerName = data['customerName']?.toString();
+                        final service = _localizedServiceName(
+                          data['service']?.toString() ?? '-',
+                          l10n,
+                        );
+                        final date = _formatDate(
+                          context,
+                          data['bookingDate'] as Timestamp?,
+                        );
+                        final time = _formatBookingTimeForDisplay(
+                          context,
+                          data,
+                        );
+                        final normalizedStatus = status.toLowerCase();
+
+                        return Card(
+                          margin: const EdgeInsetsDirectional.only(bottom: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(14),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: FutureBuilder<String>(
+                                        future: _resolveCustomerName(
+                                          customerId,
+                                          customerName,
+                                          l10n,
+                                        ),
+                                        builder: (context, nameSnapshot) {
+                                          final displayName =
+                                              nameSnapshot.data ??
+                                              l10n.barberBookingsCustomerFallback;
+                                          return Text(
+                                            displayName,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: _statusChipColor(
+                                          status,
+                                        ).withValues(alpha: 0.16),
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(
+                                          color: _statusChipColor(status),
                                         ),
                                       ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: _statusChipColor(
-                                            status,
-                                          ).withValues(alpha: 0.16),
-                                          borderRadius: BorderRadius.circular(
-                                            20,
-                                          ),
-                                          border: Border.all(
-                                            color: _statusChipColor(status),
-                                          ),
-                                        ),
-                                        child: Text(
-                                          _statusLabel(status),
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: _statusChipColor(status),
-                                            fontWeight: FontWeight.w700,
-                                          ),
+                                      child: Text(
+                                        _statusLabel(status, l10n),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: _statusChipColor(status),
+                                          fontWeight: FontWeight.w700,
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text('Service: $service'),
-                                  Text('Date: $date'),
-                                  Text('Time: $time'),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  '${l10n.myBookingsServiceLabel}: $service',
+                                ),
+                                Text('${l10n.myBookingsDateLabel}: $date'),
+                                Text('${l10n.myBookingsTimeLabel}: $time'),
+                                if (normalizedStatus == 'pending') ...[
                                   const SizedBox(height: 10),
                                   Row(
                                     children: [
@@ -807,39 +819,45 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                                             doc.id,
                                             'accepted',
                                           ),
-                                          child: const Text('Accept'),
+                                          child: Text(
+                                            l10n.barberBookingsAccept,
+                                          ),
                                         ),
                                       ),
-                                      const SizedBox(width: 10),
+                                      const SizedBox(width: 8),
                                       Expanded(
                                         child: OutlinedButton(
                                           onPressed: () => _updateBookingStatus(
                                             doc.id,
                                             'rejected',
                                           ),
-                                          child: const Text('Reject'),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: OutlinedButton(
-                                          onPressed: () => _updateBookingStatus(
-                                            doc.id,
-                                            'completed',
+                                          child: Text(
+                                            l10n.barberBookingsReject,
                                           ),
-                                          child: const Text('Complete'),
                                         ),
                                       ),
                                     ],
                                   ),
+                                ] else if (normalizedStatus == 'accepted') ...[
+                                  const SizedBox(height: 10),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: OutlinedButton(
+                                      onPressed: () => _updateBookingStatus(
+                                        doc.id,
+                                        'completed',
+                                      ),
+                                      child: Text(l10n.barberDashboardComplete),
+                                    ),
+                                  ),
                                 ],
-                              ),
+                              ],
                             ),
-                          );
-                        }).toList(),
-                      );
-                    },
-                  ),
+                          ),
+                        );
+                      }).toList(),
+                    );
+                  },
                 ),
               ],
             ),
@@ -850,15 +868,15 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
   }
 }
 
-/// Isolated so a debounced Firestore write / Cubit state change only
-/// rebuilds this Row, not the entire dashboard (bookings list, working
-/// hours grid, etc).
 class _OnlineStatusToggle extends StatelessWidget {
   final String barberId;
+
   const _OnlineStatusToggle({required this.barberId});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return BlocConsumer<BarberStatusCubit, BarberStatusState>(
       listener: (context, state) {
         if (state is BarberStatusError) {
@@ -870,8 +888,13 @@ class _OnlineStatusToggle extends StatelessWidget {
       builder: (context, state) {
         final isUpdating = state is BarberStatusUpdating;
         return Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(state.isOnline ? 'Online' : 'Offline'),
+            Text(
+              state.isOnline
+                  ? l10n.barberDashboardOnline
+                  : l10n.homeOfflineStatus,
+            ),
             const SizedBox(width: 8),
             Switch(
               value: state.isOnline,
@@ -882,7 +905,7 @@ class _OnlineStatusToggle extends StatelessWidget {
             ),
             if (isUpdating)
               const Padding(
-                padding: EdgeInsets.only(left: 8.0),
+                padding: EdgeInsetsDirectional.only(start: 8),
                 child: SizedBox(
                   width: 16,
                   height: 16,
