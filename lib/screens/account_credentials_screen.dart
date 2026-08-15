@@ -61,9 +61,9 @@ class _AccountCredentialsScreenState extends State<AccountCredentialsScreen> {
     final user = FirebaseAuth.instance.currentUser;
     final currentEmail = user?.email;
     if (user == null || currentEmail == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.accountCredentialsSignedOut)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.accountCredentialsSignedOut)));
       return;
     }
 
@@ -75,9 +75,9 @@ class _AccountCredentialsScreenState extends State<AccountCredentialsScreen> {
     final changesPassword = newPassword.isNotEmpty;
 
     if (!changesEmail && !changesPassword) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.accountCredentialsNoChanges)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.accountCredentialsNoChanges)));
       return;
     }
     if (currentPassword.isEmpty) {
@@ -87,9 +87,9 @@ class _AccountCredentialsScreenState extends State<AccountCredentialsScreen> {
       return;
     }
     if (changesPassword && newPassword != confirmPassword) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.registerPasswordsDoNotMatch)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.registerPasswordsDoNotMatch)));
       return;
     }
 
@@ -117,14 +117,14 @@ class _AccountCredentialsScreenState extends State<AccountCredentialsScreen> {
                 ? l10n.accountCredentialsPasswordUpdatedEmailVerificationSent
                 : l10n.accountCredentialsEmailVerificationSent)
           : l10n.accountCredentialsPasswordUpdated;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } on FirebaseAuthException catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_localizedAuthError(error, l10n))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_localizedAuthError(error, l10n))));
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }

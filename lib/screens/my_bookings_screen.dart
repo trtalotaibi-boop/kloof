@@ -173,10 +173,7 @@ class MyBookingsScreen extends StatelessWidget {
     return rawTime;
   }
 
-  String _bookingTime(
-    Map<String, dynamic> booking,
-    AppLocalizations l10n,
-  ) {
+  String _bookingTime(Map<String, dynamic> booking, AppLocalizations l10n) {
     final slotStart = booking['slotStart'];
     if (slotStart is Timestamp) {
       return DateFormat.jm(l10n.localeName).format(slotStart.toDate());

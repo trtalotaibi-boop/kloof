@@ -57,8 +57,8 @@ class BookingStore {
       final booking = await transaction.get(bookingRef);
       if (!booking.exists) return false;
 
-      final currentStatus =
-          (booking.data()?['status']?.toString() ?? 'pending').toLowerCase();
+      final currentStatus = (booking.data()?['status']?.toString() ?? 'pending')
+          .toLowerCase();
       final isAllowed =
           (currentStatus == 'pending' &&
               (requestedStatus == 'accepted' ||

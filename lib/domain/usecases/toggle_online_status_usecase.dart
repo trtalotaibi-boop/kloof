@@ -7,10 +7,7 @@ class ToggleOnlineParams extends Equatable {
   final String barberId;
   final bool isOnline;
 
-  const ToggleOnlineParams({
-    required this.barberId,
-    required this.isOnline,
-  });
+  const ToggleOnlineParams({required this.barberId, required this.isOnline});
 
   @override
   List<Object?> get props => [barberId, isOnline];

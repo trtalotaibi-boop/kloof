@@ -15,21 +15,19 @@ class BarberStatusInitial extends BarberStatusState {
 
 class BarberStatusUpdating extends BarberStatusState {
   const BarberStatusUpdating({required bool isOnline})
-      : super(isOnline: isOnline);
+    : super(isOnline: isOnline);
 }
 
 class BarberStatusSuccess extends BarberStatusState {
   const BarberStatusSuccess({required bool isOnline})
-      : super(isOnline: isOnline);
+    : super(isOnline: isOnline);
 }
 
 class BarberStatusError extends BarberStatusState {
   final String message;
 
-  const BarberStatusError({
-    required bool isOnline,
-    required this.message,
-  }) : super(isOnline: isOnline);
+  const BarberStatusError({required bool isOnline, required this.message})
+    : super(isOnline: isOnline);
 
   @override
   List<Object> get props => [isOnline, message];
