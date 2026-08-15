@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:kloof/l10n/app_localizations.dart';
+import 'package:kloof/theme/kloof_theme.dart';
+
 import 'barber_details_screen.dart';
 import 'barber_dashboard_screen.dart';
 import 'my_bookings_screen.dart';
@@ -18,6 +20,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _isCheckingRole = true;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   List<String> _serviceNames(dynamic rawServices) {
     if (rawServices is String) {
@@ -75,6 +79,12 @@ class _HomeScreenState extends State<HomeScreen> {
     _enforceCustomerAccess();
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _enforceCustomerAccess() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -90,12 +100,14 @@ class _HomeScreenState extends State<HomeScreen> {
           .collection('users')
           .doc(user.uid)
           .get();
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
       final data = userDoc.data() ?? <String, dynamic>{};
       final role = (data['role']?.toString().toLowerCase() ?? 'customer');
       final fullName = data['fullName']?.toString().trim();
       final barberName = (fullName != null && fullName.isNotEmpty)
           ? fullName
-          : (user.email ?? 'Barber');
+          : (user.email ?? l10n.bookingConfirmationLabelBarber);
 
       if (role == 'barber') {
         if (!mounted) return;
@@ -161,15 +173,15 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F8F8),
+      backgroundColor: KloofColors.warmOffWhite,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: Colors.white,
+        backgroundColor: KloofColors.warmOffWhite,
         elevation: 0,
         title: Text(
           l10n.appTitle,
           style: TextStyle(
-            color: Colors.black,
+            color: KloofColors.softGold,
             fontWeight: FontWeight.bold,
             letterSpacing: 2,
           ),
@@ -192,7 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                   icon: const Icon(
                     Icons.notifications_none,
-                    color: Colors.black,
+                    color: KloofColors.primaryText,
                   ),
                 );
               }
@@ -220,11 +232,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         const Icon(
                           Icons.notifications_none,
-                          color: Colors.black,
+                          color: KloofColors.primaryText,
                         ),
                         if (unreadCount > 0)
-                          Positioned(
-                            right: -6,
+                          PositionedDirectional(
+                            end: -6,
                             top: -5,
                             child: Container(
                               padding: const EdgeInsets.symmetric(
@@ -232,7 +244,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 vertical: 1,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.red,
+                                color: KloofColors.luxuryGold,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               constraints: const BoxConstraints(
@@ -243,7 +255,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 unreadCount > 99 ? '99+' : '$unreadCount',
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
-                                  color: Colors.white,
+                                  color: KloofColors.deepBlack,
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -269,14 +281,14 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Text(
               l10n.myBookingsTitle,
               style: TextStyle(
-                color: Colors.black,
+                color: KloofColors.primaryText,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ),
           IconButton(
             onPressed: _logout,
-            icon: const Icon(Icons.logout, color: Colors.black),
+            icon: const Icon(Icons.logout, color: KloofColors.primaryText),
           ),
         ],
       ),
@@ -289,11 +301,11 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text(
                   l10n.homeCurrentLocation,
-                  style: TextStyle(color: Colors.grey),
+                  style: TextStyle(color: KloofColors.secondaryText),
                 ),
                 Row(
                   children: [
-                    Icon(Icons.location_on, color: Colors.red),
+                    Icon(Icons.location_on, color: KloofColors.luxuryGold),
                     SizedBox(width: 5),
                     Text(
                       l10n.homeCityMakkah,
@@ -313,18 +325,47 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 20),
             Text(
               l10n.homeFindFavoriteBarber,
-              style: TextStyle(color: Colors.grey, fontSize: 16),
+              style: TextStyle(color: KloofColors.secondaryText, fontSize: 16),
             ),
             const SizedBox(height: 25),
             TextField(
+              controller: _searchController,
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
               decoration: InputDecoration(
                 hintText: l10n.homeSearchHint,
                 prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchQuery.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: l10n.homeClearSearch,
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {
+                            _searchQuery = '';
+                          });
+                        },
+                        icon: const Icon(Icons.clear),
+                      ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: KloofColors.cardBackground,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide.none,
+                  borderSide: const BorderSide(color: KloofColors.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: const BorderSide(color: KloofColors.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: const BorderSide(
+                    color: KloofColors.luxuryGold,
+                    width: 1.5,
+                  ),
                 ),
               ),
             ),
@@ -347,8 +388,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   return Text(l10n.homeNoBarbersFound);
                 }
 
+                final canonicalLegacyIds = snapshot.data!.docs
+                    .map((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      return (data['legacyProfileId'] ?? '').toString();
+                    })
+                    .where((id) => id.isNotEmpty)
+                    .toSet();
                 final barbers = snapshot.data!.docs
                     .map((doc) {
+                      if (canonicalLegacyIds.contains(doc.id)) return null;
                       final barberData = doc.data() as Map<String, dynamic>;
                       final fullName = barberData['fullName']
                           ?.toString()
@@ -361,9 +410,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           barberData['shopName']?.toString().trim() ?? '';
                       final rawRating = barberData['rating'];
                       final services = barberData['services'];
+                      final workingHours = barberData['workingHours'];
 
-                      if (name == null ||
-                          name.trim().isEmpty) {
+                      if (name == null || name.trim().isEmpty) {
                         return null;
                       }
 
@@ -375,7 +424,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                         rawRating.toString(),
                                       )?.toStringAsFixed(1) ??
                                       "0.0"));
-                      final imageUrl = barberData['imageUrl']?.toString() ?? '';
+                      final imageUrl =
+                          (barberData['profileImage'] ??
+                                  barberData['imageUrl'] ??
+                                  '')
+                              .toString();
                       final address =
                           barberData['address']?.toString() ??
                           l10n.homeAddressNotAvailable;
@@ -388,12 +441,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       final isOnline = barberData['isOnline'] == true;
 
                       return {
-                        'id': doc.id,
+                        'id':
+                            (barberData['uid'] ??
+                                    barberData['ownerUid'] ??
+                                    doc.id)
+                                .toString(),
                         'name': name,
                         'shopName': shopName,
                         'rating': "⭐ $ratingText",
                         'imageUrl': imageUrl,
                         'services': services,
+                        'workingHours': workingHours,
                         'address': address,
                         'latitude': latitude,
                         'longitude': longitude,
@@ -410,8 +468,24 @@ class _HomeScreenState extends State<HomeScreen> {
                   return aOnline ? -1 : 1;
                 });
 
+                final normalizedQuery = _searchQuery.trim().toLowerCase();
+                final filteredBarbers = normalizedQuery.isEmpty
+                    ? barbers
+                    : barbers.where((barber) {
+                        final searchableText = <String>[
+                          barber['name'] as String,
+                          barber['shopName'] as String,
+                          ..._serviceNames(barber['services']),
+                        ].join(' ').toLowerCase();
+                        return searchableText.contains(normalizedQuery);
+                      }).toList();
+
+                if (filteredBarbers.isEmpty) {
+                  return Text(l10n.homeNoBarbersFound);
+                }
+
                 return Column(
-                  children: barbers.map((barber) {
+                  children: filteredBarbers.map((barber) {
                     return _barberCard(
                       l10n,
                       barber['id'] as String,
@@ -420,6 +494,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       shopName: barber['shopName'] as String,
                       imageUrl: barber['imageUrl'] as String,
                       services: barber['services'],
+                      workingHours: barber['workingHours'],
                       address: barber['address'] as String,
                       latitude: barber['latitude'] as double?,
                       longitude: barber['longitude'] as double?,
@@ -443,6 +518,7 @@ class _HomeScreenState extends State<HomeScreen> {
     required String shopName,
     String? imageUrl,
     Object? services,
+    Object? workingHours,
     String? address,
     double? latitude,
     double? longitude,
@@ -462,6 +538,7 @@ class _HomeScreenState extends State<HomeScreen> {
               rating: rating,
               imageUrl: imageUrl ?? '',
               services: services,
+              workingHours: workingHours,
               address: address ?? l10n.homeAddressNotAvailable,
               latitude: latitude,
               longitude: longitude,
@@ -472,10 +549,11 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Opacity(
         opacity: isOffline ? 0.6 : 1.0,
         child: Card(
-          margin: const EdgeInsets.only(bottom: 20),
-          elevation: 3,
+          margin: const EdgeInsetsDirectional.only(bottom: 20),
+          elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
+            side: const BorderSide(color: KloofColors.border),
           ),
           child: Padding(
             padding: const EdgeInsets.all(15),
@@ -483,7 +561,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 CircleAvatar(
                   radius: 32,
-                  backgroundColor: Colors.grey.shade300,
+                  backgroundColor: KloofColors.secondarySurface,
                   backgroundImage: (imageUrl != null && imageUrl.isNotEmpty)
                       ? NetworkImage(imageUrl)
                       : null,
@@ -492,7 +570,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       : const Icon(
                           Icons.content_cut,
                           size: 30,
-                          color: Colors.black,
+                          color: KloofColors.softGold,
                         ),
                 ),
                 const SizedBox(width: 15),
@@ -518,13 +596,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.grey.shade300,
+                                color: KloofColors.secondarySurface,
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
                                 l10n.homeOfflineStatus,
                                 style: TextStyle(
-                                  color: Colors.black54,
+                                  color: KloofColors.secondaryText,
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -539,7 +617,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            color: Colors.black54,
+                            color: KloofColors.secondaryText,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
@@ -549,7 +627,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Text(
                         rating,
                         style: const TextStyle(
-                          color: Colors.orange,
+                          color: KloofColors.luxuryGold,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -563,7 +641,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               .join(' • '),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: Colors.grey),
+                          style: const TextStyle(
+                            color: KloofColors.secondaryText,
+                          ),
                         ),
                       ],
                     ],
@@ -576,5 +656,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
 }

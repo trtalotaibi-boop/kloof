@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kloof/l10n/app_localizations.dart';
+import 'package:kloof/theme/kloof_theme.dart';
 import 'login_screen.dart';
 import 'package:kloof/screens/register_screen.dart';
 
@@ -20,14 +21,14 @@ class WelcomeScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: KloofColors.deepBlack,
       appBar: showBackButton
           ? AppBar(
-              backgroundColor: Colors.white,
+              backgroundColor: KloofColors.deepBlack,
               elevation: 0,
-              iconTheme: const IconThemeData(color: Colors.black),
+              iconTheme: const IconThemeData(color: Colors.white),
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back),
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
                 onPressed: () => Navigator.pop(context),
               ),
             )
@@ -35,7 +36,7 @@ class WelcomeScreen extends StatelessWidget {
       body: SafeArea(
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 30),
+            padding: const EdgeInsetsDirectional.symmetric(horizontal: 30),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -43,20 +44,30 @@ class WelcomeScreen extends StatelessWidget {
                 const SizedBox.shrink(),
                 Column(
                   children: [
-                    const Icon(
-                      Icons.content_cut,
-                      size: 100,
-                      color: Colors.black,
+                    Container(
+                      width: 128,
+                      height: 128,
+                      decoration: BoxDecoration(
+                        color: KloofColors.cardBackground,
+                        border: Border.all(color: KloofColors.border),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Image.asset(
+                        'assets/branding/kloof-app-icon-master.png',
+                        fit: BoxFit.cover,
+                      ),
                     ),
 
                     const SizedBox(height: 30),
 
                     Text(
-                      l10n.appTitle,
-                      style: TextStyle(
+                      'KLOOF',
+                      style: const TextStyle(
                         fontSize: 42,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 3,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 5,
                       ),
                     ),
 
@@ -65,7 +76,10 @@ class WelcomeScreen extends StatelessWidget {
                     Text(
                       l10n.welcomeTagline,
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 18, color: Colors.grey),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        color: KloofColors.softGold,
+                      ),
                     ),
 
                     const SizedBox(height: 50),
@@ -82,6 +96,10 @@ class WelcomeScreen extends StatelessWidget {
                             ),
                           );
                         },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: KloofColors.luxuryGold,
+                          foregroundColor: KloofColors.deepBlack,
+                        ),
                         child: Text(
                           l10n.welcomeLogin,
                           style: const TextStyle(fontSize: 18),
@@ -104,6 +122,10 @@ class WelcomeScreen extends StatelessWidget {
                             ),
                           );
                         },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: const BorderSide(color: KloofColors.luxuryGold),
+                        ),
                         child: Text(
                           l10n.welcomeCreateAccount,
                           style: const TextStyle(fontSize: 18),
@@ -114,7 +136,7 @@ class WelcomeScreen extends StatelessWidget {
                 ),
                 if (showBarberPortal)
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsetsDirectional.only(bottom: 12),
                     child: TextButton(
                       onPressed: () {
                         Navigator.push(
@@ -128,6 +150,9 @@ class WelcomeScreen extends StatelessWidget {
                           ),
                         );
                       },
+                      style: TextButton.styleFrom(
+                        foregroundColor: KloofColors.softGold,
+                      ),
                       child: Text(l10n.welcomeBarberPortal),
                     ),
                   )

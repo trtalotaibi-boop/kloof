@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kloof/l10n/app_localizations.dart';
+import 'package:kloof/theme/kloof_theme.dart';
 
 import 'my_bookings_screen.dart';
 
@@ -89,117 +90,135 @@ class BookingConfirmationScreen extends StatelessWidget {
     return displayName.trim().replaceAll(RegExp(r'\s+'), ' ');
   }
 
+  void _goToMyBookings(BuildContext context) {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute<void>(builder: (_) => const MyBookingsScreen()),
+      (_) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F8F8),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-        title: Text(
-          l10n.bookingConfirmationTitle,
-          style: TextStyle(color: Colors.black),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _goToMyBookings(context);
+      },
+      child: Scaffold(
+        backgroundColor: KloofColors.warmOffWhite,
+        appBar: AppBar(
+          leading: BackButton(
+            onPressed: () => _goToMyBookings(context),
+            color: KloofColors.primaryText,
+          ),
+          backgroundColor: KloofColors.warmOffWhite,
+          elevation: 0,
+          iconTheme: const IconThemeData(color: KloofColors.primaryText),
+          title: Text(
+            l10n.bookingConfirmationTitle,
+            style: TextStyle(color: KloofColors.primaryText),
+          ),
         ),
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsetsDirectional.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Spacer(),
-              const Icon(
-                Icons.check_circle_rounded,
-                size: 92,
-                color: Colors.green,
-              ),
-              const SizedBox(height: 20),
-              Text(
-                l10n.bookingConfirmationReceivedTitle,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsetsDirectional.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Spacer(),
+                const Icon(
+                  Icons.check_circle_rounded,
+                  size: 92,
+                  color: KloofColors.success,
                 ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                l10n.bookingConfirmationReceivedBody,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 15, color: Colors.black54),
-              ),
-              const SizedBox(height: 28),
-              Container(
-                padding: const EdgeInsetsDirectional.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
+                const SizedBox(height: 20),
+                Text(
+                  l10n.bookingConfirmationReceivedTitle,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: KloofColors.primaryText,
+                  ),
                 ),
-                child: Column(
-                  children: [
-                    _detailRow(l10n.bookingConfirmationLabelBarber, barberName),
-                    const SizedBox(height: 10),
-                    _detailRow(
-                      l10n.bookingConfirmationLabelService,
-                      _singleServiceLabel(l10n),
-                    ),
-                    if (servicePrice != null) ...[
+                const SizedBox(height: 10),
+                Text(
+                  l10n.bookingConfirmationReceivedBody,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: KloofColors.secondaryText,
+                  ),
+                ),
+                const SizedBox(height: 28),
+                Container(
+                  padding: const EdgeInsetsDirectional.all(16),
+                  decoration: BoxDecoration(
+                    color: KloofColors.cardBackground,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Column(
+                    children: [
+                      _detailRow(
+                        l10n.bookingConfirmationLabelBarber,
+                        barberName,
+                      ),
                       const SizedBox(height: 10),
                       _detailRow(
-                        l10n.bookingConfirmationLabelPrice,
-                        _formattedPrice(l10n),
+                        l10n.bookingConfirmationLabelService,
+                        _singleServiceLabel(l10n),
+                      ),
+                      if (servicePrice != null) ...[
+                        const SizedBox(height: 10),
+                        _detailRow(
+                          l10n.bookingConfirmationLabelPrice,
+                          _formattedPrice(l10n),
+                        ),
+                      ],
+                      const SizedBox(height: 10),
+                      _detailRow(
+                        l10n.bookingConfirmationLabelDate,
+                        _formattedDate(l10n),
+                      ),
+                      const SizedBox(height: 10),
+                      _detailRow(
+                        l10n.bookingConfirmationLabelTime,
+                        selectedTime,
+                      ),
+                      const SizedBox(height: 10),
+                      _detailRow(
+                        l10n.bookingConfirmationLabelStatus,
+                        l10n.bookingConfirmationStatusPending,
                       ),
                     ],
-                    const SizedBox(height: 10),
-                    _detailRow(
-                      l10n.bookingConfirmationLabelDate,
-                      _formattedDate(l10n),
-                    ),
-                    const SizedBox(height: 10),
-                    _detailRow(l10n.bookingConfirmationLabelTime, selectedTime),
-                    const SizedBox(height: 10),
-                    _detailRow(
-                      l10n.bookingConfirmationLabelStatus,
-                      l10n.bookingConfirmationStatusPending,
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const MyBookingsScreen(),
+                const Spacer(),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => _goToMyBookings(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: KloofColors.primaryBlack,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
                       ),
-                      (route) => route.isFirst,
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
                     ),
-                  ),
-                  child: Text(
-                    l10n.bookingConfirmationDone,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                    child: Text(
+                      l10n.bookingConfirmationDone,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -213,7 +232,7 @@ class BookingConfirmationScreen extends StatelessWidget {
           child: Text(
             label,
             style: const TextStyle(
-              color: Colors.black54,
+              color: KloofColors.secondaryText,
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
@@ -229,7 +248,7 @@ class BookingConfirmationScreen extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.end,
               style: const TextStyle(
-                color: Colors.black,
+                color: KloofColors.primaryText,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),

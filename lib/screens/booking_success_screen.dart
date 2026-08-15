@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:kloof/l10n/app_localizations.dart';
+import 'package:kloof/theme/kloof_theme.dart';
+
+import 'home_screen.dart';
+import 'my_bookings_screen.dart';
 
 class BookingSuccessScreen extends StatefulWidget {
   final String barberName;
@@ -24,6 +28,20 @@ class BookingSuccessScreen extends StatefulWidget {
 }
 
 class _BookingSuccessScreenState extends State<BookingSuccessScreen> {
+  void _goToHome() {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
+      (_) => false,
+    );
+  }
+
+  void _goToMyBookings() {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute<void>(builder: (_) => const MyBookingsScreen()),
+      (_) => false,
+    );
+  }
+
   String _localizedServiceName(String rawName, AppLocalizations l10n) {
     final normalized = rawName.trim().toLowerCase();
     switch (normalized) {
@@ -76,7 +94,7 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen> {
     // Auto-navigate to home after 3 seconds
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
-        Navigator.of(context).popUntil((route) => route.isFirst);
+        _goToMyBookings();
       }
     });
   }
@@ -85,104 +103,117 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F8F8),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: Colors.green.shade100,
-                  borderRadius: BorderRadius.circular(40),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.check,
-                    size: 50,
-                    color: Colors.green.shade700,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _goToHome();
+      },
+      child: Scaffold(
+        backgroundColor: KloofColors.warmOffWhite,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: KloofColors.softGold.withValues(alpha: 0.22),
+                    borderRadius: BorderRadius.circular(40),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.check,
+                      size: 50,
+                      color: KloofColors.luxuryGold,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                l10n.bookingSuccessTitle,
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
+                const SizedBox(height: 24),
+                Text(
+                  l10n.bookingSuccessTitle,
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                l10n.bookingSuccessSubtitle,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey,
+                const SizedBox(height: 16),
+                Text(
+                  l10n.bookingSuccessSubtitle,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: KloofColors.secondaryText,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildDetailRow(l10n.bookingConfirmationLabelBarber, widget.barberName),
-                    const SizedBox(height: 12),
-                    _buildDetailRow(
-                      l10n.bookingConfirmationLabelService,
-                      _localizedServiceName(widget.selectedService, l10n),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildDetailRow(l10n.bookingConfirmationLabelDate, widget.selectedDate),
-                    const SizedBox(height: 12),
-                    _buildDetailRow(l10n.bookingConfirmationLabelTime, widget.selectedTime),
-                    if (widget.notes.isNotEmpty) ...[
+                const SizedBox(height: 32),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: KloofColors.cardBackground,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildDetailRow(
+                        l10n.bookingConfirmationLabelBarber,
+                        widget.barberName,
+                      ),
                       const SizedBox(height: 12),
-                      _buildDetailRow(l10n.bookingSuccessLabelNotes, widget.notes),
+                      _buildDetailRow(
+                        l10n.bookingConfirmationLabelService,
+                        _localizedServiceName(widget.selectedService, l10n),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildDetailRow(
+                        l10n.bookingConfirmationLabelDate,
+                        widget.selectedDate,
+                      ),
+                      const SizedBox(height: 12),
+                      _buildDetailRow(
+                        l10n.bookingConfirmationLabelTime,
+                        widget.selectedTime,
+                      ),
+                      if (widget.notes.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        _buildDetailRow(
+                          l10n.bookingSuccessLabelNotes,
+                          widget.notes,
+                        ),
+                      ],
+                      const SizedBox(height: 12),
+                      _buildDetailRow(
+                        l10n.bookingSuccessLabelBookingId,
+                        widget.bookingId,
+                      ),
                     ],
-                    const SizedBox(height: 12),
-                    _buildDetailRow(l10n.bookingSuccessLabelBookingId, widget.bookingId),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).popUntil((route) => route.isFirst);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
                   ),
-                  child: Text(l10n.bookingSuccessBackToHome),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                l10n.bookingSuccessRedirecting,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade500,
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _goToMyBookings,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: KloofColors.primaryBlack,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: Text(l10n.bookingSuccessBackToHome),
+                  ),
                 ),
-                textAlign: TextAlign.center,
-              ),
-            ],
+                const SizedBox(height: 16),
+                Text(
+                  l10n.bookingSuccessRedirecting,
+                  style: TextStyle(fontSize: 13, color: KloofColors.mutedText),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -200,17 +231,14 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen> {
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: Colors.grey,
+              color: KloofColors.secondaryText,
             ),
           ),
         ),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
             overflow: TextOverflow.ellipsis,
           ),
         ),

@@ -3,6 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kloof/l10n/app_localizations.dart';
+import 'package:kloof/theme/kloof_theme.dart';
+
+import '../data/booking_store.dart';
 
 class BarberBookingsScreen extends StatelessWidget {
   const BarberBookingsScreen({super.key});
@@ -10,14 +13,14 @@ class BarberBookingsScreen extends StatelessWidget {
   Color _statusChipColor(String status) {
     switch (status.toLowerCase()) {
       case 'accepted':
-        return Colors.green;
+        return KloofColors.success;
       case 'rejected':
-        return Colors.red;
+        return KloofColors.error;
       case 'completed':
-        return Colors.blue;
+        return KloofColors.mutedText;
       case 'pending':
       default:
-        return Colors.orange;
+        return KloofColors.warning;
     }
   }
 
@@ -118,10 +121,54 @@ class BarberBookingsScreen extends StatelessWidget {
   }
 
   Future<void> _updateBookingStatus(String bookingId, String status) async {
-    await FirebaseFirestore.instance
+    final bookingReference = FirebaseFirestore.instance
         .collection('bookings')
-        .doc(bookingId)
-        .update({'status': status});
+        .doc(bookingId);
+    final booking = await bookingReference.get();
+    final customerId = booking.data()?['customerId']?.toString();
+
+    await BookingStore(
+      FirebaseFirestore.instance,
+    ).updateBookingStatus(bookingId, status);
+
+    final message = switch (status) {
+      'accepted' => 'Your booking has been accepted.',
+      'rejected' => 'Your booking has been rejected.',
+      _ => null,
+    };
+    if (customerId == null || customerId.isEmpty || message == null) return;
+
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'recipientId': customerId,
+      'message': message,
+      'bookingId': bookingId,
+      'isRead': false,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> _confirmAndReject(BuildContext context, String bookingId) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.barberBookingsRejectConfirmTitle),
+        content: Text(l10n.barberBookingsRejectConfirmMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.commonCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.barberBookingsRejectConfirmAction),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await _updateBookingStatus(bookingId, 'rejected');
+    }
   }
 
   @override
@@ -130,21 +177,21 @@ class BarberBookingsScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F8F8),
+      backgroundColor: KloofColors.warmOffWhite,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: KloofColors.warmOffWhite,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: const IconThemeData(color: KloofColors.primaryText),
         title: Text(
           l10n.barberBookingsTitle,
-          style: TextStyle(color: Colors.black),
+          style: TextStyle(color: KloofColors.primaryText),
         ),
       ),
       body: currentUser == null
           ? Center(
               child: Text(
                 l10n.barberBookingsSignedOut,
-                style: const TextStyle(color: Colors.black54),
+                style: const TextStyle(color: KloofColors.secondaryText),
               ),
             )
           : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
@@ -161,7 +208,7 @@ class BarberBookingsScreen extends StatelessWidget {
                   return Center(
                     child: Text(
                       l10n.barberBookingsLoadFailed,
-                      style: const TextStyle(color: Colors.black54),
+                      style: const TextStyle(color: KloofColors.secondaryText),
                     ),
                   );
                 }
@@ -171,7 +218,7 @@ class BarberBookingsScreen extends StatelessWidget {
                   return Center(
                     child: Text(
                       l10n.barberBookingsEmpty,
-                      style: const TextStyle(color: Colors.black54),
+                      style: const TextStyle(color: KloofColors.secondaryText),
                     ),
                   );
                 }
@@ -193,7 +240,10 @@ class BarberBookingsScreen extends StatelessWidget {
                     final customerId = booking['customerId']?.toString() ?? '';
                     final customerName = booking['customerName']?.toString();
                     final service = booking['service']?.toString() ?? '-';
-                    final localizedService = _localizedServiceName(service, l10n);
+                    final localizedService = _localizedServiceName(
+                      service,
+                      l10n,
+                    );
                     final rawPrice = _formatPrice(booking['servicePrice']);
                     final price = rawPrice == '-'
                         ? rawPrice
@@ -228,7 +278,8 @@ class BarberBookingsScreen extends StatelessWidget {
                                     ),
                                     builder: (context, nameSnapshot) {
                                       final displayName =
-                                          nameSnapshot.data ?? l10n.barberBookingsCustomerFallback;
+                                          nameSnapshot.data ??
+                                          l10n.barberBookingsCustomerFallback;
                                       return Text(
                                         displayName,
                                         style: const TextStyle(
@@ -294,30 +345,41 @@ class BarberBookingsScreen extends StatelessWidget {
                             ),
                             if (isPending) ...[
                               const SizedBox(height: 12),
-                              Row(
+                              OverflowBar(
+                                spacing: 10,
+                                overflowSpacing: 8,
+                                alignment: MainAxisAlignment.end,
+                                overflowAlignment: OverflowBarAlignment.start,
                                 children: [
-                                  Expanded(
-                                    child: OutlinedButton(
-                                      onPressed: bookingId.isEmpty
-                                          ? null
-                                          : () => _updateBookingStatus(
-                                              bookingId,
-                                              'accepted',
-                                            ),
-                                      child: Text(l10n.barberBookingsAccept),
+                                  OutlinedButton(
+                                    onPressed: bookingId.isEmpty
+                                        ? null
+                                        : () => _updateBookingStatus(
+                                            bookingId,
+                                            'accepted',
+                                          ),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: KloofColors.success,
+                                      side: const BorderSide(
+                                        color: KloofColors.success,
+                                      ),
                                     ),
+                                    child: Text(l10n.barberBookingsAccept),
                                   ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: OutlinedButton(
-                                      onPressed: bookingId.isEmpty
-                                          ? null
-                                          : () => _updateBookingStatus(
-                                              bookingId,
-                                              'rejected',
-                                            ),
-                                      child: Text(l10n.barberBookingsReject),
+                                  OutlinedButton(
+                                    onPressed: bookingId.isEmpty
+                                        ? null
+                                        : () => _confirmAndReject(
+                                            context,
+                                            bookingId,
+                                          ),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: KloofColors.error,
+                                      side: const BorderSide(
+                                        color: KloofColors.error,
+                                      ),
                                     ),
+                                    child: Text(l10n.barberBookingsReject),
                                   ),
                                 ],
                               ),

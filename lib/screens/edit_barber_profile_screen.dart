@@ -6,6 +6,9 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kloof/l10n/app_localizations.dart';
+import 'package:kloof/theme/kloof_theme.dart';
+
+import '../data/barber_profile_store.dart';
 
 class EditBarberProfileScreen extends StatefulWidget {
   const EditBarberProfileScreen({super.key});
@@ -72,7 +75,11 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
 
   Future<void> _loadProfile() async {
     try {
-      final docRef = _docRefForCurrentUser();
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) throw Exception('No signed-in barber user found.');
+      final docRef = await BarberProfileStore(
+        FirebaseFirestore.instance,
+      ).ensureCanonicalProfile(uid: user.uid, fallbackName: user.displayName);
       final snapshot = await docRef.get();
 
       if (!snapshot.exists) {
@@ -99,7 +106,8 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
       _selectedCity = _cities.contains(loadedCity) ? loadedCity : _cities.first;
       _addressController.text = (data['address'] ?? '').toString();
       _bioController.text = (data['bio'] ?? '').toString();
-      _existingProfileImageUrl = (data['profileImage'] ?? '').toString();
+      _existingProfileImageUrl =
+          (data['profileImage'] ?? data['imageUrl'] ?? '').toString();
 
       final parsedServices = <Map<String, dynamic>>[];
       for (final service in servicesRaw) {
@@ -136,8 +144,9 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
     } catch (_) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.barberProfileLoadFailed)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.barberProfileLoadFailed)));
     } finally {
       if (mounted) {
         setState(() {
@@ -240,6 +249,9 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
         'address': _addressController.text.trim(),
         'bio': _bioController.text.trim(),
         'profileImage': profileImageUrl,
+        'imageUrl': profileImageUrl,
+        'uid': user.uid,
+        'ownerUid': user.uid,
         'services': services,
       }, SetOptions(merge: true));
 
@@ -262,8 +274,9 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
         _ => l10n.editBarberProfileSaveFailed,
       };
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(localizedMessage)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(localizedMessage)));
     } finally {
       if (mounted) {
         setState(() {
@@ -407,8 +420,9 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
       margin: const EdgeInsetsDirectional.only(bottom: 8),
       padding: const EdgeInsetsDirectional.all(10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: KloofColors.cardBackground,
         borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: KloofColors.border),
       ),
       child: Column(
         children: [
@@ -432,7 +446,10 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
                     removed.dispose();
                   });
                 },
-                icon: const Icon(Icons.delete_outline, color: Colors.black54),
+                icon: const Icon(
+                  Icons.delete_outline,
+                  color: KloofColors.secondaryText,
+                ),
               ),
             ],
           ),
@@ -442,31 +459,37 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
               controller: service.nameController,
               compact: true,
             ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: _field(
-                  label: l10n.editBarberProfilePriceInputLabel,
-                  controller: service.priceController,
-                  hintText: l10n.editBarberProfileNotSetHint,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  compact: true,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final priceField = _field(
+                label: l10n.editBarberProfilePriceInputLabel,
+                controller: service.priceController,
+                hintText: l10n.editBarberProfileNotSetHint,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _field(
-                  label: l10n.editBarberProfileDurationInputLabel,
-                  controller: service.durationController,
-                  hintText: l10n.editBarberProfileNotSetHint,
-                  keyboardType: TextInputType.number,
-                  compact: true,
-                ),
-              ),
-            ],
+                compact: true,
+              );
+              final durationField = _field(
+                label: l10n.editBarberProfileDurationInputLabel,
+                controller: service.durationController,
+                hintText: l10n.editBarberProfileNotSetHint,
+                keyboardType: TextInputType.number,
+                compact: true,
+              );
+
+              if (constraints.maxWidth < 360) {
+                return Column(children: [priceField, durationField]);
+              }
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: priceField),
+                  const SizedBox(width: 8),
+                  Expanded(child: durationField),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -478,14 +501,14 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F8F8),
+      backgroundColor: KloofColors.warmOffWhite,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: KloofColors.warmOffWhite,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: const IconThemeData(color: KloofColors.primaryText),
         title: Text(
           l10n.editBarberProfileTitle,
-          style: TextStyle(color: Colors.black),
+          style: TextStyle(color: KloofColors.primaryText),
         ),
       ),
       body: _isLoading
@@ -499,7 +522,7 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
                     Center(
                       child: CircleAvatar(
                         radius: 44,
-                        backgroundColor: Colors.grey.shade300,
+                        backgroundColor: KloofColors.secondarySurface,
                         backgroundImage: _pickedImage != null
                             ? FileImage(File(_pickedImage!.path))
                             : (_existingProfileImageUrl.trim().isNotEmpty
@@ -511,7 +534,7 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
                             ? const Icon(
                                 Icons.person,
                                 size: 38,
-                                color: Colors.black54,
+                                color: KloofColors.mutedGold,
                               )
                             : null,
                       ),
@@ -573,7 +596,7 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
                     Text(
                       l10n.barberProfileServices,
                       style: TextStyle(
-                        color: Colors.black,
+                        color: KloofColors.primaryText,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -594,7 +617,7 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
                       child: ElevatedButton(
                         onPressed: _isSaving ? null : _saveProfile,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
+                          backgroundColor: KloofColors.primaryBlack,
                           foregroundColor: Colors.white,
                         ),
                         child: _isSaving

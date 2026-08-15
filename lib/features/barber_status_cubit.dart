@@ -1,6 +1,8 @@
 import 'dart:async';
-import 'package:bloc/bloc.dart';
+
 import 'package:equatable/equatable.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../domain/usecases/toggle_online_status_usecase.dart';
 
 part 'barber_status_state.dart';
@@ -8,10 +10,16 @@ part 'barber_status_state.dart';
 class BarberStatusCubit extends Cubit<BarberStatusState> {
   final ToggleOnlineStatusUseCase toggleOnlineStatusUseCase;
 
-  BarberStatusCubit(this.toggleOnlineStatusUseCase) : super(BarberStatusInitial());
+  BarberStatusCubit(this.toggleOnlineStatusUseCase)
+    : super(BarberStatusInitial());
 
   Timer? _debounceTimer;
   static const _debounceDuration = Duration(milliseconds: 400);
+
+  void syncFromFirestore(bool isOnline) {
+    if (state is BarberStatusUpdating) return;
+    emit(BarberStatusSuccess(isOnline: isOnline));
+  }
 
   void toggleOnline(String barberId, bool currentValue) {
     final newValue = !currentValue;
@@ -23,7 +31,10 @@ class BarberStatusCubit extends Cubit<BarberStatusState> {
     });
   }
 
-  Future<void> _commitStatus({required String barberId, required bool isOnline}) async {
+  Future<void> _commitStatus({
+    required String barberId,
+    required bool isOnline,
+  }) async {
     final result = await toggleOnlineStatusUseCase(
       ToggleOnlineParams(barberId: barberId, isOnline: isOnline),
     );
@@ -31,7 +42,9 @@ class BarberStatusCubit extends Cubit<BarberStatusState> {
     if (isClosed) return;
 
     result.fold(
-      (failure) => emit(BarberStatusError(isOnline: !isOnline, message: failure.message)),
+      (failure) => emit(
+        BarberStatusError(isOnline: !isOnline, message: failure.message),
+      ),
       (_) => emit(BarberStatusSuccess(isOnline: isOnline)),
     );
   }

@@ -2,8 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:kloof/l10n/app_localizations.dart';
+import 'package:kloof/theme/kloof_theme.dart';
 
 import 'edit_barber_profile_screen.dart';
+import '../data/barber_profile_store.dart';
 
 class BarberProfileScreen extends StatefulWidget {
   const BarberProfileScreen({super.key});
@@ -19,26 +21,9 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
       throw Exception('No signed-in barber user found.');
     }
 
-    final docRef = FirebaseFirestore.instance
-        .collection('barbers')
-        .doc(user.uid);
-
-    final doc = await docRef.get();
-    if (!doc.exists) {
-      await docRef.set({
-        'fullName': '',
-        'shopName': '',
-        'phone': '',
-        'city': '',
-        'address': '',
-        'bio': '',
-        'profileImage': '',
-        'services': <Map<String, dynamic>>[],
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-    }
-
-    return docRef;
+    return BarberProfileStore(
+      FirebaseFirestore.instance,
+    ).ensureCanonicalProfile(uid: user.uid, fallbackName: user.displayName);
   }
 
   Widget _profileRow(String label, String value) {
@@ -51,7 +36,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
           Text(
             label,
             style: const TextStyle(
-              color: Colors.black54,
+              color: KloofColors.secondaryText,
               fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
@@ -62,7 +47,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              color: Colors.black,
+              color: KloofColors.primaryText,
               fontSize: 16,
               fontWeight: FontWeight.w500,
             ),
@@ -92,12 +77,16 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
   }
 
   String _formatDuration(dynamic duration, AppLocalizations l10n) {
-    if (duration == null) return '-';
+    if (duration == null || duration.toString().trim().isEmpty) {
+      return l10n.barberProfileNotAvailable;
+    }
     if (duration is num) {
       return l10n.barberProfileDurationMinutes(duration.toInt().toString());
     }
     final parsed = int.tryParse(duration.toString());
-    if (parsed == null) return duration.toString();
+    if (parsed == null || parsed <= 0) {
+      return l10n.barberProfileNotAvailable;
+    }
     return l10n.barberProfileDurationMinutes(parsed.toString());
   }
 
@@ -174,14 +163,14 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F8F8),
+      backgroundColor: KloofColors.warmOffWhite,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: KloofColors.warmOffWhite,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: const IconThemeData(color: KloofColors.primaryText),
         title: Text(
           l10n.barberProfileTitle,
-          style: TextStyle(color: Colors.black),
+          style: TextStyle(color: KloofColors.primaryText),
         ),
       ),
       body: FutureBuilder<DocumentReference<Map<String, dynamic>>>(
@@ -195,7 +184,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
             return Center(
               child: Text(
                 l10n.barberProfileLoadFailed,
-                style: const TextStyle(color: Colors.black54),
+                style: const TextStyle(color: KloofColors.secondaryText),
               ),
             );
           }
@@ -215,7 +204,8 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
               final city = (data['city'] ?? '').toString();
               final address = (data['address'] ?? '').toString();
               final bio = (data['bio'] ?? '').toString();
-              final profileImage = (data['profileImage'] ?? '').toString();
+              final profileImage =
+                  (data['profileImage'] ?? data['imageUrl'] ?? '').toString();
               final services = _readServices(data['services']);
 
               return SingleChildScrollView(
@@ -226,7 +216,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                     Center(
                       child: CircleAvatar(
                         radius: 48,
-                        backgroundColor: Colors.grey.shade300,
+                        backgroundColor: KloofColors.secondarySurface,
                         backgroundImage: profileImage.trim().isNotEmpty
                             ? NetworkImage(profileImage)
                             : null,
@@ -234,7 +224,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                             ? const Icon(
                                 Icons.person,
                                 size: 42,
-                                color: Colors.black54,
+                                color: KloofColors.mutedGold,
                               )
                             : null,
                       ),
@@ -253,7 +243,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                     Text(
                       l10n.barberProfileServices,
                       style: TextStyle(
-                        color: Colors.black,
+                        color: KloofColors.primaryText,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -262,19 +252,31 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                     if (services.isEmpty)
                       const Text(
                         '-',
-                        style: TextStyle(color: Colors.black87, fontSize: 15),
+                        style: TextStyle(
+                          color: KloofColors.secondaryText,
+                          fontSize: 15,
+                        ),
                       )
                     else
                       ...services.map((service) {
                         final name = (service['name'] ?? '').toString().trim();
                         final displayName = _localizedServiceName(name, l10n);
+                        final rawPrice = _formatPrice(service['price']);
+                        final displayPrice = rawPrice == '-'
+                            ? l10n.barberProfileNotAvailable
+                            : l10n.bookingConfirmationPriceValue(rawPrice);
+                        final displayDuration = _formatDuration(
+                          service['duration'],
+                          l10n,
+                        );
                         return Container(
                           width: double.infinity,
                           margin: const EdgeInsetsDirectional.only(bottom: 10),
                           padding: const EdgeInsetsDirectional.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: KloofColors.cardBackground,
                             borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: KloofColors.border),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,26 +286,28 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
-                                  color: Colors.black,
+                                  color: KloofColors.primaryText,
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                '${l10n.barberProfilePriceLabel}: ${l10n.bookingConfirmationPriceValue(_formatPrice(service['price']))}',
+                                '${l10n.barberProfilePriceLabel}: $displayPrice',
                                 style: const TextStyle(
-                                  color: Colors.black87,
+                                  color: KloofColors.secondaryText,
                                   fontSize: 14,
                                 ),
                               ),
-                              Text(
-                                '${l10n.barberProfileDurationLabel}: ${_formatDuration(service['duration'], l10n)}',
-                                style: const TextStyle(
-                                  color: Colors.black87,
-                                  fontSize: 14,
+                              if (displayDuration !=
+                                  l10n.barberProfileNotAvailable)
+                                Text(
+                                  '${l10n.barberProfileDurationLabel}: $displayDuration',
+                                  style: const TextStyle(
+                                    color: KloofColors.secondaryText,
+                                    fontSize: 14,
+                                  ),
                                 ),
-                              ),
                             ],
                           ),
                         );
@@ -321,7 +325,7 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                           );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
+                          backgroundColor: KloofColors.primaryBlack,
                           foregroundColor: Colors.white,
                         ),
                         child: Text(l10n.barberProfileEditProfile),

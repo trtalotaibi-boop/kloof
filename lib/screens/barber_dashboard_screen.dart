@@ -6,8 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:kloof/l10n/app_localizations.dart';
+import 'package:kloof/theme/kloof_theme.dart';
 
 import '../data/repositories/barber_repository_impl.dart';
+import '../data/barber_profile_store.dart';
+import '../data/booking_store.dart';
 import '../domain/usecases/toggle_online_status_usecase.dart';
 import '../features/barber_status_cubit.dart';
 import 'barber_bookings_screen.dart';
@@ -46,7 +49,8 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
   TimeOfDay? _breakEndTime;
   bool _isSavingWorkingHours = false;
 
-  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _barberSubscription;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
+  _barberSubscription;
 
   late final BarberStatusCubit _barberStatusCubit;
   bool _isCheckingRole = true;
@@ -87,7 +91,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
         return;
       }
 
-      _listenToBarberUpdates();
+      await _listenToBarberUpdates(currentUser.uid);
       if (!mounted) return;
       setState(() {
         _isRoleAllowed = true;
@@ -99,71 +103,50 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
     }
   }
 
-  void _listenToBarberUpdates() {
+  Future<void> _listenToBarberUpdates(String uid) async {
     _barberSubscription?.cancel();
+    final docRef = await BarberProfileStore(
+      FirebaseFirestore.instance,
+    ).ensureCanonicalProfile(uid: uid, fallbackName: widget.barberName);
+    _barberDocRef = docRef;
+    _barberId = uid;
 
-    _barberSubscription = FirebaseFirestore.instance
-        .collection('barbers')
-        .where('name', isEqualTo: widget.barberName)
-        .limit(1)
-        .snapshots()
-        .listen((snapshot) {
-          if (!mounted) return;
+    _barberSubscription = docRef.snapshots().listen((snapshot) {
+      if (!mounted) return;
+      final data = snapshot.data() ?? <String, dynamic>{};
+      _barberStatusCubit.syncFromFirestore(data['isOnline'] == true);
+      final workingHours = Map<String, dynamic>.from(
+        data['workingHours'] ?? <String, dynamic>{},
+      );
 
-          if (snapshot.docs.isEmpty) {
-            final docRef = FirebaseFirestore.instance
-                .collection('barbers')
-                .doc(widget.barberName);
-            _barberDocRef = docRef;
-            setState(() {
-              _barberId = docRef.id;
-              _workingDays = _allDays.toSet();
-              _openingTime = const TimeOfDay(hour: 8, minute: 0);
-              _closingTime = const TimeOfDay(hour: 23, minute: 0);
-              _appointmentDuration = 30;
-              _breakStartTime = null;
-              _breakEndTime = null;
-            });
-            return;
-          }
+      final savedDays = List<String>.from(
+        workingHours['workingDays'] ?? _allDays,
+      ).where(_allDays.contains).toSet();
+      final openingTime =
+          _parseTimeLabel(workingHours['openingTime']?.toString()) ??
+          const TimeOfDay(hour: 8, minute: 0);
+      final closingTime =
+          _parseTimeLabel(workingHours['closingTime']?.toString()) ??
+          const TimeOfDay(hour: 23, minute: 0);
+      final durationRaw = workingHours['appointmentDuration'];
+      final duration = durationRaw is num ? durationRaw.toInt() : 30;
+      final breakStart = _parseTimeLabel(
+        workingHours['breakStart']?.toString(),
+      );
+      final breakEnd = _parseTimeLabel(workingHours['breakEnd']?.toString());
 
-          final barberDoc = snapshot.docs.first;
-          _barberDocRef = barberDoc.reference;
-          final data = barberDoc.data();
-          final workingHours = Map<String, dynamic>.from(
-            data['workingHours'] ?? <String, dynamic>{},
-          );
-
-          final savedDays = List<String>.from(
-            workingHours['workingDays'] ?? _allDays,
-          ).where(_allDays.contains).toSet();
-          final openingTime =
-              _parseTimeLabel(workingHours['openingTime']?.toString()) ??
-              const TimeOfDay(hour: 8, minute: 0);
-          final closingTime =
-              _parseTimeLabel(workingHours['closingTime']?.toString()) ??
-              const TimeOfDay(hour: 23, minute: 0);
-          final durationRaw = workingHours['appointmentDuration'];
-          final duration = durationRaw is num ? durationRaw.toInt() : 30;
-          final breakStart = _parseTimeLabel(
-            workingHours['breakStart']?.toString(),
-          );
-          final breakEnd = _parseTimeLabel(
-            workingHours['breakEnd']?.toString(),
-          );
-
-          setState(() {
-            _barberId = barberDoc.id;
-            _workingDays = savedDays.isEmpty ? _allDays.toSet() : savedDays;
-            _openingTime = openingTime;
-            _closingTime = closingTime;
-            _appointmentDuration = [15, 30, 45, 60].contains(duration)
-                ? duration
-                : 30;
-            _breakStartTime = breakStart;
-            _breakEndTime = breakEnd;
-          });
-        });
+      setState(() {
+        _barberId = uid;
+        _workingDays = savedDays.isEmpty ? _allDays.toSet() : savedDays;
+        _openingTime = openingTime;
+        _closingTime = closingTime;
+        _appointmentDuration = [15, 30, 45, 60].contains(duration)
+            ? duration
+            : 30;
+        _breakStartTime = breakStart;
+        _breakEndTime = breakEnd;
+      });
+    });
   }
 
   TimeOfDay? _parseTimeLabel(String? value) {
@@ -212,15 +195,15 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
 
   Future<void> _saveWorkingHours() async {
     final l10n = AppLocalizations.of(context);
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
     final barberDocRef =
         _barberDocRef ??
-        FirebaseFirestore.instance.collection('barbers').doc(widget.barberName);
+        FirebaseFirestore.instance.collection('barbers').doc(uid);
 
     if (_workingDays.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.barberDashboardSelectWorkingDayError),
-        ),
+        SnackBar(content: Text(l10n.barberDashboardSelectWorkingDayError)),
       );
       return;
     }
@@ -229,9 +212,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
     final closingMinutes = (_closingTime.hour * 60) + _closingTime.minute;
     if (closingMinutes <= openingMinutes) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.barberDashboardClosingAfterOpeningError),
-        ),
+        SnackBar(content: Text(l10n.barberDashboardClosingAfterOpeningError)),
       );
       return;
     }
@@ -243,18 +224,14 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
           (_breakEndTime!.hour * 60) + _breakEndTime!.minute;
       if (breakEndMinutes <= breakStartMinutes) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.barberDashboardBreakEndAfterStartError),
-          ),
+          SnackBar(content: Text(l10n.barberDashboardBreakEndAfterStartError)),
         );
         return;
       }
       if (breakStartMinutes < openingMinutes ||
           breakEndMinutes > closingMinutes) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.barberDashboardBreakWithinHoursError),
-          ),
+          SnackBar(content: Text(l10n.barberDashboardBreakWithinHoursError)),
         );
         return;
       }
@@ -286,9 +263,9 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
       ).showSnackBar(SnackBar(content: Text(l10n.barberDashboardSaved)));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.barberDashboardSaveFailed)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.barberDashboardSaveFailed)));
     } finally {
       if (mounted) {
         setState(() {
@@ -321,7 +298,9 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
     final bookingData = bookingSnapshot.data();
     final customerId = bookingData?['customerId']?.toString();
 
-    await bookingRef.update({'status': status});
+    await BookingStore(
+      FirebaseFirestore.instance,
+    ).updateBookingStatus(bookingId, status);
 
     if (customerId == null || customerId.trim().isEmpty) {
       return;
@@ -342,6 +321,30 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
         message: message,
         bookingId: bookingId,
       );
+    }
+  }
+
+  Future<void> _confirmAndReject(String bookingId) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.barberBookingsRejectConfirmTitle),
+        content: Text(l10n.barberBookingsRejectConfirmMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.commonCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.barberBookingsRejectConfirmAction),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await _updateBookingStatus(bookingId, 'rejected');
     }
   }
 
@@ -383,14 +386,14 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
   Color _statusChipColor(String status) {
     switch (status.toLowerCase()) {
       case 'accepted':
-        return Colors.green;
+        return KloofColors.success;
       case 'rejected':
-        return Colors.red;
+        return KloofColors.error;
       case 'completed':
-        return Colors.blue;
+        return KloofColors.mutedText;
       case 'pending':
       default:
-        return Colors.orange;
+        return KloofColors.warning;
     }
   }
 
@@ -501,6 +504,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final currentDay = _allDays[DateTime.now().weekday - 1];
 
     if (_isCheckingRole) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -529,15 +533,15 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
     return BlocProvider<BarberStatusCubit>.value(
       value: _barberStatusCubit,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8F8F8),
+        backgroundColor: KloofColors.warmOffWhite,
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          backgroundColor: Colors.white,
+          backgroundColor: KloofColors.warmOffWhite,
           elevation: 0,
-          iconTheme: const IconThemeData(color: Colors.black),
+          iconTheme: const IconThemeData(color: KloofColors.primaryText),
           title: Text(
             widget.barberName,
-            style: const TextStyle(color: Colors.black),
+            style: const TextStyle(color: KloofColors.primaryText),
           ),
           actions: [
             IconButton(
@@ -549,11 +553,14 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                   ),
                 );
               },
-              icon: const Icon(Icons.person_outline, color: Colors.black),
+              icon: const Icon(
+                Icons.person_outline,
+                color: KloofColors.primaryText,
+              ),
             ),
             IconButton(
               onPressed: _logout,
-              icon: const Icon(Icons.logout, color: Colors.black),
+              icon: const Icon(Icons.logout, color: KloofColors.primaryText),
             ),
           ],
         ),
@@ -563,18 +570,33 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      l10n.barberDashboardAvailability,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsetsDirectional.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: KloofColors.cardBackground,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: KloofColors.border),
+                  ),
+                  child: Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 12,
+                    runSpacing: 8,
+                    children: [
+                      Text(
+                        l10n.barberDashboardAvailability,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    _OnlineStatusToggle(barberId: _barberId!),
-                  ],
+                      _OnlineStatusToggle(barberId: _barberId!),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Semantics(
@@ -597,55 +619,35 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                 Text(
                   l10n.barberDashboardWorkingHours,
                   style: const TextStyle(
-                    color: Colors.black45,
+                    color: KloofColors.primaryText,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 8),
-                Semantics(
-                  enabled: false,
-                  child: IgnorePointer(
-                    child: Opacity(
-                      opacity: 0.45,
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(14),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: KloofColors.cardBackground,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: KloofColors.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _localizedDayLabel(currentDay, l10n),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _allDays.map((day) {
-                          final isSelected = _workingDays.contains(day);
-                          return FilterChip(
-                            label: Text(_localizedDayLabel(day, l10n)),
-                            selected: isSelected,
-                            onSelected: (value) {
-                              setState(() {
-                                if (value) {
-                                  _workingDays.add(day);
-                                } else {
-                                  _workingDays.remove(day);
-                                }
-                              });
-                            },
-                            selectedColor: Colors.black,
-                            backgroundColor: Colors.white,
-                            checkmarkColor: Colors.white,
-                            labelStyle: TextStyle(
-                              color: isSelected ? Colors.white : Colors.black,
-                            ),
-                          );
-                        }).toList(),
                       ),
                       const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
                           Text(
                             l10n.myBookingsValueRow(
@@ -662,8 +664,11 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                           ),
                         ],
                       ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
                           Text(
                             l10n.myBookingsValueRow(
@@ -680,34 +685,12 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      DropdownButtonFormField<int>(
-                        value: _appointmentDuration,
-                        items: const [15, 30, 45, 60]
-                            .map(
-                              (value) => DropdownMenuItem<int>(
-                                value: value,
-                                child: Text(
-                                  l10n.barberProfileDurationMinutes(
-                                    value.toString(),
-                                  ),
-                                ),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (value) {
-                          if (value == null) return;
-                          setState(() {
-                            _appointmentDuration = value;
-                          });
-                        },
-                        decoration: InputDecoration(
-                          labelText: l10n.barberDashboardAppointmentDuration,
-                        ),
-                      ),
                       const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
                           Text(
                             _breakStartTime == null
@@ -723,7 +706,9 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                                     ),
                                   ),
                           ),
-                          Row(
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
                             children: [
                               OutlinedButton(
                                 onPressed: () => _pickTime(
@@ -733,7 +718,6 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                                 ),
                                 child: Text(l10n.barberDashboardSet),
                               ),
-                              const SizedBox(width: 6),
                               OutlinedButton(
                                 onPressed: _breakStartTime == null
                                     ? null
@@ -748,8 +732,11 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                           ),
                         ],
                       ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
                           Text(
                             _breakEndTime == null
@@ -762,7 +749,9 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                                     _formatDisplayTime(context, _breakEndTime!),
                                   ),
                           ),
-                          Row(
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
                             children: [
                               OutlinedButton(
                                 onPressed: () => _pickTime(
@@ -771,7 +760,6 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                                 ),
                                 child: Text(l10n.barberDashboardSet),
                               ),
-                              const SizedBox(width: 6),
                               OutlinedButton(
                                 onPressed: _breakEndTime == null
                                     ? null
@@ -794,7 +782,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                               ? null
                               : _saveWorkingHours,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
+                            backgroundColor: KloofColors.primaryBlack,
                             foregroundColor: Colors.white,
                           ),
                           child: _isSavingWorkingHours
@@ -806,13 +794,10 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                                     color: Colors.white,
                                   ),
                                 )
-                                : Text(l10n.barberDashboardSaveWorkingHours),
+                              : Text(l10n.barberDashboardSaveWorkingHours),
                         ),
                       ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -828,7 +813,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
+                      backgroundColor: KloofColors.primaryBlack,
                       foregroundColor: Colors.white,
                     ),
                     child: Text(l10n.barberBookingsTitle),
@@ -851,146 +836,161 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                       return const Center(child: CircularProgressIndicator());
                     }
                     if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                      return Center(child: Text(l10n.barberDashboardNoBookings));
+                      return Center(
+                        child: Text(l10n.barberDashboardNoBookings),
+                      );
                     }
                     return ListView(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                        children: snapshot.data!.docs.map((doc) {
-                          final data = doc.data() as Map<String, dynamic>;
-                          final status =
-                              data['status']?.toString() ?? 'pending';
-                          final customerId =
-                              data['customerId']?.toString() ?? '';
-                          final customerName = data['customerName']?.toString();
-                          final service = data['service']?.toString() ?? '-';
-                          final localizedService =
-                              _localizedServiceName(service, l10n);
-                          final date = _formatDate(
-                            data['bookingDate'] as Timestamp?,
-                            l10n,
-                          );
-                          final time = data['selectedTime']?.toString() ?? '-';
+                      children: snapshot.data!.docs.map((doc) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        final status = data['status']?.toString() ?? 'pending';
+                        final customerId = data['customerId']?.toString() ?? '';
+                        final customerName = data['customerName']?.toString();
+                        final service = data['service']?.toString() ?? '-';
+                        final localizedService = _localizedServiceName(
+                          service,
+                          l10n,
+                        );
+                        final date = _formatDate(
+                          data['bookingDate'] as Timestamp?,
+                          l10n,
+                        );
+                        final time = data['selectedTime']?.toString() ?? '-';
 
-                          return Card(
-                            margin: const EdgeInsetsDirectional.only(bottom: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsetsDirectional.all(14),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: FutureBuilder<String>(
-                                          future: _resolveCustomerName(
-                                            customerId,
-                                            customerName,
-                                            l10n,
-                                          ),
-                                          builder: (context, nameSnapshot) {
-                                            final displayName =
-                                                nameSnapshot.data ??
-                                                l10n.barberBookingsCustomerFallback;
-                                            return Text(
-                                              displayName,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            );
-                                          },
+                        return Card(
+                          margin: const EdgeInsetsDirectional.only(bottom: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsetsDirectional.all(14),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: FutureBuilder<String>(
+                                        future: _resolveCustomerName(
+                                          customerId,
+                                          customerName,
+                                          l10n,
+                                        ),
+                                        builder: (context, nameSnapshot) {
+                                          final displayName =
+                                              nameSnapshot.data ??
+                                              l10n.barberBookingsCustomerFallback;
+                                          return Text(
+                                            displayName,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: _statusChipColor(
+                                          status,
+                                        ).withValues(alpha: 0.16),
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(
+                                          color: _statusChipColor(status),
                                         ),
                                       ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: _statusChipColor(
-                                            status,
-                                          ).withValues(alpha: 0.16),
-                                          borderRadius: BorderRadius.circular(
-                                            20,
-                                          ),
-                                          border: Border.all(
-                                            color: _statusChipColor(status),
-                                          ),
-                                        ),
-                                        child: Text(
-                                          _statusLabel(status, l10n),
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: _statusChipColor(status),
-                                            fontWeight: FontWeight.w700,
-                                          ),
+                                      child: Text(
+                                        _statusLabel(status, l10n),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: _statusChipColor(status),
+                                          fontWeight: FontWeight.w700,
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    l10n.myBookingsValueRow(
-                                      l10n.myBookingsServiceLabel,
-                                      localizedService,
                                     ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  l10n.myBookingsValueRow(
+                                    l10n.myBookingsServiceLabel,
+                                    localizedService,
                                   ),
-                                  Text(
-                                    l10n.myBookingsValueRow(
-                                      l10n.myBookingsDateLabel,
-                                      date,
-                                    ),
+                                ),
+                                Text(
+                                  l10n.myBookingsValueRow(
+                                    l10n.myBookingsDateLabel,
+                                    date,
                                   ),
-                                  Text(
-                                    l10n.myBookingsValueRow(
-                                      l10n.myBookingsTimeLabel,
-                                      time,
-                                    ),
+                                ),
+                                Text(
+                                  l10n.myBookingsValueRow(
+                                    l10n.myBookingsTimeLabel,
+                                    time,
                                   ),
+                                ),
+                                if (status.toLowerCase() == 'pending') ...[
                                   const SizedBox(height: 10),
-                                  Row(
+                                  OverflowBar(
+                                    spacing: 10,
+                                    overflowSpacing: 8,
+                                    alignment: MainAxisAlignment.end,
+                                    overflowAlignment:
+                                        OverflowBarAlignment.start,
                                     children: [
-                                      Expanded(
-                                        child: OutlinedButton(
-                                          onPressed: () => _updateBookingStatus(
-                                            doc.id,
-                                            'accepted',
-                                          ),
-                                          child: Text(l10n.barberBookingsAccept),
+                                      OutlinedButton(
+                                        onPressed: () => _updateBookingStatus(
+                                          doc.id,
+                                          'accepted',
                                         ),
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: KloofColors.success,
+                                          side: const BorderSide(
+                                            color: KloofColors.success,
+                                          ),
+                                        ),
+                                        child: Text(l10n.barberBookingsAccept),
                                       ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: OutlinedButton(
-                                          onPressed: () => _updateBookingStatus(
-                                            doc.id,
-                                            'rejected',
+                                      OutlinedButton(
+                                        onPressed: () =>
+                                            _confirmAndReject(doc.id),
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: KloofColors.error,
+                                          side: const BorderSide(
+                                            color: KloofColors.error,
                                           ),
-                                          child: Text(l10n.barberBookingsReject),
                                         ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: OutlinedButton(
-                                          onPressed: () => _updateBookingStatus(
-                                            doc.id,
-                                            'completed',
-                                          ),
-                                          child: Text(l10n.barberDashboardComplete),
-                                        ),
+                                        child: Text(l10n.barberBookingsReject),
                                       ),
                                     ],
                                   ),
                                 ],
-                              ),
+                                if (status.toLowerCase() == 'accepted') ...[
+                                  const SizedBox(height: 10),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: OutlinedButton(
+                                      onPressed: () => _updateBookingStatus(
+                                        doc.id,
+                                        'completed',
+                                      ),
+                                      child: Text(l10n.barberDashboardComplete),
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
-                          );
-                        }).toList(),
+                          ),
+                        );
+                      }).toList(),
                     );
                   },
                 ),
@@ -1017,16 +1017,20 @@ class _OnlineStatusToggle extends StatelessWidget {
     return BlocConsumer<BarberStatusCubit, BarberStatusState>(
       listener: (context, state) {
         if (state is BarberStatusError) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.message)));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.barberDashboardStatusUpdateFailed)),
+          );
         }
       },
       builder: (context, state) {
         final isUpdating = state is BarberStatusUpdating;
         return Row(
           children: [
-            Text(state.isOnline ? l10n.barberDashboardOnline : l10n.homeOfflineStatus),
+            Text(
+              state.isOnline
+                  ? l10n.barberDashboardOnline
+                  : l10n.homeOfflineStatus,
+            ),
             const SizedBox(width: 8),
             Switch(
               value: state.isOnline,
@@ -1037,7 +1041,7 @@ class _OnlineStatusToggle extends StatelessWidget {
             ),
             if (isUpdating)
               const Padding(
-                padding: EdgeInsets.only(left: 8.0),
+                padding: EdgeInsetsDirectional.only(start: 8.0),
                 child: SizedBox(
                   width: 16,
                   height: 16,

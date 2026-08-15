@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:kloof/l10n/app_localizations.dart';
+import 'package:kloof/theme/kloof_theme.dart';
+
+import '../data/booking_store.dart';
+import '../domain/booking_slot.dart';
 
 import 'booking_confirmation_screen.dart';
 import 'login_screen.dart';
@@ -24,12 +28,13 @@ class BookingScreen extends StatefulWidget {
 
 class _BookingScreenState extends State<BookingScreen> {
   String? _selectedTime;
+  DateTime? _selectedSlotStart;
   bool _isLoadingServices = true;
   bool _isLoadingAvailability = true;
   bool _isSubmitting = false;
   bool _isBarberOnline = false;
   List<_ServiceOption> _serviceOptions = [];
-  List<String> _availableTimes = [];
+  List<_BookingSlotOption> _availableTimes = [];
   _ServiceOption? _selectedService;
 
   List<String> _splitServiceNames(String raw) {
@@ -57,7 +62,7 @@ class _BookingScreenState extends State<BookingScreen> {
       final options = <_ServiceOption>[];
       final seenNames = <String>{};
       var isOnline = false;
-      var availableTimes = <String>[];
+      var availableTimes = <_BookingSlotOption>[];
       if (barberDoc.exists) {
         final data = barberDoc.data() ?? <String, dynamic>{};
         isOnline = data['isOnline'] == true;
@@ -161,7 +166,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
   int _minutesOfDay(TimeOfDay time) => (time.hour * 60) + time.minute;
 
-  Future<List<String>> _loadAvailableTimes(
+  Future<List<_BookingSlotOption>> _loadAvailableTimes(
     String barberId,
     Map<String, dynamic> barberData,
   ) async {
@@ -175,21 +180,21 @@ class _BookingScreenState extends State<BookingScreen> {
     final workingDays = List<String>.from(
       workingHours['workingDays'] ?? dayCodes,
     );
-    if (!workingDays.contains(dayCodes[now.weekday - 1])) return <String>[];
+    if (!workingDays.contains(dayCodes[now.weekday - 1])) {
+      return <_BookingSlotOption>[];
+    }
 
-    final opening = _parseSavedTime(
-      workingHours['openingTime']?.toString(),
-    ) ?? const TimeOfDay(hour: 8, minute: 0);
-    final closing = _parseSavedTime(
-      workingHours['closingTime']?.toString(),
-    ) ?? const TimeOfDay(hour: 23, minute: 0);
+    final opening =
+        _parseSavedTime(workingHours['openingTime']?.toString()) ??
+        const TimeOfDay(hour: 8, minute: 0);
+    final closing =
+        _parseSavedTime(workingHours['closingTime']?.toString()) ??
+        const TimeOfDay(hour: 23, minute: 0);
     final durationRaw = workingHours['appointmentDuration'];
     final duration = durationRaw is num && durationRaw.toInt() > 0
         ? durationRaw.toInt()
         : 30;
-    final breakStart = _parseSavedTime(
-      workingHours['breakStart']?.toString(),
-    );
+    final breakStart = _parseSavedTime(workingHours['breakStart']?.toString());
     final breakEnd = _parseSavedTime(workingHours['breakEnd']?.toString());
 
     final existingSnapshot = await FirebaseFirestore.instance
@@ -198,7 +203,15 @@ class _BookingScreenState extends State<BookingScreen> {
         .where('bookingDate', isEqualTo: Timestamp.fromDate(bookingDate))
         .limit(100)
         .get();
-    final bookedSlots = existingSnapshot.docs
+    final bookedSlotIds = existingSnapshot.docs
+        .where(
+          (doc) =>
+              (doc.data()['status']?.toString() ?? 'pending') != 'rejected',
+        )
+        .map((doc) => doc.data()['slotId']?.toString() ?? '')
+        .where((slot) => slot.isNotEmpty)
+        .toSet();
+    final legacyBookedLabels = existingSnapshot.docs
         .where(
           (doc) =>
               (doc.data()['status']?.toString() ?? 'pending') != 'rejected',
@@ -214,7 +227,7 @@ class _BookingScreenState extends State<BookingScreen> {
         ? null
         : _minutesOfDay(breakStart);
     final breakEndMinutes = breakEnd == null ? null : _minutesOfDay(breakEnd);
-    final slots = <String>[];
+    final slots = <_BookingSlotOption>[];
 
     for (
       var start = openingMinutes;
@@ -231,7 +244,18 @@ class _BookingScreenState extends State<BookingScreen> {
 
       final time = TimeOfDay(hour: start ~/ 60, minute: start % 60);
       final label = materialLocalizations.formatTimeOfDay(time);
-      if (!bookedSlots.contains(label)) slots.add(label);
+      final slotStart = DateTime(
+        bookingDate.year,
+        bookingDate.month,
+        bookingDate.day,
+        time.hour,
+        time.minute,
+      );
+      final slotId = BookingSlot(barberId: barberId, start: slotStart).id;
+      if (!bookedSlotIds.contains(slotId) &&
+          !legacyBookedLabels.contains(label)) {
+        slots.add(_BookingSlotOption(label: label, start: slotStart));
+      }
     }
     return slots;
   }
@@ -313,24 +337,21 @@ class _BookingScreenState extends State<BookingScreen> {
     if (_isSubmitting) return;
 
     if (_selectedService == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.bookingSelectServiceError),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.bookingSelectServiceError)));
       return;
     }
 
-    if (_selectedTime == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.bookingSelectTimeError),
-        ),
-      );
+    if (_selectedTime == null || _selectedSlotStart == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.bookingSelectTimeError)));
       return;
     }
 
     final time = _selectedTime!;
+    final slotStart = _selectedSlotStart!;
 
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
@@ -347,73 +368,22 @@ class _BookingScreenState extends State<BookingScreen> {
     });
 
     try {
-      final now = DateTime.now();
-      final bookingDate = DateTime(now.year, now.month, now.day);
-
-      final barberDoc = await FirebaseFirestore.instance
-          .collection('barbers')
-          .doc(widget.barberId)
-          .get();
-
-      if (!barberDoc.exists) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.bookingBarberNotFound)),
-        );
-        return;
-      }
-
-      if (barberDoc.data()?['isOnline'] != true) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.bookingBarberOffline)),
-        );
-        return;
-      }
-
       final barberId = widget.barberId;
-
-      final existingSnapshot = await FirebaseFirestore.instance
-          .collection('bookings')
-          .where('barberId', isEqualTo: barberId)
-          .where('bookingDate', isEqualTo: Timestamp.fromDate(bookingDate))
-          .limit(100)
-          .get();
-
-      final bookedSlots = existingSnapshot.docs
-          .where(
-            (doc) =>
-                (doc.data()['status']?.toString() ?? 'pending') != 'rejected',
-          )
-          .map((doc) => doc.data()['selectedTime']?.toString() ?? '')
-          .where((slot) => slot.isNotEmpty)
-          .toSet();
-
-      if (bookedSlots.contains(time)) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.bookingSlotAlreadyBooked),
-          ),
-        );
-        return;
-      }
-
       final customerId = currentUser.uid;
 
-      final bookingRef = await FirebaseFirestore.instance
-          .collection('bookings')
-          .add({
-            'barberId': barberId,
-            'barberName': widget.barberName,
-            'customerId': customerId,
-            'service': _selectedService!.name,
-            'servicePrice': _selectedService!.price,
-            'selectedTime': time,
-            'bookingDate': Timestamp.fromDate(bookingDate),
-            'status': 'pending',
-            'createdAt': FieldValue.serverTimestamp(),
-          });
+      final bookingRef = await BookingStore(FirebaseFirestore.instance)
+          .createBooking(
+            slot: BookingSlot(barberId: barberId, start: slotStart),
+            booking: {
+              'barberId': barberId,
+              'barberName': widget.barberName,
+              'customerId': customerId,
+              'service': _selectedService!.name,
+              'servicePrice': _selectedService!.price,
+              'selectedTime': time,
+              'status': 'pending',
+            },
+          );
 
       await _createNotification(
         recipientId: customerId,
@@ -426,11 +396,23 @@ class _BookingScreenState extends State<BookingScreen> {
         message: 'New booking request.',
         bookingId: bookingRef.id,
       );
+    } on SlotAlreadyBookedException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.bookingSlotAlreadyBooked)));
+      return;
+    } on BarberUnavailableException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.bookingBarberOffline)));
+      return;
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.bookingConfirmFailed)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.bookingConfirmFailed)));
       return;
     } finally {
       if (mounted) {
@@ -449,7 +431,7 @@ class _BookingScreenState extends State<BookingScreen> {
           barberName: widget.barberName,
           service: _selectedService!.name,
           servicePrice: _selectedService!.price,
-          selectedDate: DateTime.now(),
+          selectedDate: slotStart,
           selectedTime: time,
         ),
       ),
@@ -461,15 +443,12 @@ class _BookingScreenState extends State<BookingScreen> {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F8F8),
+      backgroundColor: KloofColors.warmOffWhite,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: KloofColors.warmOffWhite,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-        title: Text(
-          l10n.bookingTitle,
-          style: TextStyle(color: Colors.black),
-        ),
+        iconTheme: const IconThemeData(color: KloofColors.primaryText),
+        title: Text(l10n.bookingTitle),
       ),
       body: SafeArea(
         child: Column(
@@ -491,7 +470,10 @@ class _BookingScreenState extends State<BookingScreen> {
                     const SizedBox(height: 8),
                     Text(
                       l10n.bookingSelectService,
-                      style: TextStyle(color: Colors.grey, fontSize: 15),
+                      style: TextStyle(
+                        color: KloofColors.secondaryText,
+                        fontSize: 15,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     if (_isLoadingServices)
@@ -499,7 +481,7 @@ class _BookingScreenState extends State<BookingScreen> {
                     else if (_serviceOptions.isEmpty)
                       Text(
                         l10n.bookingNoServicesAvailable,
-                        style: TextStyle(color: Colors.black54),
+                        style: TextStyle(color: KloofColors.secondaryText),
                       )
                     else
                       Wrap(
@@ -519,10 +501,13 @@ class _BookingScreenState extends State<BookingScreen> {
                                 _selectedService = service;
                               });
                             },
-                            selectedColor: Colors.black,
-                            backgroundColor: Colors.white,
+                            selectedColor: KloofColors.primaryBlack,
+                            backgroundColor: KloofColors.cardBackground,
+                            checkmarkColor: KloofColors.luxuryGold,
                             labelStyle: TextStyle(
-                              color: isSelected ? Colors.white : Colors.black,
+                              color: isSelected
+                                  ? Colors.white
+                                  : KloofColors.primaryText,
                             ),
                           );
                         }).toList(),
@@ -541,31 +526,39 @@ class _BookingScreenState extends State<BookingScreen> {
                     else if (!_isBarberOnline)
                       Text(
                         l10n.bookingBarberOffline,
-                        style: const TextStyle(color: Colors.black54),
+                        style: const TextStyle(
+                          color: KloofColors.secondaryText,
+                        ),
                       )
                     else if (_availableTimes.isEmpty)
                       Text(
                         l10n.bookingNoAvailableTimesToday,
-                        style: const TextStyle(color: Colors.black54),
+                        style: const TextStyle(
+                          color: KloofColors.secondaryText,
+                        ),
                       )
                     else
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: _availableTimes.map((time) {
-                          final isSelected = _selectedTime == time;
+                          final isSelected = _selectedSlotStart == time.start;
                           return ChoiceChip(
-                            label: Text(time),
+                            label: Text(time.label),
                             selected: isSelected,
                             onSelected: (_) {
                               setState(() {
-                                _selectedTime = time;
+                                _selectedTime = time.label;
+                                _selectedSlotStart = time.start;
                               });
                             },
-                            selectedColor: Colors.black,
-                            backgroundColor: Colors.white,
+                            selectedColor: KloofColors.primaryBlack,
+                            backgroundColor: KloofColors.cardBackground,
+                            checkmarkColor: KloofColors.luxuryGold,
                             labelStyle: TextStyle(
-                              color: isSelected ? Colors.white : Colors.black,
+                              color: isSelected
+                                  ? Colors.white
+                                  : KloofColors.primaryText,
                             ),
                           );
                         }).toList(),
@@ -576,14 +569,14 @@ class _BookingScreenState extends State<BookingScreen> {
               ),
             ),
             Container(
-              color: const Color(0xFFF8F8F8),
+              color: KloofColors.warmOffWhite,
               padding: const EdgeInsetsDirectional.fromSTEB(20, 8, 20, 20),
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _isSubmitting ? null : _onConfirmBooking,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
+                    backgroundColor: KloofColors.primaryBlack,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 18),
                     shape: RoundedRectangleBorder(
@@ -609,4 +602,11 @@ class _ServiceOption {
   final double? price;
 
   const _ServiceOption({required this.name, required this.price});
+}
+
+class _BookingSlotOption {
+  final String label;
+  final DateTime start;
+
+  const _BookingSlotOption({required this.label, required this.start});
 }

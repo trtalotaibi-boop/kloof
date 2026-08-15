@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:kloof/l10n/app_localizations.dart';
+import 'package:kloof/theme/kloof_theme.dart';
+
 import 'barber_dashboard_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -29,14 +31,46 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController confirmPasswordController =
       TextEditingController();
 
+  String _localizedAuthError(
+    FirebaseAuthException error,
+    AppLocalizations l10n,
+  ) {
+    switch (error.code) {
+      case 'invalid-email':
+        return l10n.authInvalidEmail;
+      case 'email-already-in-use':
+        return l10n.authEmailAlreadyInUse;
+      case 'weak-password':
+        return l10n.authWeakPassword;
+      case 'too-many-requests':
+        return l10n.authTooManyRequests;
+      case 'network-request-failed':
+        return l10n.authNetworkError;
+      case 'operation-not-allowed':
+        return l10n.authOperationNotAllowed;
+      default:
+        return l10n.authUnexpectedError;
+    }
+  }
+
+  @override
+  void dispose() {
+    fullNameController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      appBar: AppBar(backgroundColor: Colors.white, elevation: 0),
+      appBar: AppBar(),
 
-      backgroundColor: Colors.white,
+      backgroundColor: KloofColors.warmOffWhite,
 
       body: SafeArea(
         child: SingleChildScrollView(
@@ -46,7 +80,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
             children: [
               const SizedBox(height: 20),
 
-              const Icon(Icons.content_cut, size: 90),
+              Container(
+                width: 92,
+                height: 92,
+                decoration: BoxDecoration(
+                  color: KloofColors.cardBackground,
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: KloofColors.border),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Image.asset(
+                  'assets/branding/kloof-app-icon-master.png',
+                  fit: BoxFit.cover,
+                ),
+              ),
 
               const SizedBox(height: 20),
 
@@ -61,7 +108,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               Text(
                 l10n.registerSubtitle,
 
-                style: TextStyle(fontSize: 18, color: Colors.grey),
+                style: TextStyle(
+                  fontSize: 18,
+                  color: KloofColors.secondaryText,
+                ),
               ),
 
               const SizedBox(height: 40),
@@ -71,8 +121,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 decoration: InputDecoration(
                   labelText: l10n.registerFullName,
-
-                  border: const OutlineInputBorder(),
 
                   prefixIcon: const Icon(Icons.person),
                 ),
@@ -86,9 +134,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 decoration: InputDecoration(
                   labelText: l10n.registerEmail,
 
-                  border: const OutlineInputBorder(),
-
                   prefixIcon: const Icon(Icons.email),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              TextField(
+                controller: phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  labelText: l10n.registerPhone,
+                  prefixIcon: const Icon(Icons.phone_outlined),
                 ),
               ),
 
@@ -101,8 +158,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 decoration: InputDecoration(
                   labelText: l10n.registerPassword,
-
-                  border: const OutlineInputBorder(),
 
                   prefixIcon: const Icon(Icons.lock),
 
@@ -129,8 +184,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 decoration: InputDecoration(
                   labelText: l10n.registerConfirmPassword,
-
-                  border: const OutlineInputBorder(),
 
                   prefixIcon: const Icon(Icons.lock_outline),
 
@@ -159,6 +212,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 child: ElevatedButton(
                   onPressed: () async {
+                    if (fullNameController.text.trim().isEmpty ||
+                        emailController.text.trim().isEmpty ||
+                        phoneController.text.trim().isEmpty ||
+                        passwordController.text.isEmpty ||
+                        confirmPasswordController.text.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(l10n.authRequiredFields)),
+                      );
+                      return;
+                    }
                     if (passwordController.text !=
                         confirmPasswordController.text) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -169,7 +232,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       return;
                     }
 
-                    final ctx = context;
                     try {
                       debugPrint("START REGISTER");
                       final credential = await FirebaseAuth.instance
@@ -194,51 +256,65 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             'createdAt': FieldValue.serverTimestamp(),
                           });
                         }
+
+                        if (widget.selectedRole.toLowerCase() == 'barber') {
+                          final fullName = fullNameController.text.trim();
+                          await FirebaseFirestore.instance
+                              .collection('barbers')
+                              .doc(user.uid)
+                              .set({
+                                'uid': user.uid,
+                                'ownerUid': user.uid,
+                                'fullName': fullName,
+                                'name': fullName,
+                                'phone': phoneController.text.trim(),
+                                'profileImage': '',
+                                'imageUrl': '',
+                                'isOnline': false,
+                                'createdAt': FieldValue.serverTimestamp(),
+                              }, SetOptions(merge: true));
+                        }
                       }
 
                       debugPrint("REGISTER SUCCESS");
 
-                      if (!mounted) return;
+                      if (!context.mounted) return;
 
                       final registeredName = fullNameController.text.trim();
                       final barberName = registeredName.isNotEmpty
                           ? registeredName
-                          : (user?.email ?? 'Barber');
+                          : (user?.email ??
+                                l10n.bookingConfirmationLabelBarber);
 
-                      // ignore: use_build_context_synchronously
-                      ScaffoldMessenger.of(ctx).showSnackBar(
-                        SnackBar(
-                          content: Text(l10n.registerAccountCreated),
-                        ),
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(l10n.registerAccountCreated)),
                       );
 
                       if (widget.selectedRole == 'barber') {
-                        // ignore: use_build_context_synchronously
                         Navigator.pushReplacement(
-                          ctx,
+                          context,
                           MaterialPageRoute(
                             builder: (_) =>
                                 BarberDashboardScreen(barberName: barberName),
                           ),
                         );
                       } else {
-                        // ignore: use_build_context_synchronously
-                        Navigator.pop(ctx);
+                        Navigator.pop(context);
                       }
                     } on FirebaseAuthException catch (e) {
                       debugPrint("Firebase error: ${e.message}");
-                      if (mounted) {
-                        // ignore: use_build_context_synchronously
-                        ScaffoldMessenger.of(ctx).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              e.message ?? l10n.registerSomethingWentWrong,
-                            ),
-                          ),
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(_localizedAuthError(e, l10n))),
                         );
                       }
                     } catch (e, s) {
                       debugPrint("Error: $e\n$s");
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(l10n.authUnexpectedError)),
+                        );
+                      }
                     }
                   },
 

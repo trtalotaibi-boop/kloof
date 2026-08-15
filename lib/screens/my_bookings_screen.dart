@@ -3,6 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kloof/l10n/app_localizations.dart';
+import 'package:kloof/theme/kloof_theme.dart';
+
+import 'home_screen.dart';
 
 class MyBookingsScreen extends StatelessWidget {
   const MyBookingsScreen({super.key});
@@ -18,14 +21,14 @@ class MyBookingsScreen extends StatelessWidget {
   Color _statusColor(String status) {
     switch (status.toLowerCase()) {
       case 'accepted':
-        return Colors.green;
+        return KloofColors.success;
       case 'rejected':
-        return Colors.red;
+        return KloofColors.error;
       case 'completed':
-        return Colors.blue;
+        return KloofColors.mutedText;
       case 'pending':
       default:
-        return Colors.orange;
+        return KloofColors.warning;
     }
   }
 
@@ -67,7 +70,7 @@ class MyBookingsScreen extends StatelessWidget {
           .doc(barberId)
           .get();
       final data = doc.data();
-      final name = data?['name'] as String?;
+      final name = (data?['fullName'] ?? data?['name'])?.toString();
       if (name != null && name.trim().isNotEmpty) {
         return name;
       }
@@ -170,6 +173,13 @@ class MyBookingsScreen extends StatelessWidget {
     return rawTime;
   }
 
+  void _goToHome(BuildContext context) {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
+      (_) => false,
+    );
+  }
+
   Widget _bookingCard(BuildContext context, Map<String, dynamic> booking) {
     final l10n = AppLocalizations.of(context);
     final barberId = (booking['barberId'] as String?) ?? '';
@@ -190,14 +200,14 @@ class MyBookingsScreen extends StatelessWidget {
             snapshot.data ?? fallbackBarberName ?? l10n.myBookingsLoading;
 
         return Card(
-          color: Colors.white,
-          margin: const EdgeInsets.only(bottom: 12),
+          color: KloofColors.cardBackground,
+          margin: const EdgeInsetsDirectional.only(bottom: 12),
           elevation: 1.5,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsetsDirectional.all(14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -206,7 +216,7 @@ class MyBookingsScreen extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: KloofColors.primaryText,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -215,7 +225,10 @@ class MyBookingsScreen extends StatelessWidget {
                     l10n.myBookingsServiceLabel,
                     localizedService,
                   ),
-                  style: const TextStyle(color: Colors.black87, fontSize: 14),
+                  style: const TextStyle(
+                    color: KloofColors.secondaryText,
+                    fontSize: 14,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -223,7 +236,10 @@ class MyBookingsScreen extends StatelessWidget {
                     l10n.myBookingsDateLabel,
                     _formatDate(bookingDate, l10n),
                   ),
-                  style: const TextStyle(color: Colors.black87, fontSize: 14),
+                  style: const TextStyle(
+                    color: KloofColors.secondaryText,
+                    fontSize: 14,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -231,13 +247,16 @@ class MyBookingsScreen extends StatelessWidget {
                     l10n.myBookingsTimeLabel,
                     localizedTime,
                   ),
-                  style: const TextStyle(color: Colors.black87, fontSize: 14),
+                  style: const TextStyle(
+                    color: KloofColors.secondaryText,
+                    fontSize: 14,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 Align(
                   alignment: AlignmentDirectional.centerStart,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
+                    padding: const EdgeInsetsDirectional.symmetric(
                       horizontal: 10,
                       vertical: 5,
                     ),
@@ -269,64 +288,83 @@ class MyBookingsScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final user = FirebaseAuth.instance.currentUser;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F8F8),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-        title: Text(l10n.myBookingsTitle, style: const TextStyle(color: Colors.black)),
-      ),
-      body: user == null
-          ? Center(
-              child: Text(
-                l10n.myBookingsEmpty,
-                style: TextStyle(color: Colors.black54, fontSize: 16),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _goToHome(context);
+      },
+      child: Scaffold(
+        backgroundColor: KloofColors.warmOffWhite,
+        appBar: AppBar(
+          leading: BackButton(
+            onPressed: () => _goToHome(context),
+            color: KloofColors.primaryText,
+          ),
+          backgroundColor: KloofColors.warmOffWhite,
+          elevation: 0,
+          iconTheme: const IconThemeData(color: KloofColors.primaryText),
+          title: Text(
+            l10n.myBookingsTitle,
+            style: const TextStyle(color: KloofColors.primaryText),
+          ),
+        ),
+        body: user == null
+            ? Center(
+                child: Text(
+                  l10n.myBookingsEmpty,
+                  style: TextStyle(
+                    color: KloofColors.secondaryText,
+                    fontSize: 16,
+                  ),
+                ),
+              )
+            : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: FirebaseFirestore.instance
+                    .collection('bookings')
+                    .where('customerId', isEqualTo: user.uid)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Text(
+                        l10n.myBookingsLoadFailed,
+                        style: TextStyle(color: KloofColors.secondaryText),
+                      ),
+                    );
+                  }
+
+                  final docs = snapshot.data?.docs ?? [];
+                  if (docs.isEmpty) {
+                    return Center(
+                      child: Text(
+                        l10n.myBookingsEmpty,
+                        style: TextStyle(
+                          color: KloofColors.secondaryText,
+                          fontSize: 16,
+                        ),
+                      ),
+                    );
+                  }
+
+                  final bookings = docs.map((doc) => doc.data()).toList()
+                    ..sort(
+                      (a, b) => _createdAtDate(b).compareTo(_createdAtDate(a)),
+                    );
+
+                  return ListView.builder(
+                    padding: const EdgeInsetsDirectional.all(16),
+                    itemCount: bookings.length,
+                    itemBuilder: (context, index) {
+                      return _bookingCard(context, bookings[index]);
+                    },
+                  );
+                },
               ),
-            )
-          : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: FirebaseFirestore.instance
-                  .collection('bookings')
-                  .where('customerId', isEqualTo: user.uid)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Text(
-                      l10n.myBookingsLoadFailed,
-                      style: TextStyle(color: Colors.black54),
-                    ),
-                  );
-                }
-
-                final docs = snapshot.data?.docs ?? [];
-                if (docs.isEmpty) {
-                  return Center(
-                    child: Text(
-                      l10n.myBookingsEmpty,
-                      style: TextStyle(color: Colors.black54, fontSize: 16),
-                    ),
-                  );
-                }
-
-                final bookings = docs.map((doc) => doc.data()).toList()
-                  ..sort(
-                    (a, b) => _createdAtDate(b).compareTo(_createdAtDate(a)),
-                  );
-
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: bookings.length,
-                  itemBuilder: (context, index) {
-                    return _bookingCard(context, bookings[index]);
-                  },
-                );
-              },
-            ),
+      ),
     );
   }
 }
