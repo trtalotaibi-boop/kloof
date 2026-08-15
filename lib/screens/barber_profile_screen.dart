@@ -5,6 +5,7 @@ import 'package:kloof/l10n/app_localizations.dart';
 import 'package:kloof/theme/kloof_theme.dart';
 
 import 'edit_barber_profile_screen.dart';
+import 'account_screen.dart';
 import '../data/barber_profile_store.dart';
 
 class BarberProfileScreen extends StatefulWidget {
@@ -329,6 +330,22 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                           foregroundColor: Colors.white,
                         ),
                         child: Text(l10n.barberProfileEditProfile),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AccountScreen(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.manage_accounts_outlined),
+                        label: Text(l10n.accountTitle),
                       ),
                     ),
                   ],

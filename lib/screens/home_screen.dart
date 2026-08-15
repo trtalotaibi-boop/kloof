@@ -5,6 +5,7 @@ import 'package:kloof/l10n/app_localizations.dart';
 import 'package:kloof/theme/kloof_theme.dart';
 
 import 'barber_details_screen.dart';
+import 'account_screen.dart';
 import 'barber_dashboard_screen.dart';
 import 'my_bookings_screen.dart';
 import 'notifications_screen.dart';
@@ -287,6 +288,19 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           IconButton(
+            tooltip: l10n.accountTitle,
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AccountScreen()),
+              );
+            },
+            icon: const Icon(
+              Icons.person_outline,
+              color: KloofColors.primaryText,
+            ),
+          ),
+          IconButton(
             onPressed: _logout,
             icon: const Icon(Icons.logout, color: KloofColors.primaryText),
           ),
@@ -430,8 +444,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   '')
                               .toString();
                       final address =
-                          barberData['address']?.toString() ??
-                          l10n.homeAddressNotAvailable;
+                          barberData['address']?.toString().trim() ?? '';
                       final latitude = barberData['latitude'] is num
                           ? (barberData['latitude'] as num).toDouble()
                           : null;
@@ -539,7 +552,7 @@ class _HomeScreenState extends State<HomeScreen> {
               imageUrl: imageUrl ?? '',
               services: services,
               workingHours: workingHours,
-              address: address ?? l10n.homeAddressNotAvailable,
+              address: address ?? '',
               latitude: latitude,
               longitude: longitude,
             ),

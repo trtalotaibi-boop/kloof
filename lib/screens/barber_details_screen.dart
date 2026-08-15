@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kloof/l10n/app_localizations.dart';
 import 'package:kloof/theme/kloof_theme.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'booking_screen.dart';
 
@@ -29,6 +30,40 @@ class BarberDetailsScreen extends StatelessWidget {
     this.latitude,
     this.longitude,
   });
+
+  bool get _hasValidCoordinates {
+    final lat = latitude;
+    final lng = longitude;
+    return lat != null &&
+        lng != null &&
+        lat >= -90 &&
+        lat <= 90 &&
+        lng >= -180 &&
+        lng <= 180;
+  }
+
+  Future<void> _openLocation(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    final query = _hasValidCoordinates
+        ? '${latitude!},${longitude!}'
+        : address.trim();
+    if (query.isEmpty) return;
+
+    final uri = Uri.https('maps.apple.com', '/', {'q': query});
+    try {
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.barberDetailsLocationOpenFailed)),
+        );
+      }
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.barberDetailsLocationOpenFailed)),
+      );
+    }
+  }
 
   List<_ServiceDisplayData> _serviceEntries() {
     if (services is String) {
@@ -251,6 +286,7 @@ class BarberDetailsScreen extends StatelessWidget {
     final displayAddress = address.trim().isEmpty
         ? l10n.homeAddressNotAvailable
         : address;
+    final hasLocation = _hasValidCoordinates || address.trim().isNotEmpty;
 
     return Scaffold(
       backgroundColor: KloofColors.warmOffWhite,
@@ -336,24 +372,40 @@ class BarberDetailsScreen extends StatelessWidget {
                         color: KloofColors.cardBackground,
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: Row(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(
-                            Icons.location_on_outlined,
-                            color: KloofColors.mutedGold,
-                            size: 22,
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(
+                                Icons.location_on_outlined,
+                                color: KloofColors.mutedGold,
+                                size: 22,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  displayAddress,
+                                  style: const TextStyle(
+                                    color: KloofColors.secondaryText,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              displayAddress,
-                              style: const TextStyle(
-                                color: KloofColors.secondaryText,
-                                fontSize: 14,
+                          if (hasLocation) ...[
+                            const SizedBox(height: 10),
+                            Align(
+                              alignment: AlignmentDirectional.centerEnd,
+                              child: TextButton.icon(
+                                onPressed: () => _openLocation(context),
+                                icon: const Icon(Icons.map_outlined),
+                                label: Text(l10n.barberDetailsOpenLocation),
                               ),
                             ),
-                          ),
+                          ],
                         ],
                       ),
                     ),
