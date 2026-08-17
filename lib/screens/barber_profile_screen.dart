@@ -201,13 +201,17 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
 
               final fullName = (data['fullName'] ?? '').toString();
               final shopName = (data['shopName'] ?? '').toString();
-              final phone = (data['phone'] ?? '').toString();
               final city = (data['city'] ?? '').toString();
               final address = (data['address'] ?? '').toString();
               final bio = (data['bio'] ?? '').toString();
               final profileImage =
                   (data['profileImage'] ?? data['imageUrl'] ?? '').toString();
               final services = _readServices(data['services']);
+
+              final user = FirebaseAuth.instance.currentUser;
+              if (user == null) {
+                return Center(child: Text(l10n.barberProfileLoadFailed));
+              }
 
               return SingleChildScrollView(
                 padding: const EdgeInsetsDirectional.all(20),
@@ -233,7 +237,18 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                     const SizedBox(height: 20),
                     _profileRow(l10n.barberProfileLabelBarberName, fullName),
                     _profileRow(l10n.barberProfileLabelShopName, shopName),
-                    _profileRow(l10n.barberProfileLabelPhone, phone),
+                    StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                      stream: FirebaseFirestore.instance
+                          .collection('barberPrivate')
+                          .doc(user.uid)
+                          .snapshots(),
+                      builder: (context, privateSnapshot) {
+                        final phone =
+                            (privateSnapshot.data?.data()?['phone'] ?? '')
+                                .toString();
+                        return _profileRow(l10n.barberProfileLabelPhone, phone);
+                      },
+                    ),
                     _profileRow(
                       l10n.barberProfileLabelCity,
                       _localizedCityName(city, l10n),

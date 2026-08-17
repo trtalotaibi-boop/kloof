@@ -86,7 +86,6 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
         await docRef.set({
           'fullName': '',
           'shopName': '',
-          'phone': '',
           'city': '',
           'address': '',
           'bio': '',
@@ -97,11 +96,18 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
       }
 
       final data = (await docRef.get()).data() ?? <String, dynamic>{};
+      final privateData =
+          (await FirebaseFirestore.instance
+                  .collection('barberPrivate')
+                  .doc(user.uid)
+                  .get())
+              .data() ??
+          <String, dynamic>{};
       final servicesRaw = (data['services'] as List?) ?? <dynamic>[];
 
       _fullNameController.text = (data['fullName'] ?? '').toString();
       _shopNameController.text = (data['shopName'] ?? '').toString();
-      _phoneController.text = (data['phone'] ?? '').toString();
+      _phoneController.text = (privateData['phone'] ?? '').toString();
       final loadedCity = (data['city'] ?? '').toString().trim();
       _selectedCity = _cities.contains(loadedCity) ? loadedCity : _cities.first;
       _addressController.text = (data['address'] ?? '').toString();
@@ -241,10 +247,11 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
         });
       }
 
-      await docRef.set({
+      final batch = FirebaseFirestore.instance.batch();
+      batch.set(docRef, {
         'fullName': _fullNameController.text.trim(),
         'shopName': _shopNameController.text.trim(),
-        'phone': _phoneController.text.trim(),
+        'phone': FieldValue.delete(),
         'city': _selectedCity,
         'address': _addressController.text.trim(),
         'bio': _bioController.text.trim(),
@@ -254,6 +261,15 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
         'ownerUid': user.uid,
         'services': services,
       }, SetOptions(merge: true));
+      batch.set(
+        FirebaseFirestore.instance.collection('barberPrivate').doc(user.uid),
+        {
+          'phone': _phoneController.text.trim(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+      await batch.commit();
 
       if (!mounted) return;
       Navigator.pop(context);

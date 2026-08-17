@@ -84,15 +84,20 @@ class _AccountScreenState extends State<AccountScreen> {
     final firestore = FirebaseFirestore.instance;
     final userRef = firestore.collection('users').doc(user.uid);
     final barberRef = firestore.collection('barbers').doc(user.uid);
+    final barberPrivateRef = firestore
+        .collection('barberPrivate')
+        .doc(user.uid);
 
     DocumentSnapshot<Map<String, dynamic>>? userSnapshot;
     DocumentSnapshot<Map<String, dynamic>>? barberSnapshot;
+    DocumentSnapshot<Map<String, dynamic>>? barberPrivateSnapshot;
     List<QueryDocumentSnapshot<Map<String, dynamic>>> pushTokenSnapshots = [];
     var firestoreDataDeleted = false;
 
     try {
       userSnapshot = await userRef.get();
       barberSnapshot = await barberRef.get();
+      barberPrivateSnapshot = await barberPrivateRef.get();
       pushTokenSnapshots = (await userRef.collection('pushTokens').get()).docs;
 
       final deleteBatch = firestore.batch();
@@ -100,6 +105,7 @@ class _AccountScreenState extends State<AccountScreen> {
         deleteBatch.delete(token.reference);
       }
       if (barberSnapshot.exists) deleteBatch.delete(barberRef);
+      if (barberPrivateSnapshot.exists) deleteBatch.delete(barberPrivateRef);
       if (userSnapshot.exists) deleteBatch.delete(userRef);
       await deleteBatch.commit();
       firestoreDataDeleted = true;
@@ -118,6 +124,7 @@ class _AccountScreenState extends State<AccountScreen> {
             firestore,
             userSnapshot,
             barberSnapshot,
+            barberPrivateSnapshot,
             pushTokenSnapshots,
           );
       if (!mounted) return;
@@ -176,17 +183,22 @@ class _AccountScreenState extends State<AccountScreen> {
     FirebaseFirestore firestore,
     DocumentSnapshot<Map<String, dynamic>>? userSnapshot,
     DocumentSnapshot<Map<String, dynamic>>? barberSnapshot,
+    DocumentSnapshot<Map<String, dynamic>>? barberPrivateSnapshot,
     List<QueryDocumentSnapshot<Map<String, dynamic>>> pushTokenSnapshots,
   ) async {
     try {
       final restoreBatch = firestore.batch();
       final userData = userSnapshot?.data();
       final barberData = barberSnapshot?.data();
+      final barberPrivateData = barberPrivateSnapshot?.data();
       if (userSnapshot?.exists == true && userData != null) {
         restoreBatch.set(userSnapshot!.reference, userData);
       }
       if (barberSnapshot?.exists == true && barberData != null) {
         restoreBatch.set(barberSnapshot!.reference, barberData);
+      }
+      if (barberPrivateSnapshot?.exists == true && barberPrivateData != null) {
+        restoreBatch.set(barberPrivateSnapshot!.reference, barberPrivateData);
       }
       for (final token in pushTokenSnapshots) {
         restoreBatch.set(token.reference, token.data());

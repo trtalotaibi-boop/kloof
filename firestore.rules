@@ -1,0 +1,246 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function userHasRole(uid, role) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(uid))
+        && get(/databases/$(database)/documents/users/$(uid)).data.role == role;
+    }
+
+    function isCustomer() {
+      return userHasRole(request.auth.uid, 'customer');
+    }
+
+    function isBarber() {
+      return userHasRole(request.auth.uid, 'barber');
+    }
+
+    function validUserCreate(uid) {
+      return isSelf(uid)
+        && request.resource.data.keys().hasAll([
+          'fullName',
+          'role',
+          'createdAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'fullName',
+          'email',
+          'phone',
+          'role',
+          'createdAt',
+          'displayName',
+          'name'
+        ])
+        && request.resource.data.fullName is string
+        && request.resource.data.role == 'customer'
+        && request.resource.data.createdAt == request.time
+        && (!('email' in request.resource.data)
+          || request.resource.data.email is string)
+        && (!('phone' in request.resource.data)
+          || request.resource.data.phone is string);
+    }
+
+    function validUserUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'fullName',
+          'email',
+          'phone',
+          'displayName',
+          'name'
+        ])
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function validBarberFields() {
+      return request.resource.data.keys().hasOnly([
+          'uid',
+          'ownerUid',
+          'fullName',
+          'name',
+          'shopName',
+          'city',
+          'address',
+          'bio',
+          'profileImage',
+          'imageUrl',
+          'services',
+          'workingHours',
+          'isOnline',
+          'rating',
+          'latitude',
+          'longitude',
+          'legacyProfileId',
+          'createdAt',
+          'updatedAt'
+        ])
+        && (!('fullName' in request.resource.data)
+          || request.resource.data.fullName is string)
+        && (!('name' in request.resource.data)
+          || request.resource.data.name is string)
+        && (!('shopName' in request.resource.data)
+          || request.resource.data.shopName is string)
+        && (!('city' in request.resource.data)
+          || request.resource.data.city is string)
+        && (!('address' in request.resource.data)
+          || request.resource.data.address is string)
+        && (!('bio' in request.resource.data)
+          || request.resource.data.bio is string)
+        && (!('profileImage' in request.resource.data)
+          || request.resource.data.profileImage is string)
+        && (!('imageUrl' in request.resource.data)
+          || request.resource.data.imageUrl is string)
+        && (!('services' in request.resource.data)
+          || request.resource.data.services is list)
+        && (!('workingHours' in request.resource.data)
+          || request.resource.data.workingHours is map)
+        && (!('isOnline' in request.resource.data)
+          || request.resource.data.isOnline is bool)
+        && (!('rating' in request.resource.data)
+          || request.resource.data.rating is number)
+        && (!('latitude' in request.resource.data)
+          || request.resource.data.latitude is number)
+        && (!('longitude' in request.resource.data)
+          || request.resource.data.longitude is number);
+    }
+
+    function validBarberIdentity(barberId) {
+      return request.resource.data.uid == barberId
+        && request.resource.data.ownerUid == barberId;
+    }
+
+    match /users/{userId} {
+      allow get: if isSelf(userId);
+      allow list: if false;
+      allow create: if validUserCreate(userId);
+      allow update: if isSelf(userId) && validUserUpdate();
+      allow delete: if isSelf(userId);
+
+      match /pushTokens/{tokenId} {
+        allow get, list, delete: if isSelf(userId);
+        allow create, update: if isSelf(userId)
+          && request.resource.data.keys().hasAll([
+            'token',
+            'platform',
+            'updatedAt'
+          ])
+          && request.resource.data.keys().hasOnly([
+            'token',
+            'platform',
+            'updatedAt'
+          ])
+          && request.resource.data.token is string
+          && request.resource.data.token.size() > 0
+          && request.resource.data.platform is string
+          && request.resource.data.updatedAt == request.time;
+      }
+    }
+
+    match /barbers/{barberId} {
+      // Firestore rules cannot return a field-filtered document. Every signed-in
+      // client that can browse barbers receives the complete barber document.
+      allow get, list: if signedIn();
+      // Barber accounts are provisioned by trusted Admin SDK code only.
+      allow create: if false;
+      allow update: if isSelf(barberId)
+        && isBarber()
+        && validBarberIdentity(barberId)
+        && validBarberFields()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'fullName',
+          'name',
+          'shopName',
+          'phone',
+          'city',
+          'address',
+          'bio',
+          'profileImage',
+          'imageUrl',
+          'services',
+          'workingHours',
+          'isOnline',
+          'updatedAt'
+        ]);
+      allow delete: if isSelf(barberId) && isBarber();
+    }
+
+    match /barberPrivate/{barberId} {
+      allow get: if isSelf(barberId) && isBarber();
+      allow list: if false;
+      allow create: if isSelf(barberId)
+        && isBarber()
+        && request.resource.data.keys().hasOnly([
+          'phone',
+          'createdAt',
+          'updatedAt'
+        ])
+        && (!('phone' in request.resource.data)
+          || request.resource.data.phone is string)
+        && (!('createdAt' in request.resource.data)
+          || request.resource.data.createdAt == request.time)
+        && (!('updatedAt' in request.resource.data)
+          || request.resource.data.updatedAt == request.time);
+      allow update: if isSelf(barberId)
+        && isBarber()
+        && request.resource.data.keys().hasOnly([
+          'phone',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'phone',
+          'updatedAt'
+        ])
+        && (!('phone' in request.resource.data)
+          || request.resource.data.phone is string)
+        && (!('updatedAt' in request.resource.data)
+          || request.resource.data.updatedAt == request.time);
+      allow delete: if isSelf(barberId) && isBarber();
+    }
+
+    match /bookings/{bookingId} {
+      allow get, list: if signedIn()
+        && (resource.data.customerId == request.auth.uid
+          || resource.data.barberId == request.auth.uid);
+
+      // Booking creation is an Admin SDK transaction in createBooking.
+      allow create: if false;
+
+      allow update, delete: if false;
+    }
+
+    match /bookingSlots/{slotId} {
+      // Slot documents contain scheduling metadata only and are readable by
+      // authenticated users so clients can render availability.
+      allow get, list: if signedIn();
+      allow create: if false;
+      allow update, delete: if false;
+    }
+
+    match /notifications/{notificationId} {
+      allow get, list: if signedIn()
+        && resource.data.recipientId == request.auth.uid;
+      allow update: if signedIn()
+        && resource.data.recipientId == request.auth.uid
+        && request.resource.data.recipientId == request.auth.uid
+        && resource.data.isRead == false
+        && request.resource.data.isRead == true
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['isRead']);
+      allow create, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -113,7 +113,6 @@ class BarberBookingsScreen extends StatelessWidget {
   }
 
   Future<String> _resolveCustomerName(
-    String customerId,
     String? fallbackName,
     AppLocalizations l10n,
   ) async {
@@ -121,54 +120,13 @@ class BarberBookingsScreen extends StatelessWidget {
       return fallbackName;
     }
 
-    if (customerId.trim().isEmpty) {
-      return l10n.barberBookingsCustomerFallback;
-    }
-
-    try {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(customerId)
-          .get();
-      final data = userDoc.data();
-      final name = (data?['name'] ?? data?['fullName'] ?? data?['displayName'])
-          ?.toString();
-      if (name != null && name.trim().isNotEmpty) {
-        return name;
-      }
-    } catch (_) {
-      // Fall through to fallback.
-    }
-
     return l10n.barberBookingsCustomerFallback;
   }
 
   Future<void> _updateBookingStatus(String bookingId, String status) async {
-    final bookingReference = FirebaseFirestore.instance
-        .collection('bookings')
-        .doc(bookingId);
-    final booking = await bookingReference.get();
-    final customerId = booking.data()?['customerId']?.toString();
-
-    final wasUpdated = await BookingStore(
+    await BookingStore(
       FirebaseFirestore.instance,
     ).updateBookingStatus(bookingId, status);
-    if (!wasUpdated) return;
-
-    final message = switch (status) {
-      'accepted' => 'Your booking has been accepted.',
-      'rejected' => 'Your booking has been rejected.',
-      _ => null,
-    };
-    if (customerId == null || customerId.isEmpty || message == null) return;
-
-    await FirebaseFirestore.instance.collection('notifications').add({
-      'recipientId': customerId,
-      'message': message,
-      'bookingId': bookingId,
-      'isRead': false,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
   }
 
   Future<void> _confirmAndReject(BuildContext context, String bookingId) async {
@@ -261,7 +219,6 @@ class BarberBookingsScreen extends StatelessWidget {
                     final booking = bookings[index];
                     final bookingId = booking['id']?.toString() ?? '';
                     final status = booking['status']?.toString() ?? 'pending';
-                    final customerId = booking['customerId']?.toString() ?? '';
                     final customerName = booking['customerName']?.toString();
                     final service = booking['service']?.toString() ?? '-';
                     final localizedService = _localizedServiceName(
@@ -296,7 +253,6 @@ class BarberBookingsScreen extends StatelessWidget {
                                 Expanded(
                                   child: FutureBuilder<String>(
                                     future: _resolveCustomerName(
-                                      customerId,
                                       customerName,
                                       l10n,
                                     ),

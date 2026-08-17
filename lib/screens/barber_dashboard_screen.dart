@@ -275,54 +275,10 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
     }
   }
 
-  Future<void> _createNotification({
-    required String recipientId,
-    required String message,
-    required String bookingId,
-  }) async {
-    await FirebaseFirestore.instance.collection('notifications').add({
-      'recipientId': recipientId,
-      'message': message,
-      'bookingId': bookingId,
-      'isRead': false,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-  }
-
   Future<void> _updateBookingStatus(String bookingId, String status) async {
-    final bookingRef = FirebaseFirestore.instance
-        .collection('bookings')
-        .doc(bookingId);
-
-    final bookingSnapshot = await bookingRef.get();
-    final bookingData = bookingSnapshot.data();
-    final customerId = bookingData?['customerId']?.toString();
-
-    final wasUpdated = await BookingStore(
+    await BookingStore(
       FirebaseFirestore.instance,
     ).updateBookingStatus(bookingId, status);
-    if (!wasUpdated) return;
-
-    if (customerId == null || customerId.trim().isEmpty) {
-      return;
-    }
-
-    String? message;
-    if (status == 'accepted') {
-      message = 'Your booking has been accepted.';
-    } else if (status == 'rejected') {
-      message = 'Your booking has been rejected.';
-    } else if (status == 'completed') {
-      message = 'Your appointment has been completed.';
-    }
-
-    if (message != null) {
-      await _createNotification(
-        recipientId: customerId,
-        message: message,
-        bookingId: bookingId,
-      );
-    }
   }
 
   Future<void> _confirmAndReject(String bookingId) async {
@@ -493,32 +449,12 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
   }
 
   Future<String> _resolveCustomerName(
-    String customerId,
     String? fallbackName,
     AppLocalizations l10n,
   ) async {
     if (fallbackName != null && fallbackName.trim().isNotEmpty) {
       return fallbackName;
     }
-    if (customerId.trim().isEmpty) {
-      return l10n.barberBookingsCustomerFallback;
-    }
-
-    try {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(customerId)
-          .get();
-      final data = userDoc.data();
-      final name = (data?['name'] ?? data?['fullName'] ?? data?['displayName'])
-          ?.toString();
-      if (name != null && name.trim().isNotEmpty) {
-        return name;
-      }
-    } catch (_) {
-      // Fall through to fallback.
-    }
-
     return l10n.barberBookingsCustomerFallback;
   }
 
@@ -874,7 +810,6 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                       children: snapshot.data!.docs.map((doc) {
                         final data = doc.data() as Map<String, dynamic>;
                         final status = data['status']?.toString() ?? 'pending';
-                        final customerId = data['customerId']?.toString() ?? '';
                         final customerName = data['customerName']?.toString();
                         final service = data['service']?.toString() ?? '-';
                         final localizedService = _localizedServiceName(
@@ -904,7 +839,6 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                                     Expanded(
                                       child: FutureBuilder<String>(
                                         future: _resolveCustomerName(
-                                          customerId,
                                           customerName,
                                           l10n,
                                         ),

@@ -1,14 +1,49 @@
 const {initializeApp} = require("firebase-admin/app");
 const {getFirestore} = require("firebase-admin/firestore");
 const {getMessaging} = require("firebase-admin/messaging");
+const {onCall} = require("firebase-functions/v2/https");
 const {
   onDocumentCreated,
   onDocumentUpdated,
 } = require("firebase-functions/v2/firestore");
+const {
+  createBookingCore,
+  provisionBarberCore,
+  updateBookingStatusCore,
+} = require("./lib/booking");
+const {
+  writeBookingCreatedNotifications,
+  writeBookingStatusNotification,
+} = require("./lib/notifications");
 
 initializeApp();
 
 const REGION = "me-central2";
+
+exports.createBooking = onCall({region: REGION}, async (request) => {
+  return createBookingCore({
+    db: getFirestore(),
+    uid: request.auth?.uid,
+    data: request.data,
+  });
+});
+
+exports.provisionBarber = onCall({region: REGION}, async (request) => {
+  return provisionBarberCore({
+    db: getFirestore(),
+    auth: require("firebase-admin/auth").getAuth(),
+    isAdmin: request.auth?.token?.admin === true,
+    data: request.data,
+  });
+});
+
+exports.updateBookingStatus = onCall({region: REGION}, async (request) => {
+  return updateBookingStatusCore({
+    db: getFirestore(),
+    uid: request.auth?.uid,
+    data: request.data,
+  });
+});
 
 function arabicServiceName(value) {
   const service = String(value || "").trim();
@@ -77,13 +112,19 @@ exports.notifyBarberOfNewBooking = onDocumentCreated(
       const selectedTime = String(booking.selectedTime || "").trim();
       const details = [service, selectedTime].filter(Boolean).join(" • ");
 
+      await writeBookingCreatedNotifications(
+          getFirestore(),
+          event.params.bookingId,
+          booking,
+      );
+
       await sendToUser({
         uid: String(booking.barberId || ""),
         title: "لديك طلب حجز جديد",
         body: details || "افتح KLOOF لمراجعة طلب الحجز.",
         bookingId: event.params.bookingId,
         target: "barberBookings",
-      });
+      }).catch((error) => console.error("Barber push failed", error));
     },
 );
 
@@ -97,8 +138,14 @@ exports.notifyCustomerOfBookingStatus = onDocumentUpdated(
       const statusMessages = {
         accepted: "تم قبول حجزك",
         rejected: "تم رفض حجزك",
+        completed: "اكتمل موعدك",
       };
       const title = statusMessages[after.status];
+      await writeBookingStatusNotification(
+          getFirestore(),
+          event.params.bookingId,
+          after,
+      );
       if (!title) return;
 
       await sendToUser({
@@ -107,6 +154,6 @@ exports.notifyCustomerOfBookingStatus = onDocumentUpdated(
         body: "افتح KLOOF للاطلاع على تفاصيل الحجز.",
         bookingId: event.params.bookingId,
         target: "myBookings",
-      });
+      }).catch((error) => console.error("Customer push failed", error));
     },
 );

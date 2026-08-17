@@ -4,8 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:kloof/l10n/app_localizations.dart';
 import 'package:kloof/theme/kloof_theme.dart';
 
-import 'barber_dashboard_screen.dart';
-
 class RegisterScreen extends StatefulWidget {
   final String selectedRole;
 
@@ -212,6 +210,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 child: ElevatedButton(
                   onPressed: () async {
+                    if (widget.selectedRole.toLowerCase() == 'barber') {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(l10n.authOperationNotAllowed)),
+                      );
+                      return;
+                    }
                     if (fullNameController.text.trim().isEmpty ||
                         emailController.text.trim().isEmpty ||
                         phoneController.text.trim().isEmpty ||
@@ -252,27 +256,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             'fullName': fullNameController.text.trim(),
                             'email': emailController.text.trim(),
                             'phone': phoneController.text.trim(),
-                            'role': widget.selectedRole,
+                            'role': 'customer',
                             'createdAt': FieldValue.serverTimestamp(),
                           });
-                        }
-
-                        if (widget.selectedRole.toLowerCase() == 'barber') {
-                          final fullName = fullNameController.text.trim();
-                          await FirebaseFirestore.instance
-                              .collection('barbers')
-                              .doc(user.uid)
-                              .set({
-                                'uid': user.uid,
-                                'ownerUid': user.uid,
-                                'fullName': fullName,
-                                'name': fullName,
-                                'phone': phoneController.text.trim(),
-                                'profileImage': '',
-                                'imageUrl': '',
-                                'isOnline': false,
-                                'createdAt': FieldValue.serverTimestamp(),
-                              }, SetOptions(merge: true));
                         }
                       }
 
@@ -280,27 +266,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                       if (!context.mounted) return;
 
-                      final registeredName = fullNameController.text.trim();
-                      final barberName = registeredName.isNotEmpty
-                          ? registeredName
-                          : (user?.email ??
-                                l10n.bookingConfirmationLabelBarber);
-
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text(l10n.registerAccountCreated)),
                       );
 
-                      if (widget.selectedRole == 'barber') {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                BarberDashboardScreen(barberName: barberName),
-                          ),
-                        );
-                      } else {
-                        Navigator.pop(context);
-                      }
+                      Navigator.pop(context);
                     } on FirebaseAuthException catch (e) {
                       debugPrint("Firebase error: ${e.message}");
                       if (context.mounted) {

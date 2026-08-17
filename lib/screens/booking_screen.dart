@@ -33,6 +33,7 @@ class _BookingScreenState extends State<BookingScreen> {
   bool _isLoadingAvailability = true;
   bool _isSubmitting = false;
   bool _isBarberOnline = false;
+  Map<String, dynamic>? _barberData;
   List<_ServiceOption> _serviceOptions = [];
   List<_BookingSlotOption> _availableTimes = [];
   _ServiceOption? _selectedService;
@@ -62,7 +63,6 @@ class _BookingScreenState extends State<BookingScreen> {
       final options = <_ServiceOption>[];
       final seenNames = <String>{};
       var isOnline = false;
-      var availableTimes = <_BookingSlotOption>[];
       if (barberDoc.exists) {
         final data = barberDoc.data() ?? <String, dynamic>{};
         isOnline = data['isOnline'] == true;
@@ -75,6 +75,10 @@ class _BookingScreenState extends State<BookingScreen> {
               final price = priceRaw is num
                   ? priceRaw.toDouble()
                   : double.tryParse(priceRaw?.toString() ?? '');
+              final durationRaw = item['duration'];
+              final duration = durationRaw is num
+                  ? durationRaw.toInt()
+                  : int.tryParse(durationRaw?.toString() ?? '');
               final names = _splitServiceNames(
                 (item['name'] ?? '').toString().trim(),
               );
@@ -82,7 +86,9 @@ class _BookingScreenState extends State<BookingScreen> {
                 final key = name.toLowerCase();
                 if (seenNames.contains(key)) continue;
                 seenNames.add(key);
-                options.add(_ServiceOption(name: name, price: price));
+                options.add(
+                  _ServiceOption(name: name, price: price, duration: duration),
+                );
               }
               continue;
             }
@@ -93,6 +99,10 @@ class _BookingScreenState extends State<BookingScreen> {
               final price = priceRaw is num
                   ? priceRaw.toDouble()
                   : double.tryParse(priceRaw?.toString() ?? '');
+              final durationRaw = map['duration'];
+              final duration = durationRaw is num
+                  ? durationRaw.toInt()
+                  : int.tryParse(durationRaw?.toString() ?? '');
               final names = _splitServiceNames(
                 (map['name'] ?? '').toString().trim(),
               );
@@ -100,7 +110,9 @@ class _BookingScreenState extends State<BookingScreen> {
                 final key = name.toLowerCase();
                 if (seenNames.contains(key)) continue;
                 seenNames.add(key);
-                options.add(_ServiceOption(name: name, price: price));
+                options.add(
+                  _ServiceOption(name: name, price: price, duration: duration),
+                );
               }
               continue;
             }
@@ -110,28 +122,37 @@ class _BookingScreenState extends State<BookingScreen> {
               final key = name.toLowerCase();
               if (seenNames.contains(key)) continue;
               seenNames.add(key);
-              options.add(_ServiceOption(name: name, price: null));
+              options.add(
+                _ServiceOption(name: name, price: null, duration: null),
+              );
             }
           }
-        }
-
-        if (isOnline) {
-          availableTimes = await _loadAvailableTimes(widget.barberId, data);
         }
       }
 
       if (options.isEmpty) {
         final fallback = _splitServiceNames(widget.service);
         for (final name in fallback) {
-          options.add(_ServiceOption(name: name, price: null));
+          options.add(_ServiceOption(name: name, price: null, duration: null));
         }
       }
+
+      final selectedService = options.isNotEmpty ? options.first : null;
+      final barberData = barberDoc.data();
+      final availableTimes = isOnline && selectedService != null
+          ? await _loadAvailableTimes(
+              widget.barberId,
+              barberData ?? <String, dynamic>{},
+              selectedService.duration,
+            )
+          : <_BookingSlotOption>[];
 
       if (!mounted) return;
       setState(() {
         _serviceOptions = options;
-        _selectedService = options.isNotEmpty ? options.first : null;
+        _selectedService = selectedService;
         _isBarberOnline = isOnline;
+        _barberData = barberData;
         _availableTimes = availableTimes;
         _isLoadingServices = false;
         _isLoadingAvailability = false;
@@ -169,7 +190,11 @@ class _BookingScreenState extends State<BookingScreen> {
   Future<List<_BookingSlotOption>> _loadAvailableTimes(
     String barberId,
     Map<String, dynamic> barberData,
+    int? serviceDuration,
   ) async {
+    if (serviceDuration == null || serviceDuration <= 0) {
+      return <_BookingSlotOption>[];
+    }
     final materialLocalizations = MaterialLocalizations.of(context);
     final now = DateTime.now();
     final bookingDate = DateTime(now.year, now.month, now.day);
@@ -190,35 +215,12 @@ class _BookingScreenState extends State<BookingScreen> {
     final closing =
         _parseSavedTime(workingHours['closingTime']?.toString()) ??
         const TimeOfDay(hour: 23, minute: 0);
-    final durationRaw = workingHours['appointmentDuration'];
-    final duration = durationRaw is num && durationRaw.toInt() > 0
-        ? durationRaw.toInt()
+    final intervalRaw = workingHours['appointmentDuration'];
+    final interval = intervalRaw is num && intervalRaw.toInt() > 0
+        ? intervalRaw.toInt()
         : 30;
     final breakStart = _parseSavedTime(workingHours['breakStart']?.toString());
     final breakEnd = _parseSavedTime(workingHours['breakEnd']?.toString());
-
-    final existingSnapshot = await FirebaseFirestore.instance
-        .collection('bookings')
-        .where('barberId', isEqualTo: barberId)
-        .where('bookingDate', isEqualTo: Timestamp.fromDate(bookingDate))
-        .limit(100)
-        .get();
-    final bookedSlotIds = existingSnapshot.docs
-        .where(
-          (doc) =>
-              (doc.data()['status']?.toString() ?? 'pending') != 'rejected',
-        )
-        .map((doc) => doc.data()['slotId']?.toString() ?? '')
-        .where((slot) => slot.isNotEmpty)
-        .toSet();
-    final legacyBookedLabels = existingSnapshot.docs
-        .where(
-          (doc) =>
-              (doc.data()['status']?.toString() ?? 'pending') != 'rejected',
-        )
-        .map((doc) => doc.data()['selectedTime']?.toString() ?? '')
-        .where((slot) => slot.isNotEmpty)
-        .toSet();
 
     final openingMinutes = _minutesOfDay(opening);
     final closingMinutes = _minutesOfDay(closing);
@@ -228,18 +230,20 @@ class _BookingScreenState extends State<BookingScreen> {
         : _minutesOfDay(breakStart);
     final breakEndMinutes = breakEnd == null ? null : _minutesOfDay(breakEnd);
     final slots = <_BookingSlotOption>[];
+    final candidates = <(_BookingSlotOption, List<String>)>[];
+    final lockIds = <String>{};
 
     for (
       var start = openingMinutes;
-      start + duration <= closingMinutes;
-      start += duration
+      start + serviceDuration <= closingMinutes;
+      start += interval
     ) {
       if (start <= nowMinutes) continue;
       final overlapsBreak =
           breakStartMinutes != null &&
           breakEndMinutes != null &&
           start < breakEndMinutes &&
-          start + duration > breakStartMinutes;
+          start + serviceDuration > breakStartMinutes;
       if (overlapsBreak) continue;
 
       final time = TimeOfDay(hour: start ~/ 60, minute: start % 60);
@@ -251,13 +255,60 @@ class _BookingScreenState extends State<BookingScreen> {
         time.hour,
         time.minute,
       );
-      final slotId = BookingSlot(barberId: barberId, start: slotStart).id;
-      if (!bookedSlotIds.contains(slotId) &&
-          !legacyBookedLabels.contains(label)) {
-        slots.add(_BookingSlotOption(label: label, start: slotStart));
+      final candidateLockIds = <String>[];
+      for (var offset = 0; offset < serviceDuration; offset += interval) {
+        final segmentStart = slotStart.add(Duration(minutes: offset));
+        final lockId = BookingSlot(barberId: barberId, start: segmentStart).id;
+        candidateLockIds.add(lockId);
+        lockIds.add(lockId);
+      }
+      candidates.add((
+        _BookingSlotOption(label: label, start: slotStart),
+        candidateLockIds,
+      ));
+    }
+
+    final lockSnapshots = await Future.wait(
+      lockIds.map(
+        (slotId) => FirebaseFirestore.instance
+            .collection('bookingSlots')
+            .doc(slotId)
+            .get(),
+      ),
+    );
+    final occupiedLockIds = lockSnapshots
+        .where((snapshot) => snapshot.exists)
+        .map((snapshot) => snapshot.id)
+        .toSet();
+    for (final (candidate, candidateLockIds) in candidates) {
+      if (!candidateLockIds.any(occupiedLockIds.contains)) {
+        slots.add(candidate);
       }
     }
     return slots;
+  }
+
+  Future<void> _selectService(_ServiceOption service) async {
+    final barberData = _barberData;
+    setState(() {
+      _selectedService = service;
+      _selectedTime = null;
+      _selectedSlotStart = null;
+      _isLoadingAvailability = true;
+    });
+
+    final times = _isBarberOnline && barberData != null
+        ? await _loadAvailableTimes(
+            widget.barberId,
+            barberData,
+            service.duration,
+          )
+        : <_BookingSlotOption>[];
+    if (!mounted || _selectedService?.name != service.name) return;
+    setState(() {
+      _availableTimes = times;
+      _isLoadingAvailability = false;
+    });
   }
 
   String _serviceLabel(_ServiceOption option) {
@@ -317,20 +368,6 @@ class _BookingScreenState extends State<BookingScreen> {
     return displayName.trim().replaceAll(RegExp(r'\s+'), ' ');
   }
 
-  Future<void> _createNotification({
-    required String recipientId,
-    required String message,
-    required String bookingId,
-  }) async {
-    await FirebaseFirestore.instance.collection('notifications').add({
-      'recipientId': recipientId,
-      'message': message,
-      'bookingId': bookingId,
-      'isRead': false,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-  }
-
   Future<void> _onConfirmBooking() async {
     final l10n = AppLocalizations.of(context);
 
@@ -369,32 +406,10 @@ class _BookingScreenState extends State<BookingScreen> {
 
     try {
       final barberId = widget.barberId;
-      final customerId = currentUser.uid;
-
-      final bookingRef = await BookingStore(FirebaseFirestore.instance)
-          .createBooking(
-            slot: BookingSlot(barberId: barberId, start: slotStart),
-            booking: {
-              'barberId': barberId,
-              'barberName': widget.barberName,
-              'customerId': customerId,
-              'service': _selectedService!.name,
-              'servicePrice': _selectedService!.price,
-              'selectedTime': time,
-              'status': 'pending',
-            },
-          );
-
-      await _createNotification(
-        recipientId: customerId,
-        message: 'Your booking request has been submitted.',
-        bookingId: bookingRef.id,
-      );
-
-      await _createNotification(
-        recipientId: barberId,
-        message: 'New booking request.',
-        bookingId: bookingRef.id,
+      await BookingStore(FirebaseFirestore.instance).createBooking(
+        barberId: barberId,
+        service: _selectedService!.name,
+        slotStart: slotStart,
       );
     } on SlotAlreadyBookedException {
       if (!mounted) return;
@@ -496,11 +511,7 @@ class _BookingScreenState extends State<BookingScreen> {
                               overflow: TextOverflow.ellipsis,
                             ),
                             selected: isSelected,
-                            onSelected: (_) {
-                              setState(() {
-                                _selectedService = service;
-                              });
-                            },
+                            onSelected: (_) => _selectService(service),
                             selectedColor: KloofColors.primaryBlack,
                             backgroundColor: KloofColors.cardBackground,
                             checkmarkColor: KloofColors.luxuryGold,
@@ -600,8 +611,13 @@ class _BookingScreenState extends State<BookingScreen> {
 class _ServiceOption {
   final String name;
   final double? price;
+  final int? duration;
 
-  const _ServiceOption({required this.name, required this.price});
+  const _ServiceOption({
+    required this.name,
+    required this.price,
+    required this.duration,
+  });
 }
 
 class _BookingSlotOption {
