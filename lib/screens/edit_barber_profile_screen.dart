@@ -10,6 +10,70 @@ import 'package:kloof/theme/kloof_theme.dart';
 
 import '../data/barber_profile_store.dart';
 
+enum BarberLocationValidationError {
+  pairRequired,
+  invalidLatitude,
+  invalidLongitude,
+}
+
+class BarberLocationValidationResult {
+  final double? latitude;
+  final double? longitude;
+  final BarberLocationValidationError? error;
+
+  const BarberLocationValidationResult({
+    this.latitude,
+    this.longitude,
+    this.error,
+  });
+
+  bool get isValid => error == null;
+}
+
+BarberLocationValidationResult validateBarberCoordinates(
+  String latitudeText,
+  String longitudeText,
+) {
+  final latitudeValue = latitudeText.trim();
+  final longitudeValue = longitudeText.trim();
+  final hasLatitude = latitudeValue.isNotEmpty;
+  final hasLongitude = longitudeValue.isNotEmpty;
+
+  if (!hasLatitude && !hasLongitude) {
+    return const BarberLocationValidationResult();
+  }
+  if (hasLatitude != hasLongitude) {
+    return const BarberLocationValidationResult(
+      error: BarberLocationValidationError.pairRequired,
+    );
+  }
+
+  final latitude = double.tryParse(latitudeValue);
+  if (latitude == null ||
+      !latitude.isFinite ||
+      latitude < -90 ||
+      latitude > 90) {
+    return const BarberLocationValidationResult(
+      error: BarberLocationValidationError.invalidLatitude,
+    );
+  }
+
+  final longitude = double.tryParse(longitudeValue);
+  if (longitude == null ||
+      !longitude.isFinite ||
+      longitude < -180 ||
+      longitude > 180) {
+    return const BarberLocationValidationResult(
+      error: BarberLocationValidationError.invalidLongitude,
+    );
+  }
+
+  return BarberLocationValidationResult(
+    latitude: latitude,
+    longitude: longitude,
+  );
+}
+
 class EditBarberProfileScreen extends StatefulWidget {
   const EditBarberProfileScreen({super.key});
 
@@ -39,6 +103,8 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
   final _shopNameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
+  final _latitudeController = TextEditingController();
+  final _longitudeController = TextEditingController();
   final _bioController = TextEditingController();
 
   bool _isLoading = true;
@@ -111,6 +177,8 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
       final loadedCity = (data['city'] ?? '').toString().trim();
       _selectedCity = _cities.contains(loadedCity) ? loadedCity : _cities.first;
       _addressController.text = (data['address'] ?? '').toString();
+      _latitudeController.text = (data['latitude'] ?? '').toString();
+      _longitudeController.text = (data['longitude'] ?? '').toString();
       _bioController.text = (data['bio'] ?? '').toString();
       _existingProfileImageUrl =
           (data['profileImage'] ?? data['imageUrl'] ?? '').toString();
@@ -190,6 +258,26 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
   }
 
   Future<void> _saveProfile() async {
+    final l10n = AppLocalizations.of(context);
+    final location = validateBarberCoordinates(
+      _latitudeController.text,
+      _longitudeController.text,
+    );
+    if (!location.isValid) {
+      final message = switch (location.error!) {
+        BarberLocationValidationError.pairRequired =>
+          l10n.editBarberProfileLocationPairRequired,
+        BarberLocationValidationError.invalidLatitude =>
+          l10n.editBarberProfileInvalidLatitude,
+        BarberLocationValidationError.invalidLongitude =>
+          l10n.editBarberProfileInvalidLongitude,
+      };
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+      return;
+    }
+
     setState(() {
       _isSaving = true;
     });
@@ -254,6 +342,8 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
         'phone': FieldValue.delete(),
         'city': _selectedCity,
         'address': _addressController.text.trim(),
+        'latitude': location.latitude ?? FieldValue.delete(),
+        'longitude': location.longitude ?? FieldValue.delete(),
         'bio': _bioController.text.trim(),
         'profileImage': profileImageUrl,
         'imageUrl': profileImageUrl,
@@ -421,6 +511,8 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
     _shopNameController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
+    _latitudeController.dispose();
+    _longitudeController.dispose();
     _bioController.dispose();
     for (final service in _serviceForms) {
       service.dispose();
@@ -602,6 +694,24 @@ class _EditBarberProfileScreenState extends State<EditBarberProfileScreen> {
                     _field(
                       label: l10n.barberProfileLabelAddress,
                       controller: _addressController,
+                    ),
+                    _field(
+                      label: l10n.editBarberProfileLatitudeLabel,
+                      controller: _latitudeController,
+                      hintText: '21.4225',
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                        signed: true,
+                      ),
+                    ),
+                    _field(
+                      label: l10n.editBarberProfileLongitudeLabel,
+                      controller: _longitudeController,
+                      hintText: '39.8262',
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                        signed: true,
+                      ),
                     ),
                     _field(
                       label: l10n.barberProfileLabelBio,

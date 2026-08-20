@@ -61,6 +61,19 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt;
     }
 
+    function validBarberLocation() {
+      let hasLatitude = 'latitude' in request.resource.data;
+      let hasLongitude = 'longitude' in request.resource.data;
+      return hasLatitude == hasLongitude
+        && (!hasLatitude
+          || (request.resource.data.latitude is number
+            && request.resource.data.latitude >= -90
+            && request.resource.data.latitude <= 90
+            && request.resource.data.longitude is number
+            && request.resource.data.longitude >= -180
+            && request.resource.data.longitude <= 180));
+    }
+
     function validBarberFields() {
       return request.resource.data.keys().hasOnly([
           'uid',
@@ -110,7 +123,8 @@ service cloud.firestore {
         && (!('latitude' in request.resource.data)
           || request.resource.data.latitude is number)
         && (!('longitude' in request.resource.data)
-          || request.resource.data.longitude is number);
+          || request.resource.data.longitude is number)
+        && validBarberLocation();
     }
 
     function validBarberIdentity(barberId) {
@@ -168,6 +182,8 @@ service cloud.firestore {
           'services',
           'workingHours',
           'isOnline',
+          'latitude',
+          'longitude',
           'updatedAt'
         ]);
       allow delete: if isSelf(barberId) && isBarber();

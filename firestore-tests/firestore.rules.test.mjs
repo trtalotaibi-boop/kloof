@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {assertFails, assertSucceeds, initializeTestEnvironment} from '@firebase/rules-unit-testing';
-import {Timestamp, collection, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where} from 'firebase/firestore';
+import {Timestamp, collection, deleteField, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where} from 'firebase/firestore';
 
 const projectId = 'demo-kloof-rules';
 const rulesPath = fileURLToPath(new URL('../firestore.rules', import.meta.url));
@@ -86,6 +86,41 @@ describe('KLOOF Firestore security rules', () => {
     const db = dbFor(barberId);
     await assertSucceeds(updateDoc(doc(db, 'barbers', barberId), {shopName: 'Updated Shop'}));
     await assertFails(updateDoc(doc(db, 'barbers', barberId), {phone: '+966511111111'}));
+  });
+
+  test('barber location is owner-only, paired, in range, and cannot alter protected fields', async () => {
+    const validLocation = {latitude: 21.4225, longitude: 39.8262};
+    await assertSucceeds(updateDoc(doc(dbFor(barberId), 'barbers', barberId), validLocation));
+    await assertFails(updateDoc(doc(dbFor(otherBarberId), 'barbers', barberId), validLocation));
+    await assertFails(updateDoc(
+      doc(testEnv.unauthenticatedContext().firestore(), 'barbers', barberId),
+      validLocation,
+    ));
+    await assertFails(updateDoc(doc(dbFor(barberId), 'barbers', barberId), {
+      latitude: -90.1,
+      longitude: 39.8262,
+    }));
+    await assertFails(updateDoc(doc(dbFor(barberId), 'barbers', barberId), {
+      latitude: 21.4225,
+      longitude: 180.1,
+    }));
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await updateDoc(doc(context.firestore(), 'barbers', barberId), {
+        latitude: 21.4225,
+        longitude: 39.8262,
+      });
+    });
+    await assertFails(updateDoc(doc(dbFor(barberId), 'barbers', barberId), {
+      longitude: deleteField(),
+    }));
+    await assertFails(updateDoc(doc(dbFor(barberId), 'barbers', barberId), {
+      latitude: deleteField(),
+    }));
+    await assertFails(updateDoc(doc(dbFor(barberId), 'barbers', barberId), {
+      ...validLocation,
+      ownerUid: 'attacker',
+    }));
   });
 
   test('barber private phone is owner-only', async () => {
