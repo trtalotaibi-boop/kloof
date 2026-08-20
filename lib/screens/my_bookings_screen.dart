@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:kloof/l10n/app_localizations.dart';
 import 'package:kloof/theme/kloof_theme.dart';
 
+import '../domain/riyadh_time.dart';
 import 'home_screen.dart';
 
 class MyBookingsScreen extends StatelessWidget {
@@ -48,7 +49,7 @@ class MyBookingsScreen extends StatelessWidget {
 
   String _formatDate(Timestamp? timestamp, AppLocalizations l10n) {
     if (timestamp == null) return l10n.myBookingsNotAvailable;
-    final date = timestamp.toDate();
+    final date = utcInstantToRiyadhWallClock(timestamp.toDate());
     return DateFormat.yMd(l10n.localeName).format(date);
   }
 
@@ -176,14 +177,16 @@ class MyBookingsScreen extends StatelessWidget {
   String _bookingTime(Map<String, dynamic> booking, AppLocalizations l10n) {
     final slotStart = booking['slotStart'];
     if (slotStart is Timestamp) {
-      return DateFormat.jm(l10n.localeName).format(slotStart.toDate());
+      return DateFormat.jm(
+        l10n.localeName,
+      ).format(utcInstantToRiyadhWallClock(slotStart.toDate()));
     }
 
     final rawMinutes = booking['selectedTimeMinutes'];
     if (rawMinutes is num) {
       final minutes = rawMinutes.toInt();
       if (minutes >= 0 && minutes < 24 * 60) {
-        final value = DateTime(2000, 1, 1, minutes ~/ 60, minutes % 60);
+        final value = DateTime.utc(2000, 1, 1, minutes ~/ 60, minutes % 60);
         return DateFormat.jm(l10n.localeName).format(value);
       }
     }

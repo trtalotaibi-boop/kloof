@@ -4,6 +4,7 @@ const {initializeApp} = require("firebase-admin/app");
 const {getFirestore, Timestamp} = require("firebase-admin/firestore");
 const {
   createBookingCore,
+  createSlotId,
   provisionBarberCore,
   updateBookingStatusCore,
 } = require("../lib/booking");
@@ -134,6 +135,42 @@ describe("trusted booking and barber provisioning", () => {
         create(),
         (error) => error.code === "failed-precondition",
     );
+  });
+
+  test("Backend slot id uses the same Riyadh yyyyMMdd and HHmm", () => {
+    assert.equal(
+        createSlotId("barber", Date.parse("2026-08-20T17:00:00Z")),
+        "barber--20260820--2000",
+    );
+  });
+
+  test("45-minute service creates three 15-minute Riyadh locks", async () => {
+    await db.collection("barbers").doc(barberId).update({
+      services: [{name: "Haircut", price: 50, duration: 45}],
+    });
+    const booking = await create();
+    const data = (await db.collection("bookings").doc(booking.bookingId).get())
+        .data();
+    assert.deepEqual(data.slotIds, [
+      `${barberId}--20300102--1000`,
+      `${barberId}--20300102--1015`,
+      `${barberId}--20300102--1030`,
+    ]);
+  });
+
+  test("60-minute service creates four 15-minute Riyadh locks", async () => {
+    await db.collection("barbers").doc(barberId).update({
+      services: [{name: "Haircut", price: 50, duration: 60}],
+    });
+    const booking = await create();
+    const data = (await db.collection("bookings").doc(booking.bookingId).get())
+        .data();
+    assert.deepEqual(data.slotIds, [
+      `${barberId}--20300102--1000`,
+      `${barberId}--20300102--1015`,
+      `${barberId}--20300102--1030`,
+      `${barberId}--20300102--1045`,
+    ]);
   });
 
   test("overlapping concurrent bookings cannot double book", async () => {

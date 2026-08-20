@@ -6,6 +6,7 @@ import 'package:kloof/l10n/app_localizations.dart';
 import 'package:kloof/theme/kloof_theme.dart';
 
 import '../data/booking_store.dart';
+import '../domain/riyadh_time.dart';
 
 class BarberBookingsScreen extends StatelessWidget {
   const BarberBookingsScreen({super.key});
@@ -41,7 +42,7 @@ class BarberBookingsScreen extends StatelessWidget {
 
   String _formatDate(Timestamp? timestamp, AppLocalizations l10n) {
     if (timestamp == null) return '-';
-    final date = timestamp.toDate();
+    final date = utcInstantToRiyadhWallClock(timestamp.toDate());
     return DateFormat.yMd(l10n.localeName).format(date);
   }
 
@@ -52,7 +53,9 @@ class BarberBookingsScreen extends StatelessWidget {
   ) {
     final slotStart = booking['slotStart'];
     if (slotStart is Timestamp) {
-      return DateFormat.jm(l10n.localeName).format(slotStart.toDate());
+      return DateFormat.jm(
+        l10n.localeName,
+      ).format(utcInstantToRiyadhWallClock(slotStart.toDate()));
     }
 
     final rawMinutes = booking['selectedTimeMinutes'];

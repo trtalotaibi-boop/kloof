@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:kloof/l10n/app_localizations.dart';
 import 'package:kloof/theme/kloof_theme.dart';
 
+import '../domain/riyadh_time.dart';
 import 'my_bookings_screen.dart';
 
 class BookingConfirmationScreen extends StatelessWidget {
@@ -22,7 +23,9 @@ class BookingConfirmationScreen extends StatelessWidget {
   });
 
   String _formattedDate(AppLocalizations l10n) {
-    return DateFormat.yMd(l10n.localeName).format(selectedDate);
+    return DateFormat.yMd(
+      l10n.localeName,
+    ).format(utcInstantToRiyadhWallClock(selectedDate));
   }
 
   String _singleServiceLabel(AppLocalizations l10n) {

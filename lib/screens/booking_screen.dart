@@ -7,6 +7,7 @@ import 'package:kloof/theme/kloof_theme.dart';
 import '../data/booking_store.dart';
 import '../domain/booking_request_id.dart';
 import '../domain/booking_slot.dart';
+import '../domain/riyadh_time.dart';
 
 import 'booking_confirmation_screen.dart';
 import 'customer_phone_auth_screen.dart';
@@ -198,8 +199,7 @@ class _BookingScreenState extends State<BookingScreen> {
       return <_BookingSlotOption>[];
     }
     final materialLocalizations = MaterialLocalizations.of(context);
-    final now = DateTime.now();
-    final bookingDate = DateTime(now.year, now.month, now.day);
+    final now = currentRiyadhDateTime();
     final workingHours = Map<String, dynamic>.from(
       barberData['workingHours'] ?? <String, dynamic>{},
     );
@@ -250,12 +250,12 @@ class _BookingScreenState extends State<BookingScreen> {
 
       final time = TimeOfDay(hour: start ~/ 60, minute: start % 60);
       final label = materialLocalizations.formatTimeOfDay(time);
-      final slotStart = DateTime(
-        bookingDate.year,
-        bookingDate.month,
-        bookingDate.day,
-        time.hour,
-        time.minute,
+      final slotStart = riyadhWallClockToUtc(
+        year: now.year,
+        month: now.month,
+        day: now.day,
+        hour: time.hour,
+        minute: time.minute,
       );
       final candidateLockIds = <String>[];
       for (var offset = 0; offset < serviceDuration; offset += interval) {

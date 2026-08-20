@@ -12,6 +12,7 @@ import '../data/repositories/barber_repository_impl.dart';
 import '../data/barber_profile_store.dart';
 import '../data/booking_store.dart';
 import '../domain/usecases/toggle_online_status_usecase.dart';
+import '../domain/riyadh_time.dart';
 import '../features/barber_status_cubit.dart';
 import 'barber_bookings_screen.dart';
 import 'barber_profile_screen.dart';
@@ -371,7 +372,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
 
   String _formatDate(Timestamp? timestamp, AppLocalizations l10n) {
     if (timestamp == null) return '-';
-    final date = timestamp.toDate();
+    final date = utcInstantToRiyadhWallClock(timestamp.toDate());
     return DateFormat.yMd(l10n.localeName).format(date);
   }
 
@@ -382,7 +383,9 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
   ) {
     final slotStart = booking['slotStart'];
     if (slotStart is Timestamp) {
-      return DateFormat.jm(l10n.localeName).format(slotStart.toDate());
+      return DateFormat.jm(
+        l10n.localeName,
+      ).format(utcInstantToRiyadhWallClock(slotStart.toDate()));
     }
 
     final rawMinutes = booking['selectedTimeMinutes'];
@@ -468,7 +471,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final currentDay = _allDays[DateTime.now().weekday - 1];
+    final currentDay = _allDays[currentRiyadhDateTime().weekday - 1];
 
     if (_isCheckingRole) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
