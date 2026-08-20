@@ -8,7 +8,7 @@ import '../data/booking_store.dart';
 import '../domain/booking_slot.dart';
 
 import 'booking_confirmation_screen.dart';
-import 'login_screen.dart';
+import 'customer_phone_auth_screen.dart';
 
 class BookingScreen extends StatefulWidget {
   final String barberId;
@@ -395,7 +395,9 @@ class _BookingScreenState extends State<BookingScreen> {
       if (!mounted) return;
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        MaterialPageRoute(
+          builder: (context) => const CustomerPhoneAuthScreen(),
+        ),
       );
       return;
     }

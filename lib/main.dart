@@ -7,9 +7,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:kloof/l10n/app_localizations.dart';
+import 'auth/customer_auth_policy.dart';
 import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'screens/barber_dashboard_screen.dart';
+import 'screens/customer_phone_auth_screen.dart';
 import 'screens/welcome_screen.dart';
 import 'services/push_notification_service.dart';
 import 'theme/kloof_theme.dart';
@@ -67,11 +69,11 @@ class AuthenticationWrapper extends StatelessWidget {
 
         if (snapshot.hasData) {
           final user = snapshot.data!;
-          return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-            future: FirebaseFirestore.instance
+          return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+            stream: FirebaseFirestore.instance
                 .collection('users')
                 .doc(user.uid)
-                .get(),
+                .snapshots(),
             builder: (context, userSnapshot) {
               if (userSnapshot.connectionState == ConnectionState.waiting) {
                 return const Scaffold(
@@ -79,9 +81,18 @@ class AuthenticationWrapper extends StatelessWidget {
                 );
               }
 
-              final userData = userSnapshot.data?.data() ?? <String, dynamic>{};
-              final role =
-                  (userData['role']?.toString().toLowerCase() ?? 'customer');
+              if (userSnapshot.hasError || userSnapshot.data == null) {
+                return const InvalidAuthenticatedProfileScreen();
+              }
+
+              final profile = userSnapshot.data!;
+              final userData = profile.data() ?? <String, dynamic>{};
+              final role = userData['role']?.toString();
+              final destination = resolveAuthenticatedDestination(
+                profileExists: profile.exists,
+                role: role,
+                hasPhoneNumber: user.phoneNumber?.isNotEmpty == true,
+              );
               final fullName = userData['fullName']?.toString().trim();
               final barberName = (fullName != null && fullName.isNotEmpty)
                   ? fullName
@@ -90,11 +101,18 @@ class AuthenticationWrapper extends StatelessWidget {
                           context,
                         ).bookingConfirmationLabelBarber);
 
-              if (role == 'barber') {
-                return BarberDashboardScreen(barberName: barberName);
+              switch (destination) {
+                case AuthenticatedDestination.customerHome:
+                  return const HomeScreen();
+                case AuthenticatedDestination.barberDashboard:
+                  return BarberDashboardScreen(barberName: barberName);
+                case AuthenticatedDestination.completeCustomerProfile:
+                  return CustomerProfileCompletionScreen(
+                    phoneNumber: user.phoneNumber!,
+                  );
+                case AuthenticatedDestination.blocked:
+                  return const InvalidAuthenticatedProfileScreen();
               }
-
-              return const HomeScreen();
             },
           );
         } else {

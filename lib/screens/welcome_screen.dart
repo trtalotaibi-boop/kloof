@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:kloof/auth/customer_auth_policy.dart';
 import 'package:kloof/l10n/app_localizations.dart';
 import 'package:kloof/theme/kloof_theme.dart';
+import 'customer_phone_auth_screen.dart';
 import 'login_screen.dart';
 import 'package:kloof/screens/register_screen.dart';
 
@@ -92,7 +94,10 @@ class WelcomeScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const LoginScreen(),
+                              builder: (context) =>
+                                  usesCustomerPhoneAuthentication(selectedRole)
+                                  ? const CustomerPhoneAuthScreen()
+                                  : const LoginScreen(),
                             ),
                           );
                         },
@@ -118,7 +123,9 @@ class WelcomeScreen extends StatelessWidget {
                             context,
                             MaterialPageRoute(
                               builder: (context) =>
-                                  RegisterScreen(selectedRole: selectedRole),
+                                  usesCustomerPhoneAuthentication(selectedRole)
+                                  ? const CustomerPhoneAuthScreen()
+                                  : RegisterScreen(selectedRole: selectedRole),
                             ),
                           );
                         },
