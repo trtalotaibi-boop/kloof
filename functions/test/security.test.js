@@ -18,6 +18,12 @@ const customerId = "customer-one";
 const otherCustomerId = "customer-two";
 const slotStartMillis = Date.parse("2030-01-02T07:00:00Z");
 let db;
+let requestCounter;
+
+function nextClientRequestId() {
+  requestCounter += 1;
+  return requestCounter.toString(16).padStart(32, "0");
+}
 
 async function clearFirestore() {
   if (!process.env.FIRESTORE_EMULATOR_HOST) {
@@ -68,6 +74,8 @@ async function seedBookingData() {
 }
 
 async function create(uid = customerId, overrides = {}) {
+  const clientRequestId = Object.hasOwn(overrides, "clientRequestId") ?
+    overrides.clientRequestId : nextClientRequestId();
   return createBookingCore({
     db,
     uid,
@@ -77,6 +85,7 @@ async function create(uid = customerId, overrides = {}) {
       service: "Haircut",
       slotStartMillis,
       ...overrides,
+      clientRequestId,
     },
   });
 }
@@ -90,6 +99,7 @@ describe("trusted booking and barber provisioning", () => {
     db = getFirestore();
   });
   beforeEach(async () => {
+    requestCounter = 0;
     await clearFirestore();
     await seedBookingData();
   });
@@ -105,6 +115,9 @@ describe("trusted booking and barber provisioning", () => {
     assert.equal(booking.customerName, "Customer One");
     assert.equal(booking.servicePrice, 50);
     assert.equal(booking.serviceDuration, 30);
+    assert.equal(booking.status, "pending");
+    assert.equal(booking.clientRequestId.length, 32);
+    assert.equal(result.reused, false);
     assert.equal(booking.slotIds.length, 2);
     assert.equal((await db.collection("bookingSlots").get()).size, 2);
   });
@@ -132,6 +145,83 @@ describe("trusted booking and barber provisioning", () => {
     const rejected = results.find((result) => result.status === "rejected");
     assert.equal(rejected.reason.code, "already-exists");
     assert.equal((await db.collection("bookings").get()).size, 1);
+  });
+
+  test("a successful retry returns the same booking without duplicates", async () => {
+    const clientRequestId = "a".repeat(32);
+    const first = await create(customerId, {clientRequestId});
+    const retry = await create(customerId, {clientRequestId});
+
+    assert.equal(first.bookingId, retry.bookingId);
+    assert.equal(first.reused, false);
+    assert.equal(retry.reused, true);
+    assert.equal((await db.collection("bookings").get()).size, 1);
+    assert.equal((await db.collection("bookingSlots").get()).size, 2);
+  });
+
+  test("concurrent requests with the same id create one booking", async () => {
+    const clientRequestId = "b".repeat(32);
+    const results = await Promise.all([
+      create(customerId, {clientRequestId}),
+      create(customerId, {clientRequestId}),
+    ]);
+
+    assert.equal(results[0].bookingId, results[1].bookingId);
+    assert.equal(results.filter((result) => result.reused === false).length, 1);
+    assert.equal(results.filter((result) => result.reused === true).length, 1);
+    assert.equal((await db.collection("bookings").get()).size, 1);
+  });
+
+  test("different request ids for one slot still cannot double book", async () => {
+    await create(customerId, {clientRequestId: "c".repeat(32)});
+    await assert.rejects(
+        create(customerId, {clientRequestId: "d".repeat(32)}),
+        (error) => error.code === "already-exists",
+    );
+    assert.equal((await db.collection("bookings").get()).size, 1);
+  });
+
+  test("request ids are scoped to the authenticated customer", async () => {
+    const clientRequestId = "e".repeat(32);
+    const first = await create(customerId, {clientRequestId});
+    const second = await create(otherCustomerId, {
+      clientRequestId,
+      slotStartMillis: slotStartMillis + (30 * 60 * 1000),
+    });
+
+    assert.notEqual(first.bookingId, second.bookingId);
+    assert.equal((await db.collection("bookings").get()).size, 2);
+    assert.equal(
+        (await db.collection("bookings").doc(first.bookingId).get())
+            .data().customerId,
+        customerId,
+    );
+    assert.equal(
+        (await db.collection("bookings").doc(second.bookingId).get())
+            .data().customerId,
+        otherCustomerId,
+    );
+  });
+
+  test("invalid request ids are rejected", async () => {
+    for (const clientRequestId of ["", "short", "A".repeat(32), "g".repeat(32)]) {
+      await assert.rejects(
+          create(customerId, {clientRequestId}),
+          (error) => error.code === "invalid-argument",
+      );
+    }
+  });
+
+  test("one request id cannot be reused for different booking input", async () => {
+    const clientRequestId = "f".repeat(32);
+    await create(customerId, {clientRequestId});
+    await assert.rejects(
+        create(customerId, {
+          clientRequestId,
+          slotStartMillis: slotStartMillis + (60 * 60 * 1000),
+        }),
+        (error) => error.code === "already-exists",
+    );
   });
 
   test("only the assigned barber changes status and rejection releases all locks", async () => {

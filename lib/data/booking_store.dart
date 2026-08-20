@@ -5,6 +5,13 @@ class SlotAlreadyBookedException implements Exception {}
 
 class BarberUnavailableException implements Exception {}
 
+class BookingCreationResult {
+  final String bookingId;
+  final bool reused;
+
+  const BookingCreationResult({required this.bookingId, required this.reused});
+}
+
 class BookingStore {
   final FirebaseFirestore firestore;
   final FirebaseFunctions functions;
@@ -13,10 +20,11 @@ class BookingStore {
     : functions =
           functions ?? FirebaseFunctions.instanceFor(region: 'me-central2');
 
-  Future<String> createBooking({
+  Future<BookingCreationResult> createBooking({
     required String barberId,
     required String service,
     required DateTime slotStart,
+    required String clientRequestId,
   }) async {
     try {
       final callable = functions.httpsCallable('createBooking');
@@ -24,9 +32,13 @@ class BookingStore {
         'barberId': barberId,
         'service': service,
         'slotStartMillis': slotStart.millisecondsSinceEpoch,
+        'clientRequestId': clientRequestId,
       });
       final data = Map<String, dynamic>.from(result.data as Map);
-      return data['bookingId']?.toString() ?? '';
+      return BookingCreationResult(
+        bookingId: data['bookingId']?.toString() ?? '',
+        reused: data['reused'] == true,
+      );
     } on FirebaseFunctionsException catch (error) {
       if (error.code == 'already-exists') {
         throw SlotAlreadyBookedException();

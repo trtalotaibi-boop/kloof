@@ -1,8 +1,10 @@
 const {Timestamp, FieldValue} = require("firebase-admin/firestore");
 const {HttpsError} = require("firebase-functions/v2/https");
+const {createHash} = require("node:crypto");
 
 const RIYADH_TIME_ZONE = "Asia/Riyadh";
 const DAY_CODES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const CLIENT_REQUEST_ID_PATTERN = /^[a-f0-9]{32}$/;
 
 function parseClock(value) {
   const match = String(value || "").trim().match(
@@ -62,6 +64,24 @@ function requireString(value, field) {
   return result;
 }
 
+function requireClientRequestId(value) {
+  const requestId = requireString(value, "clientRequestId");
+  if (!CLIENT_REQUEST_ID_PATTERN.test(requestId)) {
+    throw new HttpsError(
+        "invalid-argument",
+        "clientRequestId must be 32 lowercase hexadecimal characters.",
+    );
+  }
+  return requestId;
+}
+
+function bookingIdForRequest(uid, clientRequestId) {
+  const digest = createHash("sha256")
+      .update(`${uid}\u0000${clientRequestId}`)
+      .digest("hex");
+  return `request_${digest}`;
+}
+
 function findService(services, requestedName) {
   if (!Array.isArray(services)) return null;
   const normalized = requestedName.toLocaleLowerCase("en-US");
@@ -74,6 +94,7 @@ async function createBookingCore({db, uid, data, nowMillis = Date.now()}) {
 
   const barberId = requireString(data?.barberId, "barberId");
   const requestedService = requireString(data?.service, "service");
+  const clientRequestId = requireClientRequestId(data?.clientRequestId);
   const slotStartMillis = Number(data?.slotStartMillis);
   if (!Number.isSafeInteger(slotStartMillis) || slotStartMillis % 60000 !== 0) {
     throw new HttpsError("invalid-argument", "slotStartMillis is invalid.");
@@ -85,11 +106,36 @@ async function createBookingCore({db, uid, data, nowMillis = Date.now()}) {
   const customerRef = db.collection("users").doc(uid);
   const barberUserRef = db.collection("users").doc(barberId);
   const barberRef = db.collection("barbers").doc(barberId);
-  const bookingRef = db.collection("bookings").doc();
+  const bookingRef = db.collection("bookings").doc(
+      bookingIdForRequest(uid, clientRequestId),
+  );
 
-  await db.runTransaction(async (transaction) => {
-    const [customerSnapshot, barberUserSnapshot, barberSnapshot] =
-      await transaction.getAll(customerRef, barberUserRef, barberRef);
+  return db.runTransaction(async (transaction) => {
+    const [bookingSnapshot, customerSnapshot, barberUserSnapshot,
+      barberSnapshot] = await transaction.getAll(
+        bookingRef,
+        customerRef,
+        barberUserRef,
+        barberRef,
+    );
+    const existingBooking = bookingSnapshot.data();
+    if (existingBooking) {
+      const existingSlotStart = existingBooking.slotStart?.toMillis?.();
+      const sameRequest = existingBooking.customerId === uid &&
+        existingBooking.clientRequestId === clientRequestId &&
+        existingBooking.barberId === barberId &&
+        String(existingBooking.service || "").trim()
+            .toLocaleLowerCase("en-US") ===
+          requestedService.toLocaleLowerCase("en-US") &&
+        existingSlotStart === slotStartMillis;
+      if (!sameRequest) {
+        throw new HttpsError(
+            "already-exists",
+            "clientRequestId was already used for a different booking.",
+        );
+      }
+      return {bookingId: bookingRef.id, reused: true};
+    }
     const customer = customerSnapshot.data();
     const barber = barberSnapshot.data();
     if (!customer || customer.role !== "customer") {
@@ -183,6 +229,7 @@ async function createBookingCore({db, uid, data, nowMillis = Date.now()}) {
       barberName,
       customerId: uid,
       customerName,
+      clientRequestId,
       service: String(service.name).trim(),
       servicePrice,
       serviceDuration,
@@ -208,9 +255,8 @@ async function createBookingCore({db, uid, data, nowMillis = Date.now()}) {
         createdAt: FieldValue.serverTimestamp(),
       });
     });
+    return {bookingId: bookingRef.id, reused: false};
   });
-
-  return {bookingId: bookingRef.id};
 }
 
 async function provisionBarberCore({

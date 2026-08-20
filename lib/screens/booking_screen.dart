@@ -5,6 +5,7 @@ import 'package:kloof/l10n/app_localizations.dart';
 import 'package:kloof/theme/kloof_theme.dart';
 
 import '../data/booking_store.dart';
+import '../domain/booking_request_id.dart';
 import '../domain/booking_slot.dart';
 
 import 'booking_confirmation_screen.dart';
@@ -33,6 +34,7 @@ class _BookingScreenState extends State<BookingScreen> {
   bool _isLoadingAvailability = true;
   bool _isSubmitting = false;
   bool _isBarberOnline = false;
+  final BookingRequestIdTracker _requestIds = BookingRequestIdTracker();
   Map<String, dynamic>? _barberData;
   List<_ServiceOption> _serviceOptions = [];
   List<_BookingSlotOption> _availableTimes = [];
@@ -289,11 +291,13 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Future<void> _selectService(_ServiceOption service) async {
+    if (_isSubmitting) return;
     final barberData = _barberData;
     setState(() {
       _selectedService = service;
       _selectedTime = null;
       _selectedSlotStart = null;
+      _requestIds.reset();
       _isLoadingAvailability = true;
     });
 
@@ -389,6 +393,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
     final time = _selectedTime!;
     final slotStart = _selectedSlotStart!;
+    final selectedService = _selectedService!;
 
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
@@ -402,6 +407,7 @@ class _BookingScreenState extends State<BookingScreen> {
       return;
     }
 
+    final clientRequestId = _requestIds.begin();
     setState(() {
       _isSubmitting = true;
     });
@@ -410,16 +416,20 @@ class _BookingScreenState extends State<BookingScreen> {
       final barberId = widget.barberId;
       await BookingStore(FirebaseFirestore.instance).createBooking(
         barberId: barberId,
-        service: _selectedService!.name,
+        service: selectedService.name,
         slotStart: slotStart,
+        clientRequestId: clientRequestId,
       );
+      _requestIds.reset();
     } on SlotAlreadyBookedException {
+      _requestIds.reset();
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(l10n.bookingSlotAlreadyBooked)));
       return;
     } on BarberUnavailableException {
+      _requestIds.reset();
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
@@ -446,8 +456,8 @@ class _BookingScreenState extends State<BookingScreen> {
       MaterialPageRoute(
         builder: (context) => BookingConfirmationScreen(
           barberName: widget.barberName,
-          service: _selectedService!.name,
-          servicePrice: _selectedService!.price,
+          service: selectedService.name,
+          servicePrice: selectedService.price,
           selectedDate: slotStart,
           selectedTime: time,
         ),
@@ -560,9 +570,11 @@ class _BookingScreenState extends State<BookingScreen> {
                             label: Text(time.label),
                             selected: isSelected,
                             onSelected: (_) {
+                              if (_isSubmitting) return;
                               setState(() {
                                 _selectedTime = time.label;
                                 _selectedSlotStart = time.start;
+                                _requestIds.reset();
                               });
                             },
                             selectedColor: KloofColors.primaryBlack,
