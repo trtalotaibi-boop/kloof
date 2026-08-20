@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kloof/l10n/app_localizations.dart';
@@ -6,45 +7,93 @@ import 'package:kloof/theme/kloof_theme.dart';
 import '../domain/riyadh_time.dart';
 import 'my_bookings_screen.dart';
 
-class BookingConfirmationScreen extends StatelessWidget {
-  final String barberName;
-  final String service;
-  final double? servicePrice;
-  final DateTime selectedDate;
-  final String selectedTime;
+typedef BookingDocumentStreamFactory =
+    Stream<Map<String, dynamic>?> Function(String bookingId);
+
+class BookingConfirmationScreen extends StatefulWidget {
+  final String bookingId;
+  final BookingDocumentStreamFactory? bookingStream;
+  final WidgetBuilder? myBookingsBuilder;
 
   const BookingConfirmationScreen({
     super.key,
-    required this.barberName,
-    required this.service,
-    required this.servicePrice,
-    required this.selectedDate,
-    required this.selectedTime,
+    required this.bookingId,
+    this.bookingStream,
+    this.myBookingsBuilder,
   });
 
-  String _formattedDate(AppLocalizations l10n) {
+  @override
+  State<BookingConfirmationScreen> createState() =>
+      _BookingConfirmationScreenState();
+}
+
+class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
+  late Stream<Map<String, dynamic>?> _bookingStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _bookingStream = _createBookingStream();
+  }
+
+  @override
+  void didUpdateWidget(covariant BookingConfirmationScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.bookingId != widget.bookingId ||
+        oldWidget.bookingStream != widget.bookingStream) {
+      _bookingStream = _createBookingStream();
+    }
+  }
+
+  Stream<Map<String, dynamic>?> _createBookingStream() {
+    final factory = widget.bookingStream;
+    if (factory != null) return factory(widget.bookingId);
+    return FirebaseFirestore.instance
+        .collection('bookings')
+        .doc(widget.bookingId)
+        .snapshots()
+        .map((snapshot) => snapshot.exists ? snapshot.data() : null);
+  }
+
+  String _formattedDate(Map<String, dynamic> booking, AppLocalizations l10n) {
+    final timestamp = booking['slotStart'] ?? booking['bookingDate'];
+    if (timestamp is! Timestamp) return l10n.myBookingsNotAvailable;
     return DateFormat.yMd(
       l10n.localeName,
-    ).format(utcInstantToRiyadhWallClock(selectedDate));
+    ).format(utcInstantToRiyadhWallClock(timestamp.toDate()));
   }
 
-  String _singleServiceLabel(AppLocalizations l10n) {
-    final displayService = service
-        .replaceAll('•', ',')
-        .split(',')
-        .map((item) => item.trim())
-        .firstWhere((item) => item.isNotEmpty, orElse: () => service.trim());
-
-    return _localizedServiceName(displayService, l10n);
+  String _formattedTime(Map<String, dynamic> booking, AppLocalizations l10n) {
+    final slotStart = booking['slotStart'];
+    if (slotStart is Timestamp) {
+      return DateFormat.jm(
+        l10n.localeName,
+      ).format(utcInstantToRiyadhWallClock(slotStart.toDate()));
+    }
+    return booking['selectedTime']?.toString() ?? l10n.myBookingsNotAvailable;
   }
 
-  String _formattedPrice(AppLocalizations l10n) {
-    if (servicePrice == null) return '-';
-    final isInt = servicePrice == servicePrice!.toInt();
-    final priceText = isInt
-        ? servicePrice!.toInt().toString()
-        : servicePrice!.toStringAsFixed(2);
+  String _formattedPrice(Map<String, dynamic> booking, AppLocalizations l10n) {
+    final price = booking['servicePrice'];
+    if (price is! num) return l10n.myBookingsNotAvailable;
+    final priceText = price.toDouble() == price.toInt()
+        ? price.toInt().toString()
+        : price.toStringAsFixed(2);
     return l10n.bookingConfirmationPriceValue(priceText);
+  }
+
+  String _localizedStatusLabel(String status, AppLocalizations l10n) {
+    switch (status.toLowerCase()) {
+      case 'accepted':
+        return l10n.myBookingsStatusAccepted;
+      case 'rejected':
+        return l10n.myBookingsStatusRejected;
+      case 'completed':
+        return l10n.myBookingsStatusCompleted;
+      case 'pending':
+      default:
+        return l10n.myBookingsStatusPending;
+    }
   }
 
   String _localizedServiceName(String rawName, AppLocalizations l10n) {
@@ -89,13 +138,14 @@ class BookingConfirmationScreen extends StatelessWidget {
       );
       displayName = displayName.replaceAllMapped(pattern, (_) => entry.value);
     }
-
     return displayName.trim().replaceAll(RegExp(r'\s+'), ' ');
   }
 
-  void _goToMyBookings(BuildContext context) {
+  void _goToMyBookings() {
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute<void>(builder: (_) => const MyBookingsScreen()),
+      MaterialPageRoute<void>(
+        builder: widget.myBookingsBuilder ?? (_) => const MyBookingsScreen(),
+      ),
       (_) => false,
     );
   }
@@ -107,13 +157,13 @@ class BookingConfirmationScreen extends StatelessWidget {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _goToMyBookings(context);
+        if (!didPop) _goToMyBookings();
       },
       child: Scaffold(
         backgroundColor: KloofColors.warmOffWhite,
         appBar: AppBar(
           leading: BackButton(
-            onPressed: () => _goToMyBookings(context),
+            onPressed: _goToMyBookings,
             color: KloofColors.primaryText,
           ),
           backgroundColor: KloofColors.warmOffWhite,
@@ -121,108 +171,146 @@ class BookingConfirmationScreen extends StatelessWidget {
           iconTheme: const IconThemeData(color: KloofColors.primaryText),
           title: Text(
             l10n.bookingConfirmationTitle,
-            style: TextStyle(color: KloofColors.primaryText),
+            style: const TextStyle(color: KloofColors.primaryText),
           ),
         ),
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsetsDirectional.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Spacer(),
-                const Icon(
-                  Icons.check_circle_rounded,
-                  size: 92,
-                  color: KloofColors.success,
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  l10n.bookingConfirmationReceivedTitle,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: KloofColors.primaryText,
+        body: StreamBuilder<Map<String, dynamic>?>(
+          stream: _bookingStream,
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return _messageState(l10n.bookingConfirmationLoadFailed);
+            }
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final booking = snapshot.data;
+            if (booking == null) {
+              return _messageState(l10n.bookingConfirmationNotFound);
+            }
+            return _successContent(booking, l10n);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _messageState(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsetsDirectional.all(24),
+        child: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: KloofColors.secondaryText),
+        ),
+      ),
+    );
+  }
+
+  Widget _successContent(Map<String, dynamic> booking, AppLocalizations l10n) {
+    final barberName = booking['barberName']?.toString().trim();
+    final service = booking['service']?.toString().trim();
+    final status = booking['status']?.toString() ?? 'pending';
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsetsDirectional.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Spacer(),
+            const Icon(
+              Icons.check_circle_rounded,
+              size: 92,
+              color: KloofColors.success,
+            ),
+            const SizedBox(height: 20),
+            Text(
+              l10n.bookingConfirmationReceivedTitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: KloofColors.primaryText,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              l10n.bookingConfirmationReceivedBody,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 15,
+                color: KloofColors.secondaryText,
+              ),
+            ),
+            const SizedBox(height: 28),
+            Container(
+              padding: const EdgeInsetsDirectional.all(16),
+              decoration: BoxDecoration(
+                color: KloofColors.cardBackground,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Column(
+                children: [
+                  _detailRow(
+                    l10n.bookingConfirmationLabelBarber,
+                    barberName == null || barberName.isEmpty
+                        ? l10n.myBookingsUnknownBarber
+                        : barberName,
                   ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  l10n.bookingConfirmationReceivedBody,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: KloofColors.secondaryText,
+                  const SizedBox(height: 10),
+                  _detailRow(
+                    l10n.bookingConfirmationLabelService,
+                    service == null || service.isEmpty
+                        ? l10n.myBookingsNotAvailable
+                        : _localizedServiceName(service, l10n),
                   ),
-                ),
-                const SizedBox(height: 28),
-                Container(
-                  padding: const EdgeInsetsDirectional.all(16),
-                  decoration: BoxDecoration(
-                    color: KloofColors.cardBackground,
+                  const SizedBox(height: 10),
+                  _detailRow(
+                    l10n.bookingConfirmationLabelPrice,
+                    _formattedPrice(booking, l10n),
+                  ),
+                  const SizedBox(height: 10),
+                  _detailRow(
+                    l10n.bookingConfirmationLabelDate,
+                    _formattedDate(booking, l10n),
+                  ),
+                  const SizedBox(height: 10),
+                  _detailRow(
+                    l10n.bookingConfirmationLabelTime,
+                    _formattedTime(booking, l10n),
+                  ),
+                  const SizedBox(height: 10),
+                  _detailRow(
+                    l10n.bookingConfirmationLabelStatus,
+                    _localizedStatusLabel(status, l10n),
+                  ),
+                ],
+              ),
+            ),
+            const Spacer(),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _goToMyBookings,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: KloofColors.primaryBlack,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Column(
-                    children: [
-                      _detailRow(
-                        l10n.bookingConfirmationLabelBarber,
-                        barberName,
-                      ),
-                      const SizedBox(height: 10),
-                      _detailRow(
-                        l10n.bookingConfirmationLabelService,
-                        _singleServiceLabel(l10n),
-                      ),
-                      if (servicePrice != null) ...[
-                        const SizedBox(height: 10),
-                        _detailRow(
-                          l10n.bookingConfirmationLabelPrice,
-                          _formattedPrice(l10n),
-                        ),
-                      ],
-                      const SizedBox(height: 10),
-                      _detailRow(
-                        l10n.bookingConfirmationLabelDate,
-                        _formattedDate(l10n),
-                      ),
-                      const SizedBox(height: 10),
-                      _detailRow(
-                        l10n.bookingConfirmationLabelTime,
-                        selectedTime,
-                      ),
-                      const SizedBox(height: 10),
-                      _detailRow(
-                        l10n.bookingConfirmationLabelStatus,
-                        l10n.bookingConfirmationStatusPending,
-                      ),
-                    ],
+                ),
+                child: Text(
+                  l10n.bookingConfirmationDone,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const Spacer(),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => _goToMyBookings(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: KloofColors.primaryBlack,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    child: Text(
-                      l10n.bookingConfirmationDone,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );

@@ -8,8 +8,14 @@ import 'package:kloof/theme/kloof_theme.dart';
 import '../domain/riyadh_time.dart';
 import 'home_screen.dart';
 
+typedef CustomerBookingsStreamFactory =
+    Stream<List<Map<String, dynamic>>> Function(String customerId);
+
 class MyBookingsScreen extends StatelessWidget {
-  const MyBookingsScreen({super.key});
+  final String? customerId;
+  final CustomerBookingsStreamFactory? bookingsStream;
+
+  const MyBookingsScreen({super.key, this.customerId, this.bookingsStream});
 
   DateTime _createdAtDate(Map<String, dynamic> booking) {
     final createdAt = booking['createdAt'];
@@ -196,6 +202,25 @@ class MyBookingsScreen extends StatelessWidget {
     return _localizedBookingTime(fallback, l10n);
   }
 
+  String _bookingPrice(Map<String, dynamic> booking, AppLocalizations l10n) {
+    final price = booking['servicePrice'];
+    if (price is! num) return l10n.myBookingsNotAvailable;
+    final priceText = price.toDouble() == price.toInt()
+        ? price.toInt().toString()
+        : price.toStringAsFixed(2);
+    return l10n.bookingConfirmationPriceValue(priceText);
+  }
+
+  Stream<List<Map<String, dynamic>>> _bookingsFor(String customerId) {
+    final factory = bookingsStream;
+    if (factory != null) return factory(customerId);
+    return FirebaseFirestore.instance
+        .collection('bookings')
+        .where('customerId', isEqualTo: customerId)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
+  }
+
   void _goToHome(BuildContext context) {
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
@@ -273,6 +298,17 @@ class MyBookingsScreen extends StatelessWidget {
                     fontSize: 14,
                   ),
                 ),
+                const SizedBox(height: 4),
+                Text(
+                  l10n.myBookingsValueRow(
+                    l10n.bookingConfirmationLabelPrice,
+                    _bookingPrice(booking, l10n),
+                  ),
+                  style: const TextStyle(
+                    color: KloofColors.secondaryText,
+                    fontSize: 14,
+                  ),
+                ),
                 const SizedBox(height: 10),
                 Align(
                   alignment: AlignmentDirectional.centerStart,
@@ -307,7 +343,8 @@ class MyBookingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final user = FirebaseAuth.instance.currentUser;
+    final effectiveCustomerId =
+        customerId ?? FirebaseAuth.instance.currentUser?.uid;
 
     return PopScope(
       canPop: false,
@@ -329,7 +366,7 @@ class MyBookingsScreen extends StatelessWidget {
             style: const TextStyle(color: KloofColors.primaryText),
           ),
         ),
-        body: user == null
+        body: effectiveCustomerId == null
             ? Center(
                 child: Text(
                   l10n.myBookingsEmpty,
@@ -339,11 +376,8 @@ class MyBookingsScreen extends StatelessWidget {
                   ),
                 ),
               )
-            : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                stream: FirebaseFirestore.instance
-                    .collection('bookings')
-                    .where('customerId', isEqualTo: user.uid)
-                    .snapshots(),
+            : StreamBuilder<List<Map<String, dynamic>>>(
+                stream: _bookingsFor(effectiveCustomerId),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
@@ -358,8 +392,10 @@ class MyBookingsScreen extends StatelessWidget {
                     );
                   }
 
-                  final docs = snapshot.data?.docs ?? [];
-                  if (docs.isEmpty) {
+                  final bookings = List<Map<String, dynamic>>.from(
+                    snapshot.data ?? const [],
+                  );
+                  if (bookings.isEmpty) {
                     return Center(
                       child: Text(
                         l10n.myBookingsEmpty,
@@ -371,10 +407,9 @@ class MyBookingsScreen extends StatelessWidget {
                     );
                   }
 
-                  final bookings = docs.map((doc) => doc.data()).toList()
-                    ..sort(
-                      (a, b) => _createdAtDate(b).compareTo(_createdAtDate(a)),
-                    );
+                  bookings.sort(
+                    (a, b) => _createdAtDate(b).compareTo(_createdAtDate(a)),
+                  );
 
                   return ListView.builder(
                     padding: const EdgeInsetsDirectional.all(16),

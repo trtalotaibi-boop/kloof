@@ -391,7 +391,6 @@ class _BookingScreenState extends State<BookingScreen> {
       return;
     }
 
-    final time = _selectedTime!;
     final slotStart = _selectedSlotStart!;
     final selectedService = _selectedService!;
 
@@ -412,14 +411,16 @@ class _BookingScreenState extends State<BookingScreen> {
       _isSubmitting = true;
     });
 
+    late final BookingCreationResult bookingResult;
     try {
       final barberId = widget.barberId;
-      await BookingStore(FirebaseFirestore.instance).createBooking(
-        barberId: barberId,
-        service: selectedService.name,
-        slotStart: slotStart,
-        clientRequestId: clientRequestId,
-      );
+      bookingResult = await BookingStore(FirebaseFirestore.instance)
+          .createBooking(
+            barberId: barberId,
+            service: selectedService.name,
+            slotStart: slotStart,
+            clientRequestId: clientRequestId,
+          );
       _requestIds.reset();
     } on SlotAlreadyBookedException {
       _requestIds.reset();
@@ -454,13 +455,7 @@ class _BookingScreenState extends State<BookingScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => BookingConfirmationScreen(
-          barberName: widget.barberName,
-          service: selectedService.name,
-          servicePrice: selectedService.price,
-          selectedDate: slotStart,
-          selectedTime: time,
-        ),
+        builder: (context) => bookingConfirmationFor(bookingResult),
       ),
     );
   }
@@ -620,6 +615,13 @@ class _BookingScreenState extends State<BookingScreen> {
       ),
     );
   }
+}
+
+@visibleForTesting
+BookingConfirmationScreen bookingConfirmationFor(
+  BookingCreationResult bookingResult,
+) {
+  return BookingConfirmationScreen(bookingId: bookingResult.bookingId);
 }
 
 class _ServiceOption {
