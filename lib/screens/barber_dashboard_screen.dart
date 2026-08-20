@@ -18,6 +18,7 @@ import 'barber_bookings_screen.dart';
 import 'barber_profile_screen.dart';
 import 'welcome_screen.dart';
 import '../widgets/whatsapp_feedback_button.dart';
+import '../widgets/barber_booking_actions.dart';
 
 class BarberDashboardScreen extends StatefulWidget {
   final String barberName;
@@ -276,34 +277,10 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
     }
   }
 
-  Future<void> _updateBookingStatus(String bookingId, String status) async {
-    await BookingStore(
+  Future<bool> _updateBookingStatus(String bookingId, String status) async {
+    return BookingStore(
       FirebaseFirestore.instance,
     ).updateBookingStatus(bookingId, status);
-  }
-
-  Future<void> _confirmAndReject(String bookingId) async {
-    final l10n = AppLocalizations.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(l10n.barberBookingsRejectConfirmTitle),
-        content: Text(l10n.barberBookingsRejectConfirmMessage),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(l10n.commonCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(l10n.barberBookingsRejectConfirmAction),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      await _updateBookingStatus(bookingId, 'rejected');
-    }
   }
 
   Future<void> _logout() async {
@@ -799,18 +776,31 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                       .orderBy('createdAt', descending: true)
                       .snapshots(),
                   builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                      return Center(
-                        child: Text(l10n.barberDashboardNoBookings),
-                      );
+                    final docs = snapshot.data?.docs ?? [];
+                    final listState = resolveBarberBookingListState(
+                      connectionState: snapshot.connectionState,
+                      hasError: snapshot.hasError,
+                      hasData: snapshot.hasData,
+                      isEmpty: docs.isEmpty,
+                    );
+                    switch (listState) {
+                      case BarberBookingListState.loading:
+                        return const Center(child: CircularProgressIndicator());
+                      case BarberBookingListState.error:
+                        return Center(
+                          child: Text(l10n.barberBookingsLoadFailed),
+                        );
+                      case BarberBookingListState.empty:
+                        return Center(
+                          child: Text(l10n.barberDashboardNoBookings),
+                        );
+                      case BarberBookingListState.data:
+                        break;
                     }
                     return ListView(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      children: snapshot.data!.docs.map((doc) {
+                      children: docs.map((doc) {
                         final data = doc.data() as Map<String, dynamic>;
                         final status = data['status']?.toString() ?? 'pending';
                         final customerName = data['customerName']?.toString();
@@ -902,55 +892,12 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                                     time,
                                   ),
                                 ),
-                                if (status.toLowerCase() == 'pending') ...[
-                                  const SizedBox(height: 10),
-                                  OverflowBar(
-                                    spacing: 10,
-                                    overflowSpacing: 8,
-                                    alignment: MainAxisAlignment.end,
-                                    overflowAlignment:
-                                        OverflowBarAlignment.start,
-                                    children: [
-                                      OutlinedButton(
-                                        onPressed: () => _updateBookingStatus(
-                                          doc.id,
-                                          'accepted',
-                                        ),
-                                        style: OutlinedButton.styleFrom(
-                                          foregroundColor: KloofColors.success,
-                                          side: const BorderSide(
-                                            color: KloofColors.success,
-                                          ),
-                                        ),
-                                        child: Text(l10n.barberBookingsAccept),
-                                      ),
-                                      OutlinedButton(
-                                        onPressed: () =>
-                                            _confirmAndReject(doc.id),
-                                        style: OutlinedButton.styleFrom(
-                                          foregroundColor: KloofColors.error,
-                                          side: const BorderSide(
-                                            color: KloofColors.error,
-                                          ),
-                                        ),
-                                        child: Text(l10n.barberBookingsReject),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                                if (status.toLowerCase() == 'accepted') ...[
-                                  const SizedBox(height: 10),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: OutlinedButton(
-                                      onPressed: () => _updateBookingStatus(
-                                        doc.id,
-                                        'completed',
-                                      ),
-                                      child: Text(l10n.barberDashboardComplete),
-                                    ),
-                                  ),
-                                ],
+                                BarberBookingActions(
+                                  key: ValueKey('booking-actions-${doc.id}'),
+                                  bookingId: doc.id,
+                                  status: status,
+                                  updateStatus: _updateBookingStatus,
+                                ),
                               ],
                             ),
                           ),

@@ -275,6 +275,62 @@ describe("trusted booking and barber provisioning", () => {
     assert.equal((await db.collection("bookingSlots").get()).empty, true);
   });
 
+  test("assigned barber accepts and completes a pending booking", async () => {
+    const booking = await create();
+    const accepted = await updateBookingStatusCore({
+      db,
+      uid: barberId,
+      data: {bookingId: booking.bookingId, status: "accepted"},
+    });
+    assert.equal(accepted.updated, true);
+    assert.equal(
+        (await db.collection("bookings").doc(booking.bookingId).get())
+            .data().status,
+        "accepted",
+    );
+
+    const completed = await updateBookingStatusCore({
+      db,
+      uid: barberId,
+      data: {bookingId: booking.bookingId, status: "completed"},
+    });
+    assert.equal(completed.updated, true);
+    assert.equal(
+        (await db.collection("bookings").doc(booking.bookingId).get())
+            .data().status,
+        "completed",
+    );
+    assert.equal((await db.collection("bookingSlots").get()).size, 2);
+  });
+
+  test("invalid and repeated status transitions are rejected", async () => {
+    const booking = await create();
+    const update = (status) => updateBookingStatusCore({
+      db,
+      uid: barberId,
+      data: {bookingId: booking.bookingId, status},
+    });
+
+    await assert.rejects(
+        update("completed"),
+        (error) => error.code === "failed-precondition",
+    );
+    await update("accepted");
+    await assert.rejects(
+        update("accepted"),
+        (error) => error.code === "failed-precondition",
+    );
+    await assert.rejects(
+        update("rejected"),
+        (error) => error.code === "failed-precondition",
+    );
+    await update("completed");
+    await assert.rejects(
+        update("completed"),
+        (error) => error.code === "failed-precondition",
+    );
+  });
+
   test("trusted provisioning separates private phone and rejects non-admin callers", async () => {
     const auth = {
       getUser: async (uid) => ({uid, email: "barber@example.com", customClaims: {}}),

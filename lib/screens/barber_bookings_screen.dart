@@ -7,6 +7,7 @@ import 'package:kloof/theme/kloof_theme.dart';
 
 import '../data/booking_store.dart';
 import '../domain/riyadh_time.dart';
+import '../widgets/barber_booking_actions.dart';
 
 class BarberBookingsScreen extends StatelessWidget {
   const BarberBookingsScreen({super.key});
@@ -126,34 +127,10 @@ class BarberBookingsScreen extends StatelessWidget {
     return l10n.barberBookingsCustomerFallback;
   }
 
-  Future<void> _updateBookingStatus(String bookingId, String status) async {
-    await BookingStore(
+  Future<bool> _updateBookingStatus(String bookingId, String status) async {
+    return BookingStore(
       FirebaseFirestore.instance,
     ).updateBookingStatus(bookingId, status);
-  }
-
-  Future<void> _confirmAndReject(BuildContext context, String bookingId) async {
-    final l10n = AppLocalizations.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(l10n.barberBookingsRejectConfirmTitle),
-        content: Text(l10n.barberBookingsRejectConfirmMessage),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(l10n.commonCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(l10n.barberBookingsRejectConfirmAction),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      await _updateBookingStatus(bookingId, 'rejected');
-    }
   }
 
   @override
@@ -185,27 +162,36 @@ class BarberBookingsScreen extends StatelessWidget {
                   .where('barberId', isEqualTo: currentUser.uid)
                   .snapshots(),
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Text(
-                      l10n.barberBookingsLoadFailed,
-                      style: const TextStyle(color: KloofColors.secondaryText),
-                    ),
-                  );
-                }
-
                 final docs = snapshot.data?.docs ?? [];
-                if (docs.isEmpty) {
-                  return Center(
-                    child: Text(
-                      l10n.barberBookingsEmpty,
-                      style: const TextStyle(color: KloofColors.secondaryText),
-                    ),
-                  );
+                final listState = resolveBarberBookingListState(
+                  connectionState: snapshot.connectionState,
+                  hasError: snapshot.hasError,
+                  hasData: snapshot.hasData,
+                  isEmpty: docs.isEmpty,
+                );
+                switch (listState) {
+                  case BarberBookingListState.loading:
+                    return const Center(child: CircularProgressIndicator());
+                  case BarberBookingListState.error:
+                    return Center(
+                      child: Text(
+                        l10n.barberBookingsLoadFailed,
+                        style: const TextStyle(
+                          color: KloofColors.secondaryText,
+                        ),
+                      ),
+                    );
+                  case BarberBookingListState.empty:
+                    return Center(
+                      child: Text(
+                        l10n.barberBookingsEmpty,
+                        style: const TextStyle(
+                          color: KloofColors.secondaryText,
+                        ),
+                      ),
+                    );
+                  case BarberBookingListState.data:
+                    break;
                 }
 
                 final bookings =
@@ -237,7 +223,6 @@ class BarberBookingsScreen extends StatelessWidget {
                       l10n,
                     );
                     final time = _formatBookingTime(context, booking, l10n);
-                    final isPending = status.toLowerCase() == 'pending';
 
                     return Card(
                       margin: const EdgeInsetsDirectional.only(bottom: 12),
@@ -326,47 +311,12 @@ class BarberBookingsScreen extends StatelessWidget {
                                 time,
                               ),
                             ),
-                            if (isPending) ...[
-                              const SizedBox(height: 12),
-                              OverflowBar(
-                                spacing: 10,
-                                overflowSpacing: 8,
-                                alignment: MainAxisAlignment.end,
-                                overflowAlignment: OverflowBarAlignment.start,
-                                children: [
-                                  OutlinedButton(
-                                    onPressed: bookingId.isEmpty
-                                        ? null
-                                        : () => _updateBookingStatus(
-                                            bookingId,
-                                            'accepted',
-                                          ),
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: KloofColors.success,
-                                      side: const BorderSide(
-                                        color: KloofColors.success,
-                                      ),
-                                    ),
-                                    child: Text(l10n.barberBookingsAccept),
-                                  ),
-                                  OutlinedButton(
-                                    onPressed: bookingId.isEmpty
-                                        ? null
-                                        : () => _confirmAndReject(
-                                            context,
-                                            bookingId,
-                                          ),
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: KloofColors.error,
-                                      side: const BorderSide(
-                                        color: KloofColors.error,
-                                      ),
-                                    ),
-                                    child: Text(l10n.barberBookingsReject),
-                                  ),
-                                ],
-                              ),
-                            ],
+                            BarberBookingActions(
+                              key: ValueKey('booking-actions-$bookingId'),
+                              bookingId: bookingId,
+                              status: status,
+                              updateStatus: _updateBookingStatus,
+                            ),
                           ],
                         ),
                       ),
